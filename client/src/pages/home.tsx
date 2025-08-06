@@ -84,13 +84,13 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Next.js App Banner */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 text-center">
+      <div className="bg-emerald-deep text-white p-4 text-center border-b-2 border-gold">
         <p className="text-sm">
-          🚀 <strong>MoneyXprt Next.js App is Ready!</strong> 
+          <span className="text-gold font-bold">MoneyXprt Next.js App is Ready!</span> 
           <span className="ml-2">Complete with Supabase auth, OpenAI chat, and dashboard.</span>
           <a 
             href="https://github.com/your-repo/moneyxprt" 
-            className="ml-4 underline hover:text-blue-200"
+            className="ml-4 text-gold underline hover:text-yellow-300"
             target="_blank" 
             rel="noopener noreferrer"
           >
@@ -103,7 +103,12 @@ export default function HomePage() {
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/attached_assets/Logo Money Expert - Elegant Emblem Design_1754451808238.png" 
+                alt="MoneyXprt Logo" 
+                className="h-10 w-10"
+              />
               <h1 className="text-2xl font-bold text-primary">MoneyXprt</h1>
             </div>
             
@@ -184,24 +189,24 @@ export default function HomePage() {
           <div className="text-center">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
               AI-powered financial co-pilot<br />
-              <span className="text-blue-200">for high-income earners</span>
+              <span className="text-gold">for high-income earners</span>
             </h1>
-            <p className="text-xl sm:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl sm:text-2xl text-gray-100 mb-8 max-w-3xl mx-auto leading-relaxed">
               Optimize your wealth with personalized AI-driven insights, tax strategies, and investment recommendations tailored for your income level.
             </p>
             
             {/* Trust indicators */}
-            <div className="flex flex-wrap justify-center items-center gap-8 mb-12 text-blue-200">
+            <div className="flex flex-wrap justify-center items-center gap-8 mb-12 text-gray-200">
               <div className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-green-400" />
+                <Shield className="h-5 w-5 text-gold" />
                 <span className="text-sm">Bank-grade security</span>
               </div>
               <div className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-green-400" />
+                <TrendingUp className="h-5 w-5 text-gold" />
                 <span className="text-sm">AI-powered insights</span>
               </div>
               <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-green-400" />
+                <Users className="h-5 w-5 text-gold" />
                 <span className="text-sm">10K+ professionals</span>
               </div>
             </div>
@@ -210,7 +215,7 @@ export default function HomePage() {
               <Button 
                 onClick={scrollToWaitlist}
                 size="lg"
-                className="bg-white text-primary hover:bg-gray-50 text-lg px-8 py-4 h-auto transform hover:scale-105 transition-all duration-200 shadow-lg"
+                className="bg-gold text-emerald-deep hover:bg-yellow-400 text-lg px-8 py-4 h-auto transform hover:scale-105 transition-all duration-200 shadow-lg font-semibold"
               >
                 Join the Waitlist
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -386,7 +391,7 @@ export default function HomePage() {
                   <Button
                     type="submit"
                     disabled={waitlistMutation.isPending}
-                    className="w-full h-14 text-lg font-semibold transform hover:scale-[1.02] transition-all"
+                    className="w-full h-14 text-lg font-semibold transform hover:scale-[1.02] transition-all gradient-gold text-emerald-deep hover:bg-yellow-400"
                   >
                     {waitlistMutation.isPending ? (
                       <>
@@ -470,63 +475,70 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="bg-emerald-deep text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8">
             <div className="md:col-span-2">
-              <h3 className="text-2xl font-bold text-primary mb-4">MoneyXprt</h3>
+              <div className="flex items-center space-x-3 mb-4">
+                <img 
+                  src="/attached_assets/Logo Money Expert - Elegant Emblem Design_1754451808238.png" 
+                  alt="MoneyXprt Logo" 
+                  className="h-8 w-8"
+                />
+                <h3 className="text-2xl font-bold text-gold">MoneyXprt</h3>
+              </div>
               <p className="text-gray-300 mb-4 max-w-md">
                 AI-powered financial co-pilot designed for high-income earners who want to optimize their wealth intelligently.
               </p>
               <div className="flex space-x-4">
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <a href="#" className="text-gray-400 hover:text-gold transition-colors">
                   <Twitter className="h-6 w-6" />
                 </a>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <a href="#" className="text-gray-400 hover:text-gold transition-colors">
                   <Linkedin className="h-6 w-6" />
                 </a>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <a href="#" className="text-gray-400 hover:text-gold transition-colors">
                   <Github className="h-6 w-6" />
                 </a>
               </div>
             </div>
             
             <div>
-              <h4 className="font-semibold mb-4">Product</h4>
+              <h4 className="font-semibold mb-4 text-gold">Product</h4>
               <ul className="space-y-2 text-gray-300">
                 <li>
-                  <button onClick={() => scrollToSection('features')} className="hover:text-white transition-colors">
+                  <button onClick={() => scrollToSection('features')} className="hover:text-gold transition-colors">
                     Features
                   </button>
                 </li>
                 <li>
-                  <button onClick={() => scrollToSection('how-it-works')} className="hover:text-white transition-colors">
+                  <button onClick={() => scrollToSection('how-it-works')} className="hover:text-gold transition-colors">
                     How It Works
                   </button>
                 </li>
                 <li>
-                  <button onClick={() => scrollToSection('pricing')} className="hover:text-white transition-colors">
+                  <button onClick={() => scrollToSection('pricing')} className="hover:text-gold transition-colors">
                     Pricing
                   </button>
                 </li>
-                <li><a href="#" className="hover:text-white transition-colors">Security</a></li>
+                <li><a href="#" className="hover:text-gold transition-colors">Security</a></li>
               </ul>
             </div>
             
             <div>
-              <h4 className="font-semibold mb-4">Company</h4>
+              <h4 className="font-semibold mb-4 text-gold">Company</h4>
               <ul className="space-y-2 text-gray-300">
-                <li><a href="#" className="hover:text-white transition-colors">About</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
+                <li><a href="#" className="hover:text-gold transition-colors">About</a></li>
+                <li><a href="#" className="hover:text-gold transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-gold transition-colors">Terms of Service</a></li>
+                <li><a href="#" className="hover:text-gold transition-colors">Contact</a></li>
               </ul>
             </div>
           </div>
           
-          <div className="border-t border-gray-700 mt-8 pt-8 text-center">
-            <p className="text-gray-400">
-              © 2024 MoneyXprt. All rights reserved. | Built with React, Supabase, and Tailwind CSS
+          <div className="border-t border-emerald-600 mt-8 pt-8 text-center">
+            <p className="text-gray-300">
+              © 2024 <span className="text-gold font-semibold">MoneyXprt</span>. All rights reserved. | Built with React, Supabase, and Tailwind CSS
             </p>
           </div>
         </div>

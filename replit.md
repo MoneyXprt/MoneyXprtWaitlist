@@ -4,6 +4,8 @@
 
 MoneyXprt is a modern, production-ready Next.js web application serving as an AI-powered financial co-pilot for high-income earners. The application features a complete waitlist system, user authentication, an AI chat interface powered by OpenAI GPT-4, and a secure dashboard for personalized financial advice. Built with Next.js 14 App Router, Supabase for authentication and database, and styled with Tailwind CSS and shadcn/ui components.
 
+**Recent Update**: Updated branding to match the elegant logo design with dark emerald green (#0F2A1D / hsl(157, 48%, 15%)) and gold (#D4AF37 / hsl(45, 70%, 65%)) color scheme for a premium, sophisticated look.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -56,8 +58,9 @@ Preferred communication style: Simple, everyday language.
 - **Design System**: shadcn/ui with New York style variant
 - **Responsive**: Mobile-first approach with Tailwind breakpoints
 - **Accessibility**: Radix UI primitives provide accessibility features
-- **Theming**: CSS custom properties for easy theme switching
+- **Theming**: Dark emerald green and gold color scheme matching logo branding
 - **Icons**: Lucide React for consistent iconography
+- **Branding**: Professional logo integration throughout the application
 
 ## External Dependencies
 
