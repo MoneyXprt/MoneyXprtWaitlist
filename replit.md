@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a full-stack web application built with a React frontend and Express.js backend, featuring a waitlist registration system. The application appears to be designed for a financial services or wealth management platform, allowing users to sign up for early access with optional demographic and goal information. The stack includes TypeScript throughout, Drizzle ORM for database management, shadcn/ui for the component library, and TanStack Query for state management.
+MoneyXprt is a modern, production-ready Next.js web application serving as an AI-powered financial co-pilot for high-income earners. The application features a complete waitlist system, user authentication, an AI chat interface powered by OpenAI GPT-4, and a secure dashboard for personalized financial advice. Built with Next.js 14 App Router, Supabase for authentication and database, and styled with Tailwind CSS and shadcn/ui components.
 
 ## User Preferences
 
@@ -11,32 +11,33 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### Frontend Architecture
-- **Framework**: React with TypeScript using Vite as the build tool
-- **Styling**: Tailwind CSS with CSS variables for theming (light/dark mode support)
+- **Framework**: Next.js 14 with App Router and TypeScript
+- **Styling**: Tailwind CSS with CSS variables for theming
 - **UI Components**: shadcn/ui component library built on Radix UI primitives
-- **Routing**: Wouter for client-side routing (lightweight alternative to React Router)
-- **State Management**: TanStack Query (React Query) for server state management
-- **Form Handling**: React Hook Form with Zod for validation
-- **Build Tool**: Vite with React plugin and custom aliases for clean imports
+- **Routing**: Next.js App Router with file-based routing
+- **State Management**: React Context for auth state, direct Supabase client calls
+- **Form Handling**: React Hook Form with native form handling
+- **Build Tool**: Next.js with built-in optimization and bundling
 
 ### Backend Architecture
-- **Framework**: Express.js with TypeScript
-- **Database ORM**: Drizzle ORM with PostgreSQL dialect
-- **API Design**: RESTful endpoints with centralized route registration
-- **Validation**: Zod schemas shared between frontend and backend
-- **Error Handling**: Centralized error middleware with structured responses
-- **Development**: Custom logging middleware for API request tracking
+- **Framework**: Next.js API Routes with TypeScript
+- **Database**: Supabase (PostgreSQL) with Row Level Security
+- **Authentication**: Supabase Auth with email/password and magic links
+- **AI Integration**: OpenAI GPT-4 for financial advice chat
+- **API Design**: RESTful API routes following Next.js conventions
+- **Security**: Middleware-based route protection and RLS policies
 
 ### Data Storage
-- **Database**: PostgreSQL via Neon Database (serverless PostgreSQL)
-- **ORM**: Drizzle ORM with type-safe queries and migrations
-- **Schema**: Two main tables - users (id, username, password) and waitlist (id, email, name, income, goal, createdAt)
-- **Migrations**: Drizzle Kit for schema migrations stored in `/migrations` directory
+- **Database**: Supabase (PostgreSQL) with built-in auth and real-time features
+- **Schema**: Two main tables - waitlist (id, email, created_at) and conversations (id, user_id, prompt, response, created_at)
+- **Security**: Row Level Security (RLS) policies for data protection
+- **Real-time**: Supabase real-time subscriptions for live updates
 
 ### Authentication & Authorization
-- **Current State**: Basic user schema exists but no authentication implementation yet
-- **Session Management**: connect-pg-simple package included for PostgreSQL session storage
-- **Future Implementation**: Appears designed for session-based authentication
+- **Implementation**: Complete Supabase Auth integration with email/password
+- **Session Management**: Supabase handles JWT tokens and session persistence
+- **Route Protection**: Next.js middleware for protecting authenticated routes
+- **User Management**: Built-in user registration, login, and password reset
 
 ### Development & Build
 - **Monorepo Structure**: Client, server, and shared code in separate directories
