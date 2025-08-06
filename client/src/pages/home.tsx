@@ -116,21 +116,27 @@ export default function HomePage() {
         body: JSON.stringify({ prompt: aiPrompt }),
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      if (response.ok) {
+      const data = await response.json();
+      
+      if (data.response) {
         setAiResponse(data.response);
-      } else {
+        setAiPrompt(""); // Clear the input after successful response
+      } else if (data.error) {
         toast({
           title: "Error",
-          description: data.error || "Failed to get AI response",
+          description: data.error,
           variant: "destructive",
         });
       }
     } catch (error) {
+      console.error('AI fetch error:', error);
       toast({
         title: "Error",
-        description: "Failed to connect to AI assistant",
+        description: "Failed to connect to AI assistant. Please try again.",
         variant: "destructive",
       });
     } finally {
