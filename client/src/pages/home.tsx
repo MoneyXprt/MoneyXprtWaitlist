@@ -188,6 +188,18 @@ export default function HomePage() {
                 >
                   Pricing
                 </button>
+                <a
+                  href="/login"
+                  className="text-emerald-deep hover:text-emerald-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  Sign In
+                </a>
+                <a
+                  href="/signup"
+                  className="bg-emerald-deep text-white hover:bg-emerald-700 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  Get Started
+                </a>
               </div>
             </nav>
             
