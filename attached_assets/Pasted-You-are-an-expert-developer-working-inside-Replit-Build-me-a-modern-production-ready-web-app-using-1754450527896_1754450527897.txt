@@ -1,0 +1,75 @@
+You are an expert developer working inside Replit. Build me a modern, production-ready web app using this stack:
+
+- **Next.js** (React 18, App Router)
+- **Supabase** (Auth + PostgreSQL database)
+- **Tailwind CSS**
+- **OpenAI API (for AI logic)**
+- **Hosted on Vercel**
+
+App Name: **MoneyXprt**
+Brand: Modern, premium feel. Clean UI. Tailored to high-income W-2 earners and real estate investors.
+
+This is a financial co-pilot MVP. I want a clean working app with the following:
+
+---
+
+## ✅ 1. Pages + Routing
+Use the Next.js App Router (`/app` directory). Set up the following routes:
+
+- `/` – Landing Page with CTA to join waitlist
+- `/dashboard` – Authenticated user dashboard
+- `/profile` – User settings & profile page
+
+---
+
+## ✅ 2. Supabase Auth
+Set up Supabase auth with:
+- Email/password sign up & login
+- Magic link (optional)
+- User stays logged in
+- Protect `/dashboard` and `/profile` routes
+
+Use Supabase client library and `supabase-js`.
+
+---
+
+## ✅ 3. Waitlist Integration
+On the home page (`/`):
+- Simple email capture form (email only)
+- On submit: store the email in `waitlist` table in Supabase
+- Include success message and error handling
+
+Supabase table: `waitlist`  
+Columns: `id`, `email`, `created_at`
+
+---
+
+## ✅ 4. Dashboard Layout
+Once logged in, show the following:
+
+- Welcome message with user’s name or email
+- Card: “How can we help you today?” → text input + submit button
+- On submit: call OpenAI API with user’s question, show response below
+- Save prompt + response to Supabase (`conversations` table)
+
+Table: `conversations`  
+Columns: `id`, `user_id`, `prompt`, `response`, `created_at`
+
+---
+
+## ✅ 5. Tailwind CSS
+- Use Tailwind for all styling
+- Clean, modern design (light mode only for now)
+- Use components for cards, buttons, form elements
+
+---
+
+## ✅ 6. Deploy to Vercel
+- Configure for Vercel deployment (add `vercel.json` if needed)
+- Output should be deploy-ready
+- Environment variables should be loaded from `.env.local`
+
+---
+
+## ✅ 7. Environment Variables
+Create `.env.local` with:
