@@ -54,31 +54,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-      });
+      // Check if OpenAI API key is valid and has quota
+      if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.trim() === '') {
+        return res.json({
+          response: "Hello! I'm MoneyXprt, your AI financial co-pilot. To provide personalized financial advice, please add a valid OpenAI API key with available credits to your environment variables. Once configured, I'll be ready to help with tax optimization, investment strategies, and wealth preservation for high-income earners."
+        });
+      }
 
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o', // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-        messages: [
-          {
-            role: 'system',
-            content: 'You are MoneyXprt, an AI-powered financial co-pilot designed specifically for high-income earners. Provide helpful, professional financial advice while maintaining your identity as MoneyXprt. Keep responses concise but informative, focusing on tax optimization, wealth preservation, investment strategies, and financial planning relevant to affluent individuals.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: 500,
-        temperature: 0.7,
-      });
+      try {
+        const openai = new OpenAI({
+          apiKey: process.env.OPENAI_API_KEY,
+        });
 
-      const response = completion.choices[0]?.message?.content || 'I apologize, but I couldn\'t generate a response. Please try again.';
+        const completion = await openai.chat.completions.create({
+          model: 'gpt-4o', // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+          messages: [
+            {
+              role: 'system',
+              content: 'You are MoneyXprt, an AI-powered financial co-pilot designed specifically for high-income earners. Provide helpful, professional financial advice while maintaining your identity as MoneyXprt. Keep responses concise but informative, focusing on tax optimization, wealth preservation, investment strategies, and financial planning relevant to affluent individuals.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: 500,
+          temperature: 0.7,
+        });
 
-      res.json({ response });
+        const response = completion.choices[0]?.message?.content || 'I apologize, but I couldn\'t generate a response. Please try again.';
+        res.json({ response });
+
+      } catch (openaiError: any) {
+        // Handle OpenAI specific errors (quota, invalid key, etc.)
+        if (openaiError.status === 429 || openaiError.code === 'insufficient_quota') {
+          return res.json({
+            response: "Hello! I'm MoneyXprt, your AI financial co-pilot. It appears your OpenAI API key has exceeded its quota. Please add credits to your OpenAI account at https://platform.openai.com/account/billing to continue receiving personalized financial advice for high-income earners."
+          });
+        } else if (openaiError.status === 401) {
+          return res.json({
+            response: "Hello! I'm MoneyXprt, your AI financial co-pilot. Your OpenAI API key appears to be invalid. Please check your API key at https://platform.openai.com/api-keys and ensure it's correctly set in your environment variables."
+          });
+        } else {
+          throw openaiError; // Re-throw other errors
+        }
+      }
+
     } catch (error) {
-      console.error('OpenAI API error:', error);
+      console.error('AI Assistant error:', error);
       res.status(500).json({
         error: 'Failed to get AI response. Please try again.'
       });
