@@ -83,22 +83,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Next.js App Banner */}
-      <div className="bg-emerald-deep text-white p-4 text-center border-b-2 border-gold">
-        <p className="text-sm">
-          <span className="text-gold font-bold">MoneyXprt Next.js App is Ready!</span> 
-          <span className="ml-2">Complete with Supabase auth, OpenAI chat, and dashboard.</span>
-          <a 
-            href="https://github.com/your-repo/moneyxprt" 
-            className="ml-4 text-gold underline hover:text-yellow-300"
-            target="_blank" 
-            rel="noopener noreferrer"
-          >
-            View Source Code →
-          </a>
-        </p>
-      </div>
-
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
