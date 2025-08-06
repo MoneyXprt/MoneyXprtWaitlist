@@ -25,7 +25,9 @@ import {
   Twitter,
   Linkedin,
   Github,
-  Menu
+  Menu,
+  Send,
+  MessageCircle
 } from "lucide-react";
 
 // Simple email validation schema
@@ -40,6 +42,9 @@ type WaitlistForm = z.infer<typeof waitlistSchema>;
 export default function HomePage() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiResponse, setAiResponse] = useState("");
+  const [isAiLoading, setIsAiLoading] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<WaitlistForm>({
@@ -95,6 +100,42 @@ export default function HomePage() {
 
   const onSubmit = (data: WaitlistForm) => {
     handleWaitlistSubmit(data);
+  };
+
+  const handleAiSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!aiPrompt.trim()) return;
+
+    setIsAiLoading(true);
+    try {
+      const response = await fetch('/api/ask', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: aiPrompt }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setAiResponse(data.response);
+      } else {
+        toast({
+          title: "Error",
+          description: data.error || "Failed to get AI response",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to connect to AI assistant",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   const scrollToWaitlist = () => {
@@ -431,6 +472,104 @@ export default function HomePage() {
                   <Clock className="h-4 w-4 text-purple-500" />
                   <span>Early access priority</span>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* AI Assistant Demo */}
+      <section className="py-20 bg-emerald-deep">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center space-x-3 mb-4">
+              <img 
+                src="/attached_assets/Logo Money Expert - Elegant Emblem Design_1754451808238.png" 
+                alt="MoneyXprt Logo" 
+                className="h-12 w-12"
+              />
+              <h2 className="text-3xl sm:text-4xl font-bold text-white">
+                Try MoneyXprt AI
+              </h2>
+            </div>
+            <p className="text-xl text-gray-200 max-w-2xl mx-auto">
+              Ask our AI financial co-pilot any question about wealth optimization, tax strategies, or investment planning.
+            </p>
+          </div>
+
+          <Card className="bg-white/10 backdrop-blur-sm border-gold/30">
+            <CardContent className="p-8">
+              <form onSubmit={handleAiSubmit} className="space-y-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <MessageCircle className="h-6 w-6 text-gold" />
+                  <Label className="text-white font-medium text-lg">
+                    Ask MoneyXprt anything about finances:
+                  </Label>
+                </div>
+                
+                <div className="flex space-x-3">
+                  <Input
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    placeholder="e.g., How can I optimize my tax strategy for high income?"
+                    className="flex-1 h-12 bg-white/90 border-white/30 text-gray-900 placeholder:text-gray-500"
+                    disabled={isAiLoading}
+                  />
+                  <Button
+                    type="submit"
+                    disabled={isAiLoading || !aiPrompt.trim()}
+                    className="bg-gold text-emerald-deep hover:bg-yellow-400 px-6 font-semibold"
+                  >
+                    {isAiLoading ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-deep" />
+                    ) : (
+                      <Send className="h-5 w-5" />
+                    )}
+                  </Button>
+                </div>
+              </form>
+
+              {aiResponse && (
+                <div className="mt-8 p-6 bg-white/90 rounded-lg border border-gold/30">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-emerald-deep rounded-full flex items-center justify-center">
+                        <Bot className="h-5 w-5 text-gold" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-emerald-deep mb-2">MoneyXprt AI:</h4>
+                      <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{aiResponse}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-6 flex flex-wrap justify-center gap-4 text-sm">
+                <button
+                  type="button"
+                  onClick={() => setAiPrompt("What are the best tax strategies for high-income earners?")}
+                  className="px-4 py-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+                  disabled={isAiLoading}
+                >
+                  Tax optimization strategies
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAiPrompt("How should I diversify my investment portfolio?")}
+                  className="px-4 py-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+                  disabled={isAiLoading}
+                >
+                  Portfolio diversification
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAiPrompt("What are the best wealth preservation strategies?")}
+                  className="px-4 py-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+                  disabled={isAiLoading}
+                >
+                  Wealth preservation
+                </button>
               </div>
             </CardContent>
           </Card>
