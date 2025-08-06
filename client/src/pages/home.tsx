@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { insertWaitlistSchema, type InsertWaitlist } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+import { supabase, type WaitlistEntry } from "@/lib/supabase";
 import { 
   Shield, 
   TrendingUp, 
@@ -29,47 +28,73 @@ import {
   Menu
 } from "lucide-react";
 
+// Simple email validation schema
+const waitlistSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  income: z.string().optional(),
+  goal: z.string().optional(),
+});
+
+type WaitlistForm = z.infer<typeof waitlistSchema>;
+
 export default function HomePage() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  const form = useForm<InsertWaitlist>({
-    resolver: zodResolver(insertWaitlistSchema),
+  const form = useForm<WaitlistForm>({
+    resolver: zodResolver(waitlistSchema),
     defaultValues: {
       email: "",
-      name: "",
-      income: undefined,
-      goal: undefined,
+      income: "",
+      goal: "",
     },
   });
 
-  const waitlistMutation = useMutation({
-    mutationFn: async (data: InsertWaitlist) => {
-      const response = await apiRequest("POST", "/api/waitlist", data);
-      return response.json();
-    },
-    onSuccess: () => {
+  const handleWaitlistSubmit = async (data: WaitlistForm) => {
+    setIsSubmitting(true);
+    try {
+      const waitlistEntry: WaitlistEntry = {
+        email: data.email,
+        income: data.income || null,
+        goal: data.goal || null
+      };
+
+      const { data: result, error } = await supabase
+        .from('waitlist')
+        .insert([waitlistEntry])
+        .select();
+
+      if (error) {
+        console.error('Supabase error:', error);
+        toast({
+          title: "Error",
+          description: error.message || "Something went wrong. Please try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Thanks for joining!",
+          description: "We'll notify you when MoneyXprt launches.",
+          className: "bg-green-50 border-green-200 text-green-800",
+        });
+        form.reset();
+        document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    } catch (error) {
+      console.error('Submission error:', error);
       toast({
-        title: "Welcome to the waitlist!",
-        description: "We'll notify you when MoneyXprt launches. Check your email for confirmation.",
-        className: "bg-green-50 border-green-200 text-green-800",
-      });
-      form.reset();
-      // Scroll to success message area
-      document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Something went wrong",
-        description: error.message || "Please try again later.",
+        title: "Error",
+        description: "Something went wrong. Please try again.",
         variant: "destructive",
       });
-    },
-  });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-  const onSubmit = (data: InsertWaitlist) => {
-    waitlistMutation.mutate(data);
+  const onSubmit = (data: WaitlistForm) => {
+    handleWaitlistSubmit(data);
   };
 
   const scrollToWaitlist = () => {
@@ -374,10 +399,10 @@ export default function HomePage() {
 
                   <Button
                     type="submit"
-                    disabled={waitlistMutation.isPending}
+                    disabled={isSubmitting}
                     className="w-full h-14 text-lg font-semibold transform hover:scale-[1.02] transition-all gradient-gold text-emerald-deep hover:bg-yellow-400"
                   >
-                    {waitlistMutation.isPending ? (
+                    {isSubmitting ? (
                       <>
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
                         Joining...
