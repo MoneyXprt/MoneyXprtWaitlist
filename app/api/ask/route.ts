@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { createClient } from '@supabase/supabase-js'
 
 const SYSTEM_PROMPT = `
 You are **MoneyXprt**, an AI financial co‑pilot for high‑income W‑2 earners and real estate investors.
@@ -17,6 +18,15 @@ Output format:
 `
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
+// Create Supabase client for server-side operations
+let supabase: ReturnType<typeof createClient> | null = null
+if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  )
+}
 
 export async function POST(req: Request) {
   try {
@@ -74,6 +84,22 @@ export async function POST(req: Request) {
     
     if (hasMissingInfo && cappedPrompt.length > 20) {
       content = '[Unverified] Assumptions: General advice without specific income/tax situation details.\n\n' + content
+    }
+
+    // Log conversation to Supabase if service role key is available
+    if (supabase) {
+      try {
+        await supabase
+          .from('conversations')
+          .insert({
+            prompt: cappedPrompt,
+            response: content,
+            meta: cappedContext ? { context: cappedContext } : null
+          })
+      } catch (logError) {
+        // Log error but don't fail the request
+        console.error('Failed to log conversation:', logError)
+      }
     }
 
     return NextResponse.json({ response: content })

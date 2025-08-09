@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -16,6 +16,14 @@ export const waitlist = pgTable("waitlist", {
   income: text("income"),
   goal: text("goal"),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const conversations = pgTable("conversations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  createdAt: timestamp("created_at").defaultNow(),
+  prompt: text("prompt"),
+  response: text("response"),
+  meta: jsonb("meta"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -40,7 +48,18 @@ export const insertWaitlistSchema = createInsertSchema(waitlist).omit({
   ]).optional(),
 });
 
+export const insertConversationSchema = createInsertSchema(conversations).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  prompt: z.string().optional(),
+  response: z.string().optional(),
+  meta: z.record(z.any()).optional(),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertWaitlist = z.infer<typeof insertWaitlistSchema>;
 export type Waitlist = typeof waitlist.$inferSelect;
+export type InsertConversation = z.infer<typeof insertConversationSchema>;
+export type Conversation = typeof conversations.$inferSelect;
