@@ -26,6 +26,16 @@ export const profiles = pgTable("profiles", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+export const usageDaily = pgTable("usage_daily", {
+  userId: uuid("user_id").notNull(),
+  day: text("day").notNull().default(sql`current_date`), // date as text for compatibility
+  prompts: text("prompts").default("0"), // int as text for compatibility
+  tokensIn: text("tokens_in").default("0"), // int as text for compatibility
+  tokensOut: text("tokens_out").default("0"), // int as text for compatibility
+}, (table) => ({
+  pk: sql`PRIMARY KEY (${table.userId}, ${table.day})`,
+}));
+
 export const insertWaitlistSchema = createInsertSchema(waitlist).omit({
   id: true,
   createdAt: true,
@@ -56,9 +66,19 @@ export const insertProfileSchema = createInsertSchema(profiles).omit({
   }),
 });
 
+export const insertUsageDailySchema = createInsertSchema(usageDaily).extend({
+  userId: z.string().uuid(),
+  day: z.string().optional(),
+  prompts: z.string().optional(),
+  tokensIn: z.string().optional(),
+  tokensOut: z.string().optional(),
+});
+
 export type InsertWaitlist = z.infer<typeof insertWaitlistSchema>;
 export type Waitlist = typeof waitlist.$inferSelect;
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
 export type Conversation = typeof conversations.$inferSelect;
 export type InsertProfile = z.infer<typeof insertProfileSchema>;
 export type Profile = typeof profiles.$inferSelect;
+export type InsertUsageDaily = z.infer<typeof insertUsageDailySchema>;
+export type UsageDaily = typeof usageDaily.$inferSelect;

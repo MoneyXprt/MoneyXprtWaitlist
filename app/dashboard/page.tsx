@@ -85,6 +85,12 @@ export default function DashboardPage() {
           >
             History
           </button>
+          <button 
+            onClick={() => router.push('/usage')} 
+            className="border px-3 py-1 rounded hover:bg-gray-50 text-sm"
+          >
+            Usage
+          </button>
           <button onClick={signOut} className="border px-3 py-1 rounded hover:bg-gray-50">
             Sign out
           </button>

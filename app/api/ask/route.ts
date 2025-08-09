@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { supabaseAdmin } from '@/lib/supabaseServer'
+import { incrementUsage, checkDailyLimit } from '@/lib/usage'
 
 const buckets = new Map<string, { tokens: number; ts: number }>()
 function allow(ip: string, rate = 20, refillMs = 60_000) {
@@ -45,6 +46,14 @@ export async function POST(req: Request) {
     // Extract user ID from headers (for development)
     const userId = req.headers.get('x-user-id') || null
 
+    // Check daily usage limit for authenticated users
+    if (userId && !(await checkDailyLimit(userId, 50))) {
+      return NextResponse.json(
+        { error: 'Daily usage limit reached. Please try again tomorrow.' },
+        { status: 429 }
+      )
+    }
+
     const { prompt, context } = await req.json().catch(() => ({ }))
     const userPrompt = String(prompt ?? '').trim()
     const extra = String(context ?? '').trim()
@@ -72,6 +81,15 @@ export async function POST(req: Request) {
     })
 
     let content = completion.choices[0]?.message?.content?.trim() || ''
+    
+    // Track token usage for authenticated users
+    if (userId) {
+      const tokensIn = completion.usage?.prompt_tokens || Math.ceil(messages.reduce((sum, msg) => sum + msg.content.length, 0) / 4)
+      const tokensOut = completion.usage?.completion_tokens || Math.ceil(content.length / 4)
+      
+      // Increment usage tracking (fire and forget)
+      incrementUsage({ userId, tokensIn, tokensOut }).catch(console.error)
+    }
     
     // Post-process for absolute claims
     const absoluteClaims = ['guarantees', 'ensures', 'prevents', 'always works', 'never fails', 'will definitely']

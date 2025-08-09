@@ -59,3 +59,18 @@ for insert with check (auth.uid() = id);
 
 create policy "profiles_self_update" on public.profiles
 for update using (auth.uid() = id);
+
+-- usage_daily table for AI call metering
+create table if not exists public.usage_daily (
+  user_id uuid,
+  day date default current_date,
+  prompts int default 0,
+  tokens_in int default 0,
+  tokens_out int default 0,
+  primary key (user_id, day)
+);
+
+alter table public.usage_daily enable row level security;
+
+create policy "usage_self" on public.usage_daily
+for select using (auth.uid() = user_id);
