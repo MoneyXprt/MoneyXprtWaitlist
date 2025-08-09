@@ -38,3 +38,24 @@ with check (auth.uid() = user_id);
 create policy "convo_select_own" on public.conversations
 for select to authenticated
 using (auth.uid() = user_id);
+
+-- profiles table
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  full_name text,
+  income_range text,
+  entity_type text,
+  created_at timestamptz default now()
+);
+
+-- RLS for profiles
+alter table public.profiles enable row level security;
+
+create policy "profiles_self_select" on public.profiles
+for select using (auth.uid() = id);
+
+create policy "profiles_self_upsert" on public.profiles
+for insert with check (auth.uid() = id);
+
+create policy "profiles_self_update" on public.profiles
+for update using (auth.uid() = id);

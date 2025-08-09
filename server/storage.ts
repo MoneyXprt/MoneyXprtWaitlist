@@ -1,7 +1,7 @@
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
 import { eq } from "drizzle-orm";
-import { type Waitlist, type InsertWaitlist, type Conversation, type InsertConversation, waitlist, conversations } from "@shared/schema";
+import { type Waitlist, type InsertWaitlist, type Conversation, type InsertConversation, type Profile, type InsertProfile, waitlist, conversations, profiles } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -12,6 +12,10 @@ export interface IStorage {
   // Conversation operations
   createConversation(conversation: InsertConversation): Promise<Conversation>
   getUserConversations(userId: string): Promise<Conversation[]>
+  
+  // Profile operations
+  getProfile(userId: string): Promise<Profile | undefined>
+  upsertProfile(profile: InsertProfile): Promise<Profile>
 }
 
 export class DatabaseStorage implements IStorage {
@@ -44,15 +48,34 @@ export class DatabaseStorage implements IStorage {
     const result = await this.db.select().from(conversations).where(eq(conversations.userId, userId));
     return result;
   }
+
+  async getProfile(userId: string): Promise<Profile | undefined> {
+    const result = await this.db.select().from(profiles).where(eq(profiles.id, userId)).limit(1);
+    return result[0];
+  }
+
+  async upsertProfile(profile: InsertProfile): Promise<Profile> {
+    const result = await this.db.insert(profiles).values(profile).onConflictDoUpdate({
+      target: profiles.id,
+      set: {
+        fullName: profile.fullName,
+        incomeRange: profile.incomeRange,
+        entityType: profile.entityType,
+      }
+    }).returning();
+    return result[0];
+  }
 }
 
 export class MemStorage implements IStorage {
   private waitlistEntries: Map<string, Waitlist>;
   private conversationsList: Conversation[];
+  private profilesMap: Map<string, Profile>;
 
   constructor() {
     this.waitlistEntries = new Map();
     this.conversationsList = [];
+    this.profilesMap = new Map();
   }
 
   async createWaitlistEntry(entry: InsertWaitlist): Promise<Waitlist> {
@@ -83,6 +106,19 @@ export class MemStorage implements IStorage {
 
   async getUserConversations(userId: string): Promise<Conversation[]> {
     return this.conversationsList.filter(conv => conv.userId === userId);
+  }
+
+  async getProfile(userId: string): Promise<Profile | undefined> {
+    return this.profilesMap.get(userId);
+  }
+
+  async upsertProfile(profile: InsertProfile): Promise<Profile> {
+    const newProfile: Profile = {
+      ...profile,
+      createdAt: new Date()
+    };
+    this.profilesMap.set(profile.id, newProfile);
+    return newProfile;
   }
 }
 

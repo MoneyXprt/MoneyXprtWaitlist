@@ -18,6 +18,14 @@ export const conversations = pgTable("conversations", {
   meta: jsonb("meta"),
 });
 
+export const profiles = pgTable("profiles", {
+  id: uuid("id").primaryKey(), // references auth.users(id)
+  fullName: text("full_name"),
+  incomeRange: text("income_range"),
+  entityType: text("entity_type"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 export const insertWaitlistSchema = createInsertSchema(waitlist).omit({
   id: true,
   createdAt: true,
@@ -35,7 +43,22 @@ export const insertConversationSchema = createInsertSchema(conversations).omit({
   meta: z.record(z.any()).optional(),
 });
 
+export const insertProfileSchema = createInsertSchema(profiles).omit({
+  createdAt: true,
+}).extend({
+  id: z.string().uuid(),
+  fullName: z.string().min(1, "Full name is required"),
+  incomeRange: z.enum(["100k-250k", "250k-500k", "500k-1m", "1m-plus"], {
+    required_error: "Please select an income range",
+  }),
+  entityType: z.enum(["individual", "sole-proprietor", "llc", "s-corp", "c-corp"], {
+    required_error: "Please select an entity type",
+  }),
+});
+
 export type InsertWaitlist = z.infer<typeof insertWaitlistSchema>;
 export type Waitlist = typeof waitlist.$inferSelect;
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
 export type Conversation = typeof conversations.$inferSelect;
+export type InsertProfile = z.infer<typeof insertProfileSchema>;
+export type Profile = typeof profiles.$inferSelect;
