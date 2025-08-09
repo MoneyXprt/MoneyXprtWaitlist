@@ -53,7 +53,29 @@ export async function POST(req: Request) {
       messages
     })
 
-    const content = completion.choices[0]?.message?.content?.trim() || ''
+    let content = completion.choices[0]?.message?.content?.trim() || ''
+    
+    // Post-process for absolute claims
+    const absoluteClaims = ['guarantees', 'ensures', 'prevents', 'always works', 'never fails', 'will definitely']
+    const hasAbsoluteClaim = absoluteClaims.some(claim => 
+      content.toLowerCase().includes(claim.toLowerCase())
+    )
+    
+    if (hasAbsoluteClaim) {
+      content += '\n\n[Unverified] This claim may be conditional. Provide missing inputs or constraints.'
+    }
+    
+    // Check for missing key financial info in user prompt
+    const keyInfoTerms = ['income', 'salary', 'earning', 'state', 'filing status', 'married', 'single', 'dependents', 'age']
+    const hasMissingInfo = keyInfoTerms.every(term => 
+      !cappedPrompt.toLowerCase().includes(term.toLowerCase()) && 
+      !cappedContext.toLowerCase().includes(term.toLowerCase())
+    )
+    
+    if (hasMissingInfo && cappedPrompt.length > 20) {
+      content = '[Unverified] Assumptions: General advice without specific income/tax situation details.\n\n' + content
+    }
+
     return NextResponse.json({ response: content })
   } catch (err: any) {
     console.error('ASK_API_ERROR', err?.message || err)
