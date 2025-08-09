@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/lib/supabaseServer'
 
 const SYSTEM_PROMPT = `
 You are **MoneyXprt**, an AI financial co‑pilot for high‑income W‑2 earners and real estate investors.
@@ -18,15 +18,6 @@ Output format:
 `
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-
-// Create Supabase client for server-side operations
-let supabase: ReturnType<typeof createClient> | null = null
-if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  )
-}
 
 export async function POST(req: Request) {
   try {
@@ -87,9 +78,9 @@ export async function POST(req: Request) {
     }
 
     // Log conversation to Supabase if service role key is available
-    if (supabase) {
+    if (supabaseAdmin) {
       try {
-        await supabase
+        await supabaseAdmin
           .from('conversations')
           .insert({
             user_id: null, // For anonymous users - will be updated when auth is integrated
