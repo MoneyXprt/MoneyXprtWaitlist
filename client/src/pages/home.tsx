@@ -190,13 +190,13 @@ export default function HomePage() {
                 </button>
                 <a
                   href="/login"
-                  className="text-emerald-deep hover:text-emerald-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="bg-white text-emerald-deep border-2 border-emerald-deep hover:bg-emerald-deep hover:text-white px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 shadow-sm"
                 >
                   Sign In
                 </a>
                 <a
                   href="/signup"
-                  className="bg-emerald-deep text-white hover:bg-emerald-700 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="bg-emerald-deep text-white hover:bg-emerald-700 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 shadow-md border-2 border-emerald-deep"
                 >
                   Get Started
                 </a>
@@ -234,6 +234,18 @@ export default function HomePage() {
                 >
                   Pricing
                 </button>
+                <a
+                  href="/login"
+                  className="bg-white text-emerald-deep border-2 border-emerald-deep hover:bg-emerald-deep hover:text-white px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 shadow-sm text-center"
+                >
+                  Sign In
+                </a>
+                <a
+                  href="/signup"
+                  className="bg-emerald-deep text-white hover:bg-emerald-700 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 shadow-md border-2 border-emerald-deep text-center"
+                >
+                  Get Started
+                </a>
               </div>
             </div>
           )}
