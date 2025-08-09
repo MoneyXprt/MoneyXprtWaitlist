@@ -92,6 +92,7 @@ export async function POST(req: Request) {
         await supabase
           .from('conversations')
           .insert({
+            user_id: null, // For anonymous users - will be updated when auth is integrated
             prompt: cappedPrompt,
             response: content,
             meta: cappedContext ? { context: cappedContext } : null

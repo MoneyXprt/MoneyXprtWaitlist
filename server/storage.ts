@@ -1,17 +1,17 @@
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
-import { type User, type InsertUser, type Waitlist, type InsertWaitlist, users, waitlist } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { type Waitlist, type InsertWaitlist, type Conversation, type InsertConversation, waitlist, conversations } from "@shared/schema";
 import { randomUUID } from "crypto";
 
-// modify the interface with any CRUD methods
-// you might need
-
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  createWaitlistEntry(entry: InsertWaitlist): Promise<Waitlist>;
-  getWaitlistEntry(email: string): Promise<Waitlist | undefined>;
+  // Waitlist operations
+  getWaitlistEntry(email: string): Promise<Waitlist | undefined>
+  createWaitlistEntry(entry: InsertWaitlist): Promise<Waitlist>
+  
+  // Conversation operations
+  createConversation(conversation: InsertConversation): Promise<Conversation>
+  getUserConversations(userId: string): Promise<Conversation[]>
 }
 
 export class DatabaseStorage implements IStorage {
@@ -25,21 +25,6 @@ export class DatabaseStorage implements IStorage {
     this.db = drizzle(sql);
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    const result = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
-    return result[0];
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await this.db.select().from(users).where(eq(users.username, username)).limit(1);
-    return result[0];
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const result = await this.db.insert(users).values(insertUser).returning();
-    return result[0];
-  }
-
   async createWaitlistEntry(entry: InsertWaitlist): Promise<Waitlist> {
     const result = await this.db.insert(waitlist).values(entry).returning();
     return result[0];
@@ -49,32 +34,25 @@ export class DatabaseStorage implements IStorage {
     const result = await this.db.select().from(waitlist).where(eq(waitlist.email, email)).limit(1);
     return result[0];
   }
+
+  async createConversation(conversation: InsertConversation): Promise<Conversation> {
+    const result = await this.db.insert(conversations).values(conversation).returning();
+    return result[0];
+  }
+
+  async getUserConversations(userId: string): Promise<Conversation[]> {
+    const result = await this.db.select().from(conversations).where(eq(conversations.userId, userId));
+    return result;
+  }
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<string, User>;
   private waitlistEntries: Map<string, Waitlist>;
+  private conversationsList: Conversation[];
 
   constructor() {
-    this.users = new Map();
     this.waitlistEntries = new Map();
-  }
-
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+    this.conversationsList = [];
   }
 
   async createWaitlistEntry(entry: InsertWaitlist): Promise<Waitlist> {
@@ -90,6 +68,21 @@ export class MemStorage implements IStorage {
 
   async getWaitlistEntry(email: string): Promise<Waitlist | undefined> {
     return this.waitlistEntries.get(email);
+  }
+
+  async createConversation(conversation: InsertConversation): Promise<Conversation> {
+    const id = randomUUID();
+    const newConversation: Conversation = {
+      ...conversation,
+      id,
+      createdAt: new Date()
+    };
+    this.conversationsList.push(newConversation);
+    return newConversation;
+  }
+
+  async getUserConversations(userId: string): Promise<Conversation[]> {
+    return this.conversationsList.filter(conv => conv.userId === userId);
   }
 }
 
