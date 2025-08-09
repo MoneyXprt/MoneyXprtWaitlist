@@ -1,0 +1,74 @@
+---
+
+### 🟢 Prompt 2 — Minimal chat UI component and hook it up
+
+```markdown
+Add a minimal AI chat box to the homepage under the waitlist. Create `app/components/AIBox.tsx` and render it in `app/page.tsx`.
+
+`app/components/AIBox.tsx`:
+
+```tsx
+'use client'
+import { useState } from 'react'
+
+export default function AIBox() {
+  const [prompt, setPrompt] = useState('')
+  const [context, setContext] = useState('') // optional
+  const [response, setResponse] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setResponse('')
+    setLoading(true)
+    try {
+      const res = await fetch('/api/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, context })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || 'Request failed')
+      setResponse(data.response)
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="mt-8 rounded border p-4 space-y-4">
+      <h3 className="text-lg font-semibold">MoneyXprt — Ask a question</h3>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <input
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder="Ask about taxes, cash flow, or entities…"
+          className="w-full border p-2 rounded"
+        />
+        <textarea
+          value={context}
+          onChange={(e) => setContext(e.target.value)}
+          placeholder="Optional context (income range, goals, entity type)"
+          className="w-full border p-2 rounded h-20"
+        />
+        <button
+          disabled={loading || !prompt.trim()}
+          className="bg-black text-white px-4 py-2 rounded disabled:opacity-50"
+        >
+          {loading ? 'Thinking…' : 'Send'}
+        </button>
+      </form>
+
+      {error && <p className="text-red-600">{error}</p>}
+      {response && (
+        <div className="bg-gray-50 border rounded p-3 whitespace-pre-wrap">
+          {response}
+        </div>
+      )}
+    </div>
+  )
+}
