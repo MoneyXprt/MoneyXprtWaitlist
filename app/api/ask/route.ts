@@ -77,21 +77,18 @@ export async function POST(req: Request) {
       content = '[Unverified] Assumptions: General advice without specific income/tax situation details.\n\n' + content
     }
 
-    // Log conversation to Supabase if service role key is available
-    if (supabaseAdmin) {
-      try {
-        await supabaseAdmin
-          .from('conversations')
-          .insert({
-            user_id: null, // For anonymous users - will be updated when auth is integrated
-            prompt: cappedPrompt,
-            response: content,
-            meta: cappedContext ? { context: cappedContext } : null
-          })
-      } catch (logError) {
-        // Log error but don't fail the request
-        console.error('Failed to log conversation:', logError)
+    try {
+      if (supabaseAdmin) {
+        // Optional: extract user_id from a header later; for now null
+        await supabaseAdmin.from('conversations').insert({
+          user_id: null,
+          prompt: cappedPrompt,
+          response: content,
+          meta: cappedContext ? { context: cappedContext } : null
+        })
       }
+    } catch (e) {
+      console.warn('convo log failed', e)
     }
 
     return NextResponse.json({ response: content })
