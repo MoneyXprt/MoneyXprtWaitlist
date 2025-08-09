@@ -32,17 +32,8 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 export async function POST(req: Request) {
   try {
-    // Rate limiting
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || 
-               req.headers.get('x-real-ip') || 
-               'unknown'
-    
-    if (!allow(ip)) {
-      return NextResponse.json(
-        { error: 'Rate limit exceeded. Please try again later.' },
-        { status: 429 }
-      )
-    }
+    const ip = req.headers.get('x-forwarded-for') ?? 'local'
+    if (!allow(ip)) return NextResponse.json({ error: 'Rate limit' }, { status: 429 })
 
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(
