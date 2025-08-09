@@ -4,7 +4,7 @@
 
 MoneyXprt is a modern, production-ready Next.js web application serving as an AI-powered financial co-pilot for high-income earners. The application features a complete waitlist system, user authentication, an AI chat interface powered by OpenAI GPT-4, and a secure dashboard for personalized financial advice. Built with Next.js 14 App Router, Supabase for authentication and database, and styled with Tailwind CSS and shadcn/ui components.
 
-**Recent Update**: Added complete Supabase email/password authentication system with protected routes, login/signup pages, user dashboard, and middleware-based route protection. Updated branding to match the elegant logo design with dark emerald green (#0F2A1D / hsl(157, 48%, 15%)) and gold (#D4AF37 / hsl(45, 70%, 65%)) color scheme for a premium, sophisticated look.
+**Recent Update**: Added server-side conversation logging to Supabase with conversations table (prompt, response, metadata). Created browser client in `lib/supabaseClient.ts` for authentication. Enhanced AI API with post-processing logic to add disclaimers for absolute claims and missing context assumptions. Complete Supabase email/password authentication system operational with protected routes, login/signup pages, user dashboard, and middleware-based route protection. Updated branding to match the elegant logo design with dark emerald green (#0F2A1D / hsl(157, 48%, 15%)) and gold (#D4AF37 / hsl(45, 70%, 65%)) color scheme.
 
 ## User Preferences
 
@@ -31,7 +31,8 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Storage
 - **Database**: Supabase (PostgreSQL) with built-in auth and real-time features
-- **Schema**: Two main tables - waitlist (id, email, created_at) and conversations (id, user_id, prompt, response, created_at)
+- **Schema**: Main tables - waitlist (email, name, income, goal), conversations (prompt, response, meta), users (username, password)
+- **Logging**: Server-side conversation logging with SUPABASE_SERVICE_ROLE_KEY for analytics
 - **Security**: Row Level Security (RLS) policies for data protection
 - **Real-time**: Supabase real-time subscriptions for live updates
 
@@ -41,7 +42,7 @@ Preferred communication style: Simple, everyday language.
 - **Route Protection**: Next.js middleware automatically redirects unauthenticated users to login
 - **User Management**: Full registration, login, logout, and session handling
 - **Pages**: Login (/login), Signup (/signup), Protected Dashboard (/dashboard)
-- **Client Setup**: Browser and server-side Supabase clients with proper cookie handling
+- **Client Setup**: Browser client (`lib/supabaseClient.ts`) and server-side clients with proper environment handling
 
 ### Development & Build
 - **Monorepo Structure**: Client, server, and shared code in separate directories
@@ -51,10 +52,12 @@ Preferred communication style: Simple, everyday language.
 - **TypeScript**: Strict configuration with path mapping for clean imports
 
 ### API Structure
+- **AI Chat Endpoint**: POST `/api/ask` with OpenAI GPT-4o integration and professional system prompt
+- **Post-processing**: Automatic disclaimers for absolute claims and missing context assumptions
+- **Conversation Logging**: Server-side logging to Supabase conversations table with graceful error handling
 - **Waitlist Endpoint**: POST `/api/waitlist` for user registration
 - **Validation**: Zod schemas with email validation and optional demographic fields
-- **Error Handling**: Proper HTTP status codes (409 for duplicates, 400 for validation errors)
-- **Response Format**: Consistent JSON responses with message and data fields
+- **Error Handling**: Proper HTTP status codes and consistent JSON responses
 
 ### UI/UX Design
 - **Design System**: shadcn/ui with New York style variant
