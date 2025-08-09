@@ -2,6 +2,17 @@ import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { supabaseAdmin } from '@/lib/supabaseServer'
 
+const buckets = new Map<string, { tokens: number; ts: number }>()
+function allow(ip: string, rate = 20, refillMs = 60_000) {
+  const now = Date.now()
+  const b = buckets.get(ip) ?? { tokens: rate, ts: now }
+  const refill = Math.floor((now - b.ts) / refillMs) * rate
+  const tokens = Math.min(rate, b.tokens + Math.max(0, refill))
+  const ok = tokens > 0
+  buckets.set(ip, { tokens: ok ? tokens - 1 : tokens, ts: ok ? now : b.ts })
+  return ok
+}
+
 const SYSTEM_PROMPT = `
 You are **MoneyXprt**, an AI financial co‑pilot for high‑income W‑2 earners and real estate investors.
 Follow these rules, always:
@@ -21,6 +32,18 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 export async function POST(req: Request) {
   try {
+    // Rate limiting
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || 
+               req.headers.get('x-real-ip') || 
+               'unknown'
+    
+    if (!allow(ip)) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429 }
+      )
+    }
+
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(
         { error: 'OPENAI_API_KEY not set' },
