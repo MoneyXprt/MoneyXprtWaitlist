@@ -78,9 +78,17 @@ export default function DashboardPage() {
             {profile.incomeRange?.replace(/k/g, 'K').replace(/-/g, ' - $')} • {profile.entityType?.toUpperCase()}
           </p>
         </div>
-        <button onClick={signOut} className="border px-3 py-1 rounded hover:bg-gray-50">
-          Sign out
-        </button>
+        <div className="flex items-center space-x-2">
+          <button 
+            onClick={() => router.push('/history')} 
+            className="border px-3 py-1 rounded hover:bg-gray-50 text-sm"
+          >
+            History
+          </button>
+          <button onClick={signOut} className="border px-3 py-1 rounded hover:bg-gray-50">
+            Sign out
+          </button>
+        </div>
       </div>
       <AIBox />
     </main>

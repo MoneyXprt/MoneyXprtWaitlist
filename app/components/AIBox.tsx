@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { supabase } from '@/lib/supabaseClient'
 
 export default function AIBox() {
   const [prompt, setPrompt] = useState('')
@@ -14,9 +15,21 @@ export default function AIBox() {
     setResponse('')
     setLoading(true)
     try {
+      // Get user session for authenticated requests
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      }
+      
+      // Include user ID if authenticated
+      if (session?.user?.id) {
+        headers['x-user-id'] = session.user.id
+      }
+
       const res = await fetch('/api/ask', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ prompt, context })
       })
       const data = await res.json()

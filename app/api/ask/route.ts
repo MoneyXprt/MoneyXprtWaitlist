@@ -42,6 +42,9 @@ export async function POST(req: Request) {
       )
     }
 
+    // Extract user ID from headers (for development)
+    const userId = req.headers.get('x-user-id') || null
+
     const { prompt, context } = await req.json().catch(() => ({ }))
     const userPrompt = String(prompt ?? '').trim()
     const extra = String(context ?? '').trim()
@@ -93,9 +96,8 @@ export async function POST(req: Request) {
 
     try {
       if (supabaseAdmin) {
-        // Optional: extract user_id from a header later; for now null
         await supabaseAdmin.from('conversations').insert({
-          user_id: null,
+          user_id: userId,
           prompt: cappedPrompt,
           response: content,
           meta: cappedContext ? { context: cappedContext } : null
