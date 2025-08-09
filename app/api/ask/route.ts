@@ -42,9 +42,9 @@ export async function POST(req: Request) {
     const cappedContext = cap(extra, 1000)
 
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
-      ...(cappedContext ? [{ role: 'system', content: `Context: ${cappedContext}` }] : []),
-      { role: 'user', content: cappedPrompt }
+      { role: 'system' as const, content: SYSTEM_PROMPT },
+      ...(cappedContext ? [{ role: 'system' as const, content: `Context: ${cappedContext}` }] : []),
+      { role: 'user' as const, content: cappedPrompt }
     ]
 
     const completion = await openai.chat.completions.create({
