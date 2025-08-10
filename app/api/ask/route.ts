@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { supabaseAdmin } from '@/lib/supabaseServer'
-import { incrementUsage, checkDailyLimit } from '@/lib/usage'
+import { incrementUsage, checkDailyLimit, getCurrentDailyUsage, isUserSubscribed } from '@/lib/usage'
 
 const buckets = new Map<string, { tokens: number; ts: number }>()
 function allow(ip: string, rate = 20, refillMs = 60_000) {
@@ -46,12 +46,25 @@ export async function POST(req: Request) {
     // Extract user ID from headers (for development)
     const userId = req.headers.get('x-user-id') || null
 
-    // Check daily usage limit for authenticated users
-    if (userId && !(await checkDailyLimit(userId, 50))) {
-      return NextResponse.json(
-        { error: 'Daily usage limit reached. Please try again tomorrow.' },
-        { status: 429 }
-      )
+    // Check subscription and usage limits for authenticated users
+    if (userId) {
+      const subscribed = await isUserSubscribed(userId)
+      const dailyUsage = await getCurrentDailyUsage(userId)
+      
+      if (!subscribed && dailyUsage >= 10) {
+        return NextResponse.json(
+          { 
+            error: 'Free limit reached (10 requests/day). Upgrade to continue unlimited access.',
+            upgrade_url: '/pricing'
+          },
+          { status: 402 }
+        )
+      } else if (subscribed && !(await checkDailyLimit(userId, 1000))) {
+        return NextResponse.json(
+          { error: 'Daily usage limit reached. Please contact support if you need higher limits.' },
+          { status: 429 }
+        )
+      }
     }
 
     const { prompt, context } = await req.json().catch(() => ({ }))

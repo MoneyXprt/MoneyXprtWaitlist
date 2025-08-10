@@ -33,7 +33,19 @@ export default function AIBox() {
         body: JSON.stringify({ prompt, context })
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'Request failed')
+      if (!res.ok) {
+        if (res.status === 402 && data.upgrade_url) {
+          // Payment required - show upgrade option
+          setError(data.error + ' Click here to upgrade.')
+          setTimeout(() => {
+            if (window.confirm('Upgrade to continue unlimited access?')) {
+              window.location.href = data.upgrade_url
+            }
+          }, 1000)
+          return
+        }
+        throw new Error(data?.error || 'Request failed')
+      }
       setResponse(data.response)
     } catch (err: any) {
       setError(err.message || 'Something went wrong')

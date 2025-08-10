@@ -90,3 +90,42 @@ export async function checkDailyLimit(userId: string, limit: number = 50): Promi
     return true // Allow on error
   }
 }
+
+export async function getCurrentDailyUsage(userId: string): Promise<number> {
+  if (!supabaseAdmin) return 0
+
+  try {
+    const today = new Date().toISOString().split('T')[0]
+
+    const { data } = await supabaseAdmin
+      .from('usage_daily')
+      .select('prompts')
+      .eq('user_id', userId)
+      .eq('day', today)
+      .single()
+
+    if (!data) return 0
+
+    return parseInt(data.prompts) || 0
+  } catch (error) {
+    console.error('Failed to get daily usage:', error)
+    return 0
+  }
+}
+
+export async function isUserSubscribed(userId: string): Promise<boolean> {
+  if (!supabaseAdmin) return false
+
+  try {
+    const { data } = await supabaseAdmin
+      .from('billing')
+      .select('is_active')
+      .eq('user_id', userId)
+      .single()
+
+    return data?.is_active === 'true'
+  } catch (error) {
+    console.error('Failed to check subscription status:', error)
+    return false
+  }
+}

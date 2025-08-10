@@ -91,6 +91,12 @@ export default function DashboardPage() {
           >
             Usage
           </button>
+          <button 
+            onClick={() => router.push('/pricing')} 
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded text-sm"
+          >
+            Upgrade
+          </button>
           <button onClick={signOut} className="border px-3 py-1 rounded hover:bg-gray-50">
             Sign out
           </button>

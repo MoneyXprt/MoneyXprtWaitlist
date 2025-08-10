@@ -74,3 +74,17 @@ alter table public.usage_daily enable row level security;
 
 create policy "usage_self" on public.usage_daily
 for select using (auth.uid() = user_id);
+
+-- billing table for subscription management
+create table if not exists public.billing (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  is_active boolean default false,
+  stripe_customer_id text,
+  stripe_subscription_id text,
+  updated_at timestamptz default now()
+);
+
+alter table public.billing enable row level security;
+
+create policy "billing_self" on public.billing 
+for select using (auth.uid() = user_id);

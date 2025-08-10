@@ -36,6 +36,14 @@ export const usageDaily = pgTable("usage_daily", {
   pk: sql`PRIMARY KEY (${table.userId}, ${table.day})`,
 }));
 
+export const billing = pgTable("billing", {
+  userId: uuid("user_id").primaryKey(), // references auth.users(id)
+  isActive: text("is_active").default("false"), // boolean as text for compatibility
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
 export const insertWaitlistSchema = createInsertSchema(waitlist).omit({
   id: true,
   createdAt: true,
@@ -74,6 +82,13 @@ export const insertUsageDailySchema = createInsertSchema(usageDaily).extend({
   tokensOut: z.string().optional(),
 });
 
+export const insertBillingSchema = createInsertSchema(billing).extend({
+  userId: z.string().uuid(),
+  isActive: z.string().optional(),
+  stripeCustomerId: z.string().optional(),
+  stripeSubscriptionId: z.string().optional(),
+});
+
 export type InsertWaitlist = z.infer<typeof insertWaitlistSchema>;
 export type Waitlist = typeof waitlist.$inferSelect;
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
@@ -82,3 +97,5 @@ export type InsertProfile = z.infer<typeof insertProfileSchema>;
 export type Profile = typeof profiles.$inferSelect;
 export type InsertUsageDaily = z.infer<typeof insertUsageDailySchema>;
 export type UsageDaily = typeof usageDaily.$inferSelect;
+export type InsertBilling = z.infer<typeof insertBillingSchema>;
+export type Billing = typeof billing.$inferSelect;
