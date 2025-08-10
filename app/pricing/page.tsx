@@ -3,6 +3,9 @@ import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useSession } from '@/lib/useSession'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function PricingPage() {
   const { user, loading } = useSession()
@@ -91,11 +94,11 @@ export default function PricingPage() {
 
       <main className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         {canceled && (
-          <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-yellow-800">
+          <Alert className="mb-8 bg-yellow-50 border-yellow-200">
+            <AlertDescription className="text-yellow-800">
               ⚠️ Checkout was canceled. You can try again anytime.
-            </p>
-          </div>
+            </AlertDescription>
+          </Alert>
         )}
 
         <div className="text-center mb-12">
@@ -109,7 +112,7 @@ export default function PricingPage() {
         </div>
 
         <div className="flex justify-center">
-          <div className="bg-white rounded-2xl shadow-xl border-2 border-emerald-200 p-8 max-w-sm w-full relative">
+          <Card className="max-w-sm w-full border-2 border-emerald-200 relative">
             {/* Popular badge */}
             <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
               <span className="bg-emerald-600 text-white px-4 py-1 rounded-full text-sm font-medium">
@@ -117,57 +120,59 @@ export default function PricingPage() {
               </span>
             </div>
             
-            <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Starter Plan</h3>
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">Starter Plan</CardTitle>
               <div className="text-4xl font-bold text-emerald-600 mb-1">$9</div>
               <div className="text-gray-500">per month</div>
-            </div>
+            </CardHeader>
 
-            <ul className="space-y-4 mb-8">
-              <li className="flex items-center">
-                <svg className="w-5 h-5 text-emerald-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-gray-700">Unlimited AI conversations</span>
-              </li>
-              <li className="flex items-center">
-                <svg className="w-5 h-5 text-emerald-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-gray-700">Advanced tax optimization strategies</span>
-              </li>
-              <li className="flex items-center">
-                <svg className="w-5 h-5 text-emerald-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-gray-700">Investment portfolio guidance</span>
-              </li>
-              <li className="flex items-center">
-                <svg className="w-5 h-5 text-emerald-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-gray-700">Conversation history & export</span>
-              </li>
-              <li className="flex items-center">
-                <svg className="w-5 h-5 text-emerald-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-gray-700">Priority support</span>
-              </li>
-            </ul>
+            <CardContent className="space-y-6">
+              <ul className="space-y-4">
+                <li className="flex items-center">
+                  <svg className="w-5 h-5 text-emerald-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Unlimited AI conversations</span>
+                </li>
+                <li className="flex items-center">
+                  <svg className="w-5 h-5 text-emerald-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Advanced tax optimization strategies</span>
+                </li>
+                <li className="flex items-center">
+                  <svg className="w-5 h-5 text-emerald-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Investment portfolio guidance</span>
+                </li>
+                <li className="flex items-center">
+                  <svg className="w-5 h-5 text-emerald-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Conversation history & export</span>
+                </li>
+                <li className="flex items-center">
+                  <svg className="w-5 h-5 text-emerald-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Priority support</span>
+                </li>
+              </ul>
 
-            <button
-              onClick={handleCheckout}
-              disabled={checkoutLoading}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:cursor-not-allowed"
-            >
-              {checkoutLoading ? 'Starting checkout...' : 'Start Subscription'}
-            </button>
+              <Button
+                onClick={handleCheckout}
+                disabled={checkoutLoading}
+                className="w-full bg-emerald-600 hover:bg-emerald-700"
+              >
+                {checkoutLoading ? 'Starting checkout...' : 'Start Subscription'}
+              </Button>
 
-            <p className="text-xs text-gray-500 text-center mt-4">
-              Cancel anytime. 30-day money-back guarantee.
-            </p>
-          </div>
+              <p className="text-xs text-gray-500 text-center">
+                Cancel anytime. 30-day money-back guarantee.
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="text-center mt-12">

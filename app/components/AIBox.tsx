@@ -1,6 +1,11 @@
 'use client'
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function AIBox() {
   const [prompt, setPrompt] = useState('')
@@ -55,68 +60,66 @@ export default function AIBox() {
   }
 
   return (
-    <div className="mt-12 bg-white rounded-lg border border-gray-200 shadow-sm p-6 space-y-4">
-      <div className="flex items-center space-x-3">
-        <div className="w-8 h-8 bg-emerald-deep rounded-full flex items-center justify-center">
-          <span className="text-white text-sm font-bold">AI</span>
+    <Card className="mt-12">
+      <CardHeader>
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-emerald-600 rounded-full flex items-center justify-center">
+            <span className="text-white text-sm font-bold">AI</span>
+          </div>
+          <CardTitle className="text-emerald-600">MoneyXprt — Ask Your Financial Co-Pilot</CardTitle>
         </div>
-        <h3 className="text-xl font-semibold text-emerald-deep">MoneyXprt — Ask Your Financial Co-Pilot</h3>
-      </div>
-      
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <input
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Ask about taxes, investments, cash flow, or financial strategies…"
-            className="w-full border border-gray-300 focus:border-emerald-deep focus:ring-2 focus:ring-emerald-deep/20 p-3 rounded-md text-gray-900 placeholder-gray-500"
+            className="focus:ring-emerald-600 focus:border-emerald-600"
           />
-        </div>
-        
-        <div>
-          <textarea
+          
+          <Textarea
             value={context}
             onChange={(e) => setContext(e.target.value)}
             placeholder="Optional: Add context like income range, goals, or current situation"
-            className="w-full border border-gray-300 focus:border-emerald-deep focus:ring-2 focus:ring-emerald-deep/20 p-3 rounded-md h-20 text-gray-900 placeholder-gray-500 resize-none"
+            className="h-20 resize-none focus:ring-emerald-600 focus:border-emerald-600"
           />
-        </div>
-        
-        <button
-          disabled={loading || !prompt.trim()}
-          className="bg-emerald-deep hover:bg-emerald-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2"
-        >
-          {loading ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-              <span>Thinking…</span>
-            </>
-          ) : (
-            <span>Get Financial Advice</span>
-          )}
-        </button>
-      </form>
+          
+          <Button
+            disabled={loading || !prompt.trim()}
+            className="bg-emerald-600 hover:bg-emerald-700 flex items-center space-x-2"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                <span>Thinking…</span>
+              </>
+            ) : (
+              <span>Get Financial Advice</span>
+            )}
+          </Button>
+        </form>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md">
-          <p className="font-medium">Error:</p>
-          <p>{error}</p>
-        </div>
-      )}
-      
-      {response && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-md p-4">
-          <div className="flex items-center space-x-2 mb-3">
-            <div className="w-6 h-6 bg-emerald-deep rounded-full flex items-center justify-center">
-              <span className="text-white text-xs font-bold">M</span>
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
+        {response && (
+          <Alert className="bg-emerald-50 border-emerald-200">
+            <div className="flex items-center space-x-2 mb-3">
+              <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">M</span>
+              </div>
+              <span className="font-medium text-emerald-600">MoneyXprt Response:</span>
             </div>
-            <span className="font-medium text-emerald-deep">MoneyXprt Response:</span>
-          </div>
-          <div className="text-gray-800 whitespace-pre-wrap leading-relaxed">
-            {response}
-          </div>
-        </div>
-      )}
-    </div>
+            <AlertDescription className="text-gray-800 whitespace-pre-wrap leading-relaxed">
+              {response}
+            </AlertDescription>
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
   )
 }
