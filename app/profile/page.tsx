@@ -1,175 +1,274 @@
 'use client'
-
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabaseClient'
+import { useSession } from '@/lib/useSession'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useSupabase } from '../providers'
-import Link from 'next/link'
-import { ArrowLeft, User, Mail, Calendar } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import type { Profile } from '@/shared/schema'
 
 export default function ProfilePage() {
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
-  const { supabase, user, loading: authLoading } = useSupabase()
+  const { user, loading } = useSession()
   const router = useRouter()
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [profileLoading, setProfileLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [formData, setFormData] = useState({
+    fullName: '',
+    incomeRange: '',
+    entityType: '',
+  })
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/auth')
-    }
-  }, [user, authLoading, router])
-
-  const handlePasswordUpdate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match')
+    if (!loading && !user) {
+      router.replace('/login')
       return
     }
 
-    setLoading(true)
-    setError('')
-    setMessage('')
+    if (user) {
+      fetchProfile()
+    }
+  }, [user, loading, router])
+
+  async function fetchProfile() {
+    if (!user) return
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      })
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
 
-      if (error) throw error
+      if (error && error.code !== 'PGRST116') {
+        console.error('Profile fetch error:', error)
+        setError('Failed to load profile')
+        return
+      }
 
-      setMessage('Password updated successfully!')
-      setNewPassword('')
-      setConfirmPassword('')
-    } catch (error: any) {
-      setError(error.message)
+      if (data) {
+        setProfile(data)
+        setFormData({
+          fullName: data.full_name || '',
+          incomeRange: data.income_range || '',
+          entityType: data.entity_type || '',
+        })
+      }
+    } catch (error) {
+      console.error('Profile fetch failed:', error)
+      setError('Failed to load profile')
     } finally {
-      setLoading(false)
+      setProfileLoading(false)
     }
   }
 
-  if (authLoading) {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!user || submitting) return
+
+    setSubmitting(true)
+    setError(null)
+    setSuccess(false)
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          full_name: formData.fullName,
+          income_range: formData.incomeRange,
+          entity_type: formData.entityType,
+        })
+
+      if (error) throw error
+      
+      setSuccess(true)
+      await fetchProfile() // Refresh profile data
+    } catch (error: any) {
+      console.error('Profile update failed:', error)
+      setError('Failed to update profile: ' + (error.message || 'Unknown error'))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (loading || profileLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading profile...</p>
         </div>
       </div>
     )
   }
 
-  if (!user) {
-    return null
-  }
+  if (!user) return null
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <Link href="/" className="text-2xl font-bold text-primary">
-              MoneyXprt
-            </Link>
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
-              </Button>
-            </Link>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => router.back()}
+                className="text-gray-600 hover:text-gray-900"
+              >
+                ← Back
+              </button>
+              <h1 className="text-2xl font-bold text-gray-900">Profile Settings</h1>
+            </div>
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Dashboard
+            </button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Profile Settings</h1>
-          <p className="text-gray-600">Manage your account preferences and security settings.</p>
-        </div>
+      <main className="max-w-2xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        {success && (
+          <Alert className="mb-6 bg-green-50 border-green-200">
+            <AlertDescription className="text-green-800">
+              ✓ Profile updated successfully!
+            </AlertDescription>
+          </Alert>
+        )}
 
-        {/* Account Information */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <User className="h-5 w-5 mr-2" />
-              Account Information
-            </CardTitle>
-            <CardDescription>
-              Your basic account details
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <Mail className="h-5 w-5 text-gray-400" />
-              <div>
-                <p className="text-sm font-medium text-gray-900">Email</p>
-                <p className="text-sm text-gray-600">{user.email}</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Calendar className="h-5 w-5 text-gray-400" />
-              <div>
-                <p className="text-sm font-medium text-gray-900">Account Created</p>
-                <p className="text-sm text-gray-600">
-                  {new Date(user.created_at!).toLocaleDateString()}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-        {/* Password Update */}
         <Card>
           <CardHeader>
-            <CardTitle>Update Password</CardTitle>
-            <CardDescription>
-              Change your account password for better security
-            </CardDescription>
+            <CardTitle>Update Your Profile</CardTitle>
+            <p className="text-sm text-gray-600">
+              Keep your information current for personalized financial advice.
+            </p>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handlePasswordUpdate} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address
+                </label>
                 <Input
-                  type="password"
-                  placeholder="New password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
+                  id="email"
+                  type="email"
+                  value={user.email || ''}
+                  disabled
+                  className="bg-gray-50"
                 />
-              </div>
-              <div>
-                <Input
-                  type="password"
-                  placeholder="Confirm new password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Email cannot be changed. Contact support if needed.
+                </p>
               </div>
 
-              {error && (
-                <div className="text-red-600 text-sm">{error}</div>
-              )}
+              <div>
+                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name
+                </label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  required
+                  value={formData.fullName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                  placeholder="Enter your full name"
+                />
+              </div>
 
-              {message && (
-                <div className="text-green-600 text-sm">{message}</div>
-              )}
+              <div>
+                <label htmlFor="incomeRange" className="block text-sm font-medium text-gray-700 mb-2">
+                  Annual Income Range
+                </label>
+                <select
+                  id="incomeRange"
+                  required
+                  value={formData.incomeRange}
+                  onChange={(e) => setFormData(prev => ({ ...prev, incomeRange: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                >
+                  <option value="">Select income range</option>
+                  <option value="100k-250k">$100k - $250k</option>
+                  <option value="250k-500k">$250k - $500k</option>
+                  <option value="500k-1m">$500k - $1M</option>
+                  <option value="1m-plus">$1M+</option>
+                </select>
+              </div>
 
-              <Button 
-                type="submit" 
-                disabled={loading || !newPassword || !confirmPassword}
-              >
-                {loading ? 'Updating...' : 'Update Password'}
-              </Button>
+              <div>
+                <label htmlFor="entityType" className="block text-sm font-medium text-gray-700 mb-2">
+                  Entity Type
+                </label>
+                <select
+                  id="entityType"
+                  required
+                  value={formData.entityType}
+                  onChange={(e) => setFormData(prev => ({ ...prev, entityType: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                >
+                  <option value="">Select entity type</option>
+                  <option value="individual">Individual</option>
+                  <option value="sole-proprietor">Sole Proprietor</option>
+                  <option value="llc">LLC</option>
+                  <option value="s-corp">S-Corp</option>
+                  <option value="c-corp">C-Corp</option>
+                </select>
+              </div>
+
+              <div className="flex space-x-3">
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                >
+                  {submitting ? 'Updating...' : 'Update Profile'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push('/dashboard')}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
-      </div>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-red-600">Account Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h4 className="font-medium text-gray-900">Sign Out</h4>
+                  <p className="text-sm text-gray-600">Sign out of your account</p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => router.push('/logout')}
+                >
+                  Sign Out
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
     </div>
   )
 }
