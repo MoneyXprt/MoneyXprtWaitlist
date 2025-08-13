@@ -379,7 +379,7 @@ export default function Home() {
 
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
-              <div className="w-20 h-20 bg-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold">
+              <div className="w-20 h-20 bg-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold" data-testid="step-1-circle">
                 1
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Connect Your Accounts</h3>
