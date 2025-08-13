@@ -2,19 +2,24 @@ import { NextResponse } from 'next/server'
 import { sbAdmin } from '@/lib/supabase'
 import { redactPII } from '@/lib/redact'
 import { sha256Hex } from '@/lib/crypto'
+import { insertWaitlistSchema } from '@/shared/schema'
 
 export async function POST(req: Request) {
   try {
-    const { email } = await req.json().catch(() => ({}))
+    const body = await req.json().catch(() => ({}))
+    const { email } = body
     
     if (!email || typeof email !== 'string') {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
     }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 })
+    // Validate using schema
+    const validation = insertWaitlistSchema.safeParse({ address: email })
+    if (!validation.success) {
+      return NextResponse.json({ 
+        message: 'Validation error',
+        errors: validation.error.errors 
+      }, { status: 400 })
     }
 
     // Log request with PII protection
