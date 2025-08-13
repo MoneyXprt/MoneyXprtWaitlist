@@ -4,7 +4,7 @@
 
 MoneyXprt is a modern, production-ready Next.js web application serving as an AI-powered financial co-pilot for high-income earners. The application features a complete waitlist system, user authentication, an AI chat interface powered by OpenAI GPT-4, and a secure dashboard for personalized financial advice. Built with Next.js 14 App Router, Supabase for authentication and database, and styled with Tailwind CSS and shadcn/ui components.
 
-**Recent Update**: Added three specialized AI API routes for financial expertise: tax-scan, entity-opt, and fee-check with dedicated OpenAI system prompts and fake user profiles. Optimized Supabase client architecture with cleaner function-based approach (`sbAdmin()` and `sbBrowser()`), updated environment variable configuration with comprehensive .env.example, and resolved all TypeScript errors. Application fully production-ready with specialized financial AI endpoints, proper session management, and complete deployment documentation.
+**Recent Update**: Enhanced security and privacy with comprehensive utility modules: crypto.ts (SHA256 hashing), redact.ts (PII protection), and ai.ts (secure server-side OpenAI calls with no logging). Updated all API routes to use secure utilities with automatic PII redaction and request hashing. Added three specialized AI endpoints (tax-scan, entity-opt, fee-check) with dedicated system prompts. Application now includes enterprise-grade privacy protection, data integrity verification, and compliance-ready logging while maintaining full functionality.
 
 ## User Preferences
 
@@ -63,6 +63,9 @@ Preferred communication style: Simple, everyday language.
 - **Validation**: Zod schemas with email validation and optional demographic fields
 - **Error Handling**: Proper HTTP status codes and consistent JSON responses
 - **Fake User Profiles**: Temporary mock data for testing (to be replaced with real authentication)
+- **Security & Privacy**: SHA256 hashing, automatic PII redaction, secure logging without content exposure
+- **Data Integrity**: Request hashing and verification for audit trails
+- **Compliance**: Financial-grade privacy protection with sanitized AI interactions
 
 ### UI/UX Design
 - **Design System**: shadcn/ui with New York style variant
