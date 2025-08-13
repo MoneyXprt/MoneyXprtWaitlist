@@ -365,6 +365,52 @@ export default function Home() {
         </div>
       </section>
 
+      {/* How It Works */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              How MoneyXprt Works
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Three simple steps to optimize your financial future
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-20 h-20 bg-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold">
+                1
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Connect Your Accounts</h3>
+              <p className="text-gray-600">
+                Securely link your bank accounts, investments, and financial data through our encrypted platform.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-20 h-20 bg-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold">
+                2
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">AI Analysis</h3>
+              <p className="text-gray-600">
+                Our AI analyzes your financial patterns, goals, and market conditions to create personalized recommendations.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-20 h-20 bg-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold">
+                3
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Optimize & Execute</h3>
+              <p className="text-gray-600">
+                Receive actionable insights and automated optimizations to maximize your wealth growth and tax efficiency.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="mt-12 py-8 bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
