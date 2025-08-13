@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { sbBrowser } from '@/lib/supabase';
+import { sbBrowser } from '../lib/supabase';
 
 export default function AuthWidget() {
   const supabase = sbBrowser();
