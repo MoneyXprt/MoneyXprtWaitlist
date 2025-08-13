@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { z } from "zod";
 import { DollarSign, ArrowLeft } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 const signupSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -39,20 +40,33 @@ export default function SignupPage() {
   const handleSignup = async (data: SignupForm) => {
     setIsLoading(true);
     try {
-      // TODO: Implement actual signup logic with Supabase
-      console.log("Signup data:", data);
-      
-      toast({
-        title: "Account Created",
-        description: "Welcome to MoneyXprt! Please check your email to verify your account.",
+      const { data: authData, error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            full_name: data.name,
+          }
+        }
       });
-      
-      // Redirect to login or dashboard after successful signup
-      window.location.href = "/login";
-    } catch (error) {
+
+      if (error) {
+        throw error;
+      }
+
+      if (authData.user) {
+        toast({
+          title: "Account Created",
+          description: "Welcome to MoneyXprt! Please check your email to verify your account.",
+        });
+        
+        // Redirect to login page to complete verification
+        window.location.href = "/login";
+      }
+    } catch (error: any) {
       toast({
-        title: "Signup Failed",
-        description: "Something went wrong. Please try again.",
+        title: "Signup Failed", 
+        description: error.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
     } finally {
