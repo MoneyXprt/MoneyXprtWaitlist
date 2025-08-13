@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import { supabaseAdmin } from '@/lib/supabaseServer'
+import { sbAdmin } from '@/lib/supabaseClient'
 import { incrementUsage, checkDailyLimit, getCurrentDailyUsage, isUserSubscribed } from '@/lib/usage'
 
 const buckets = new Map<string, { tokens: number; ts: number }>()
@@ -97,7 +97,7 @@ export async function POST(req: Request) {
     
     // Track token usage for authenticated users
     if (userId) {
-      const tokensIn = completion.usage?.prompt_tokens || Math.ceil(messages.reduce((sum, msg) => sum + msg.content.length, 0) / 4)
+      const tokensIn = completion.usage?.prompt_tokens || Math.ceil(messages.reduce((sum, msg) => sum + (msg.content?.toString().length || 0), 0) / 4)
       const tokensOut = completion.usage?.completion_tokens || Math.ceil(content.length / 4)
       
       // Increment usage tracking (fire and forget)
@@ -126,8 +126,8 @@ export async function POST(req: Request) {
     }
 
     try {
-      if (supabaseAdmin) {
-        await supabaseAdmin.from('conversations').insert({
+      // Log conversation to database
+        await sbAdmin().from('conversations').insert({
           user_id: userId,
           prompt: cappedPrompt,
           response: content,
