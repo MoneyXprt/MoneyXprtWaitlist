@@ -1,36 +1,287 @@
 'use client'
-import { supabase } from '@/lib/supabaseClient'
+
 import { useState } from 'react'
-import AIBox from './components/AIBox'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
+import { TrendingUp, Shield, DollarSign, Send, Loader2 } from 'lucide-react'
+
+interface AIResponse {
+  response: string
+  metadata?: {
+    requestHash: string
+    hasPII: boolean
+    sanitized: boolean
+  }
+}
 
 export default function Home() {
-  const [email, setEmail] = useState('')
-  const [ok, setOk] = useState(false)
+  const [taxPrompt, setTaxPrompt] = useState('')
+  const [entityPrompt, setEntityPrompt] = useState('')
+  const [feePrompt, setFeePrompt] = useState('')
+  
+  const [taxResponse, setTaxResponse] = useState<AIResponse | null>(null)
+  const [entityResponse, setEntityResponse] = useState<AIResponse | null>(null)
+  const [feeResponse, setFeeResponse] = useState<AIResponse | null>(null)
+  
+  const [taxLoading, setTaxLoading] = useState(false)
+  const [entityLoading, setEntityLoading] = useState(false)
+  const [feeLoading, setFeeLoading] = useState(false)
 
-  async function join(e: React.FormEvent) {
-    e.preventDefault()
-    const { error } = await supabase.from('waitlist').insert([{ email }])
-    if (error) alert('Error: ' + error.message)
-    else { setOk(true); setEmail('') }
+  const callAPI = async (endpoint: string, prompt: string, setResponse: (r: AIResponse | null) => void, setLoading: (l: boolean) => void) => {
+    if (!prompt.trim()) return
+    
+    setLoading(true)
+    setResponse(null)
+    
+    try {
+      const response = await fetch(`/api/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      })
+      
+      const data = await response.json()
+      setResponse(data)
+    } catch (error) {
+      setResponse({ response: 'Error: Unable to process request' })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <main className="max-w-2xl mx-auto p-6 space-y-8">
-      <section className="space-y-3">
-        <h1 className="text-3xl font-bold">MoneyXprt</h1>
-        <p>Join the waitlist:</p>
-        <form onSubmit={join} className="flex gap-2">
-          <input 
-            className="border p-2 rounded flex-1" 
-            value={email} 
-            onChange={e=>setEmail(e.target.value)} 
-            placeholder="you@example.com" 
-          />
-          <button className="bg-black text-white px-4 rounded">Join</button>
-        </form>
-        {ok && <p className="text-green-600">Thanks for joining!</p>}
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50">
+      {/* Header */}
+      <header className="border-b bg-white/80 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold text-emerald-900">MoneyXprt</span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Link href="/login">
+                <Button variant="ghost" className="text-emerald-700 hover:text-emerald-900">
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/signup">
+                <Button className="bg-emerald-600 hover:bg-emerald-700">
+                  Get Started
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="pt-8 pb-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <Badge className="mb-3 bg-emerald-100 text-emerald-800">
+            AI-Powered Financial Intelligence
+          </Badge>
+          <h1 className="text-3xl font-bold text-gray-900 mb-3">
+            Your AI Financial <span className="text-emerald-600">Co-Pilot</span>
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Test our specialized AI tools for tax optimization, entity structuring, and fee analysis
+          </p>
+        </div>
       </section>
-      <AIBox />
-    </main>
+
+      {/* AI Tools Grid */}
+      <section className="py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-3 gap-6">
+            
+            {/* Tax Scanner */}
+            <Card className="border-emerald-200">
+              <CardHeader>
+                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center mb-2">
+                  <TrendingUp className="w-5 h-5 text-emerald-600" />
+                </div>
+                <CardTitle className="text-emerald-900">Tax Scanner</CardTitle>
+                <CardDescription>
+                  AI-powered tax optimization analysis for high-income strategies
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Textarea
+                  placeholder="Ask about tax strategies for your income level..."
+                  value={taxPrompt}
+                  onChange={(e) => setTaxPrompt(e.target.value)}
+                  className="min-h-[100px]"
+                />
+                <Button 
+                  onClick={() => callAPI('tax-scan', taxPrompt, setTaxResponse, setTaxLoading)}
+                  disabled={taxLoading || !taxPrompt.trim()}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                >
+                  {taxLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Scan Tax Strategy
+                    </>
+                  )}
+                </Button>
+                {taxResponse && (
+                  <div className="mt-4 p-4 bg-emerald-50 rounded-lg">
+                    <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {taxResponse.response}
+                    </div>
+                    {taxResponse.metadata && (
+                      <div className="mt-3 flex gap-2">
+                        {taxResponse.metadata.sanitized && (
+                          <Badge variant="secondary" className="text-xs">PII Protected</Badge>
+                        )}
+                        <Badge variant="outline" className="text-xs">
+                          ID: {taxResponse.metadata.requestHash.substring(0, 8)}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Entity Optimizer */}
+            <Card className="border-emerald-200">
+              <CardHeader>
+                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center mb-2">
+                  <Shield className="w-5 h-5 text-emerald-600" />
+                </div>
+                <CardTitle className="text-emerald-900">Entity Optimizer</CardTitle>
+                <CardDescription>
+                  Business structure recommendations for tax efficiency and protection
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Textarea
+                  placeholder="Ask about LLC, S-Corp, or other entity structures..."
+                  value={entityPrompt}
+                  onChange={(e) => setEntityPrompt(e.target.value)}
+                  className="min-h-[100px]"
+                />
+                <Button 
+                  onClick={() => callAPI('entity-opt', entityPrompt, setEntityResponse, setEntityLoading)}
+                  disabled={entityLoading || !entityPrompt.trim()}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                >
+                  {entityLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Optimize Entity
+                    </>
+                  )}
+                </Button>
+                {entityResponse && (
+                  <div className="mt-4 p-4 bg-emerald-50 rounded-lg">
+                    <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {entityResponse.response}
+                    </div>
+                    {entityResponse.metadata && (
+                      <div className="mt-3 flex gap-2">
+                        {entityResponse.metadata.sanitized && (
+                          <Badge variant="secondary" className="text-xs">PII Protected</Badge>
+                        )}
+                        <Badge variant="outline" className="text-xs">
+                          ID: {entityResponse.metadata.requestHash.substring(0, 8)}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Fee Checker */}
+            <Card className="border-emerald-200">
+              <CardHeader>
+                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center mb-2">
+                  <DollarSign className="w-5 h-5 text-emerald-600" />
+                </div>
+                <CardTitle className="text-emerald-900">Fee Checker</CardTitle>
+                <CardDescription>
+                  Investment fee analysis and optimization recommendations
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Textarea
+                  placeholder="Ask about investment fees, advisor costs, or expense ratios..."
+                  value={feePrompt}
+                  onChange={(e) => setFeePrompt(e.target.value)}
+                  className="min-h-[100px]"
+                />
+                <Button 
+                  onClick={() => callAPI('fee-check', feePrompt, setFeeResponse, setFeeLoading)}
+                  disabled={feeLoading || !feePrompt.trim()}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                >
+                  {feeLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Check Fees
+                    </>
+                  )}
+                </Button>
+                {feeResponse && (
+                  <div className="mt-4 p-4 bg-emerald-50 rounded-lg">
+                    <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {feeResponse.response}
+                    </div>
+                    {feeResponse.metadata && (
+                      <div className="mt-3 flex gap-2">
+                        {feeResponse.metadata.sanitized && (
+                          <Badge variant="secondary" className="text-xs">PII Protected</Badge>
+                        )}
+                        <Badge variant="outline" className="text-xs">
+                          ID: {feeResponse.metadata.requestHash.substring(0, 8)}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="mt-12 py-8 bg-gray-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="flex items-center justify-center space-x-3 mb-4">
+            <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
+              <DollarSign className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-bold">MoneyXprt</span>
+          </div>
+          <p className="text-sm text-gray-400">
+            © 2024 MoneyXprt. Financial AI for high-income professionals.
+          </p>
+        </div>
+      </footer>
+    </div>
   )
 }
