@@ -30,6 +30,12 @@ export default function Home() {
   const [entityLoading, setEntityLoading] = useState(false)
   const [feeLoading, setFeeLoading] = useState(false)
 
+  // Waitlist state
+  const [email, setEmail] = useState('')
+  const [waitlistLoading, setWaitlistLoading] = useState(false)
+  const [waitlistSuccess, setWaitlistSuccess] = useState(false)
+  const [waitlistError, setWaitlistError] = useState('')
+
   const callAPI = async (endpoint: string, prompt: string, setResponse: (r: AIResponse | null) => void, setLoading: (l: boolean) => void) => {
     if (!prompt.trim()) return
     
@@ -49,6 +55,36 @@ export default function Home() {
       setResponse({ response: 'Error: Unable to process request' })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const joinWaitlist = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email.trim()) return
+
+    setWaitlistLoading(true)
+    setWaitlistError('')
+    setWaitlistSuccess(false)
+
+    try {
+      const response = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setWaitlistSuccess(true)
+        setEmail('')
+      } else {
+        setWaitlistError(data.error || 'Failed to join waitlist')
+      }
+    } catch (error) {
+      setWaitlistError('Network error. Please try again.')
+    } finally {
+      setWaitlistLoading(false)
     }
   }
 
@@ -89,9 +125,44 @@ export default function Home() {
           <h1 className="text-3xl font-bold text-gray-900 mb-3">
             Your AI Financial <span className="text-emerald-600">Co-Pilot</span>
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
             Test our specialized AI tools for tax optimization, entity structuring, and fee analysis
           </p>
+          
+          {/* Waitlist Signup */}
+          <div className="max-w-md mx-auto">
+            <form onSubmit={joinWaitlist} className="flex gap-2">
+              <input
+                type="email"
+                placeholder="Enter your email for early access"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                disabled={waitlistLoading}
+              />
+              <Button 
+                type="submit" 
+                disabled={waitlistLoading || !email.trim()}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                {waitlistLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  'Join Waitlist'
+                )}
+              </Button>
+            </form>
+            {waitlistSuccess && (
+              <p className="mt-2 text-sm text-emerald-600">
+                Thanks for joining! We'll be in touch soon.
+              </p>
+            )}
+            {waitlistError && (
+              <p className="mt-2 text-sm text-red-600">
+                {waitlistError}
+              </p>
+            )}
+          </div>
         </div>
       </section>
 

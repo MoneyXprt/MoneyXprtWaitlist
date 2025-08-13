@@ -5,7 +5,7 @@ import { z } from "zod";
 
 export const waitlist = pgTable("waitlist", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: text("email").notNull().unique(),
+  address: text("address").notNull().unique(), // Using 'address' as requested
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
@@ -48,7 +48,7 @@ export const insertWaitlistSchema = createInsertSchema(waitlist).omit({
   id: true,
   createdAt: true,
 }).extend({
-  email: z.string().email("Please enter a valid email address"),
+  address: z.string().email("Please enter a valid email address"),
 });
 
 export const insertConversationSchema = createInsertSchema(conversations).omit({
