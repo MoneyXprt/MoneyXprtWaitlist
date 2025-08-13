@@ -1,63 +1,46 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { sha256Hex } from '@/lib/crypto'
-import { sbAdmin } from '@/lib/supabase'
-import { chat } from '@/lib/ai'
-import { redactPII } from '@/lib/redact'
+import { NextRequest, NextResponse } from 'next/server';
+import { sbAdmin } from '@/lib/supabase';
+import { chat } from '@/lib/ai';
 
-export const runtime = 'nodejs'
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
-  try {
-    const token = req.headers.get('x-supabase-auth')
-    if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+  const token = req.headers.get('x-supabase-auth');
+  if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
-    const admin = sbAdmin()
-    const { data: userData, error: uerr } = await admin.auth.getUser(token)
-    if (uerr || !userData?.user) return NextResponse.json({ error: 'Invalid auth' }, { status: 401 })
+  const admin = sbAdmin();
+  const { data: userData, error: uerr } = await admin.auth.getUser(token);
+  if (uerr || !userData?.user) return NextResponse.json({ error: 'Invalid auth' }, { status: 401 });
 
-    const { prompt, context } = await req.json().catch(() => ({}))
-    const userPrompt = String(prompt ?? '').trim()
-    
-    if (!userPrompt) {
-      return NextResponse.json({ error: 'Missing prompt' }, { status: 400 })
-    }
+  const body = await req.json();
+  const facts = {
+    w2_income: Number(body.w2 || 0),
+    rental_units: Number(body.re_units || 0),
+    side_income: Number(body.side_income || 0),
+  };
 
-    const systemPrompt = `You are MoneyXprt, an AI financial advisor specializing in business entity optimization for high-income professionals.
-Focus on:
-1) LLC vs S-Corp vs C-Corp analysis for tax efficiency
-2) Business structure optimization for W-2 + side income + real estate
-3) Specific recommendations for entity formation and tax planning
-Label any estimates or assumptions as [Unverified]. Keep responses concise and actionable.`
+  const prompt = `
+Given: ${JSON.stringify(facts)}
+Recommend an entity structure and tax tactics for a US taxpayer (W-2 + rentals + side income).
+- Show dollar-impact ranges where possible, labeled [Unverified].
+- Include pros/cons and steps for the next 90 days.
+- No guarantees.`;
 
-    const output = await chat([
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
-    ])
+  const out = await (await import('@/lib/ai')).chat([
+    { role:'system', content: 'You are MoneyXprt. Provide concise, actionable steps with clearly labeled uncertainty.' },
+    { role:'user', content: prompt }
+  ]);
 
-    const redacted = redactPII(output)
-    const digest = sha256Hex(userPrompt + (context || ''))
+  const { error } = await admin.from('reports').insert({
+    user_id: userData.user.id,
+    kind: 'entity_opt',
+    input_summary: facts,
+    raw_output: out
+  });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    // Log to database with real user ID
-    const { error } = await admin.from('conversations').insert({
-      user_id: userData.user.id,
-      prompt_hash: digest,
-      response: redacted,
-      metadata: { endpoint: 'entity-opt', timestamp: new Date().toISOString() }
-    })
-
-    if (error) {
-      console.error('Database logging failed:', error)
-      // Continue anyway - don't fail the request
-    }
-
-    return NextResponse.json({ 
-      response: redacted,
-      metadata: {
-        requestHash: digest,
-        hasPII: output !== redacted,
-        sanitized: true
-      }
-    })
+  return NextResponse.json({ ok: true, message: out });
+}
 
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 500 })

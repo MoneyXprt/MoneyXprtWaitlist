@@ -30,6 +30,23 @@ export interface AIResponse {
  * Make a secure AI request with automatic PII protection
  * No logging of actual prompts or responses for privacy
  */
+// Simple chat function for direct OpenAI calls
+export async function chat(messages: Array<{role: string, content: string}>): Promise<string> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o', // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages: messages as any,
+      max_tokens: 500,
+      temperature: 0.2
+    })
+    
+    return response.choices[0]?.message?.content || 'No response generated'
+  } catch (error: any) {
+    console.error('OpenAI API error:', error)
+    return `Error: ${error.message || 'Failed to generate response'}`
+  }
+}
+
 export async function secureAIRequest(request: AIRequest): Promise<AIResponse> {
   const {
     prompt,

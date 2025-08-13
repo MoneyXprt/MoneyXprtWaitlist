@@ -1,63 +1,42 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { sha256Hex } from '@/lib/crypto'
-import { sbAdmin } from '@/lib/supabase'
-import { chat } from '@/lib/ai'
-import { redactPII } from '@/lib/redact'
+import { NextRequest, NextResponse } from 'next/server';
+import { sbAdmin } from '@/lib/supabase';
+import { chat } from '@/lib/ai';
 
-export const runtime = 'nodejs'
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
-  try {
-    const token = req.headers.get('x-supabase-auth')
-    if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+  const token = req.headers.get('x-supabase-auth');
+  if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
-    const admin = sbAdmin()
-    const { data: userData, error: uerr } = await admin.auth.getUser(token)
-    if (uerr || !userData?.user) return NextResponse.json({ error: 'Invalid auth' }, { status: 401 })
+  const admin = sbAdmin();
+  const { data: userData, error: uerr } = await admin.auth.getUser(token);
+  if (uerr || !userData?.user) return NextResponse.json({ error: 'Invalid auth' }, { status: 401 });
 
-    const { prompt, context } = await req.json().catch(() => ({}))
-    const userPrompt = String(prompt ?? '').trim()
-    
-    if (!userPrompt) {
-      return NextResponse.json({ error: 'Missing prompt' }, { status: 400 })
-    }
+  const { prompt } = await req.json();
+  if (!prompt?.trim()) return NextResponse.json({ error: 'Missing prompt' }, { status: 400 });
 
-    const systemPrompt = `You are MoneyXprt, an AI financial advisor specializing in investment fee analysis and cost optimization.
+  const systemPrompt = `You are MoneyXprt, an AI financial advisor specializing in investment fee analysis and cost optimization.
 Focus on:
 1) Investment fee analysis and cost reduction strategies
 2) Advisor fee assessment and alternatives
 3) Portfolio optimization for cost efficiency
-Label any estimates or assumptions as [Unverified]. Keep responses concise and actionable.`
+Label any estimates or assumptions as [Unverified]. Keep responses concise and actionable.`;
 
-    const output = await chat([
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
-    ])
+  const out = await (await import('@/lib/ai')).chat([
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: prompt }
+  ]);
 
-    const redacted = redactPII(output)
-    const digest = sha256Hex(userPrompt + (context || ''))
+  const { error } = await admin.from('reports').insert({
+    user_id: userData.user.id,
+    kind: 'fee_check',
+    input_summary: { prompt: prompt.slice(0, 100) },
+    raw_output: out
+  });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    // Log to database with real user ID
-    const { error } = await admin.from('conversations').insert({
-      user_id: userData.user.id,
-      prompt_hash: digest,
-      response: redacted,
-      metadata: { endpoint: 'fee-check', timestamp: new Date().toISOString() }
-    })
-
-    if (error) {
-      console.error('Database logging failed:', error)
-      // Continue anyway - don't fail the request
-    }
-
-    return NextResponse.json({ 
-      response: redacted,
-      metadata: {
-        requestHash: digest,
-        hasPII: output !== redacted,
-        sanitized: true
-      }
-    })
+  return NextResponse.json({ ok: true, message: out });
+}
 
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 500 })
