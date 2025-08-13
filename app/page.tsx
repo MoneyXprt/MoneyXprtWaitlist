@@ -142,9 +142,14 @@ export default function Home() {
           <h1 className="text-3xl font-bold text-gray-900 mb-3">
             Your AI Financial <span className="text-emerald-600">Co-Pilot</span>
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-4">
             Test our specialized AI tools for tax optimization, entity structuring, and fee analysis
           </p>
+          <div className="mb-6">
+            <a href="/reports" className="underline text-emerald-800 hover:text-emerald-900">
+              View Reports
+            </a>
+          </div>
           
           {/* Waitlist Signup */}
           <div className="max-w-md mx-auto">
