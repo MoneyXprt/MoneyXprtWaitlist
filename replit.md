@@ -4,7 +4,7 @@
 
 MoneyXprt is a modern, production-ready Next.js web application serving as an AI-powered financial co-pilot for high-income earners. The application features a complete waitlist system, user authentication, an AI chat interface powered by OpenAI GPT-4, and a secure dashboard for personalized financial advice. Built with Next.js 14 App Router, Supabase for authentication and database, and styled with Tailwind CSS and shadcn/ui components.
 
-**Recent Update**: Finalized production-ready application with complete feature set including Stripe subscription payments ($9/month), comprehensive shadcn/ui component integration, profile management system, error boundaries, SEO optimization, and deployment preparation. Added logout functionality, profile editing page, comprehensive error handling, and detailed deployment documentation. Application now ready for Vercel deployment with proper environment variable configuration and production-grade security measures.
+**Recent Update**: Optimized Supabase client architecture with cleaner function-based approach (`sbAdmin()` and `sbBrowser()`), updated environment variable configuration with comprehensive .env.example, and resolved all TypeScript errors in API routes. Application fully production-ready with proper Supabase integration, error-free OpenAI API endpoints, and complete deployment documentation. Ready for Vercel deployment with optimized client separation and session management.
 
 ## User Preferences
 
@@ -42,7 +42,7 @@ Preferred communication style: Simple, everyday language.
 - **Route Protection**: Next.js middleware automatically redirects unauthenticated users to login
 - **User Management**: Full registration, login, logout, and session handling
 - **Pages**: Login (/login), Signup (/signup), Protected Dashboard (/dashboard)
-- **Client Setup**: Dual client architecture - browser client (`lib/supabaseClient.ts`) for auth and server client (`lib/supabaseServer.ts`) for admin operations
+- **Client Setup**: Optimized function-based architecture - `sbAdmin()` for server operations with service role key, `sbBrowser()` for client-side auth with proper session control
 
 ### Development & Build
 - **Monorepo Structure**: Client, server, and shared code in separate directories
@@ -66,6 +66,24 @@ Preferred communication style: Simple, everyday language.
 - **Theming**: Dark emerald green and gold color scheme matching logo branding
 - **Icons**: Lucide React for consistent iconography
 - **Branding**: Professional logo integration throughout the application
+
+## Environment Configuration
+
+### Required Environment Variables
+Set these in Replit Secrets and later in Vercel:
+
+- **NEXT_PUBLIC_SUPABASE_URL** - Your Supabase project URL
+- **NEXT_PUBLIC_SUPABASE_ANON_KEY** - Supabase anonymous/public key
+- **SUPABASE_SERVICE_ROLE_KEY** - Supabase service role key for admin operations
+- **OPENAI_API_KEY** - OpenAI API key for GPT-4o integration
+
+### Optional Variables
+- **NEXT_PUBLIC_WC_PROJECT_ID** - Wallet Connect project ID for future crypto features
+- **Stripe Keys** - For subscription payments (VITE_STRIPE_PUBLIC_KEY, STRIPE_SECRET_KEY, etc.)
+
+### Development Setup
+- Complete `.env.example` file provided for reference
+- All keys properly documented for deployment readiness
 
 ## External Dependencies
 

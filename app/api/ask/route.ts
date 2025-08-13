@@ -127,13 +127,12 @@ export async function POST(req: Request) {
 
     try {
       // Log conversation to database
-        await sbAdmin().from('conversations').insert({
-          user_id: userId,
-          prompt: cappedPrompt,
-          response: content,
-          meta: cappedContext ? { context: cappedContext } : null
-        })
-      }
+      await sbAdmin().from('conversations').insert({
+        user_id: userId,
+        prompt: cappedPrompt,
+        response: content,
+        meta: cappedContext ? { context: cappedContext } : null
+      })
     } catch (e) {
       console.warn('convo log failed', e)
     }
