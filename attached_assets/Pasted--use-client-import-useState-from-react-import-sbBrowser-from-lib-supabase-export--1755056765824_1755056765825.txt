@@ -1,0 +1,53 @@
+'use client';
+import { useState } from 'react';
+import { sbBrowser } from '@/lib/supabase';
+
+export default function Home() {
+  const supabase = sbBrowser();
+  const [taxPdf, setTaxPdf] = useState<File | null>(null);
+  const [entityForm, setEntityForm] = useState({ w2: '', re_units: '', side_income: '' });
+  const [holdingsCsv, setHoldingsCsv] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string>("");
+
+  async function authHeader() {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    return token ? { 'x-supabase-auth': token } : {};
+  }
+
+  async function runTaxScan() {
+    if (!taxPdf) return;
+    setBusy(true); setMsg('');
+    const fd = new FormData(); fd.append('file', taxPdf);
+    const headers = await authHeader();
+    const res = await fetch('/api/tax-scan', { method: 'POST', body: fd, headers: headers as any });
+    const out = await res.json(); setMsg(out.message || JSON.stringify(out));
+    setBusy(false);
+  }
+
+  async function runEntityOpt() {
+    setBusy(true); setMsg('');
+    const headers = { 'Content-Type':'application/json', ...(await authHeader()) as any };
+    const res = await fetch('/api/entity-opt', { method: 'POST', headers, body: JSON.stringify(entityForm) });
+    const out = await res.json(); setMsg(out.message || JSON.stringify(out));
+    setBusy(false);
+  }
+
+  async function runFeeCheck() {
+    if (!holdingsCsv) return;
+    setBusy(true); setMsg('');
+    const fd = new FormData(); fd.append('file', holdingsCsv);
+    const headers = await authHeader();
+    const res = await fetch('/api/fee-check', { method: 'POST', body: fd, headers: headers as any });
+    const out = await res.json(); setMsg(out.message || JSON.stringify(out));
+    setBusy(false);
+  }
+
+  return (
+    // ... keep your existing JSX (sections for the three tools + Result) ...
+    <main className="space-y-10">
+      {/* (keep your UI from earlier) */}
+    </main>
+  );
+}

@@ -8,6 +8,7 @@ import { Textarea } from '../components/ui/textarea'
 import { Badge } from '../components/ui/badge'
 import { TrendingUp, Shield, DollarSign, Send, Loader2 } from 'lucide-react'
 import AuthWidget from '../components/AuthWidget'
+import { sbBrowser } from '../lib/supabase'
 
 interface AIResponse {
   response: string
@@ -19,6 +20,7 @@ interface AIResponse {
 }
 
 export default function Home() {
+  const supabase = sbBrowser()
   const [taxPrompt, setTaxPrompt] = useState('')
   const [entityPrompt, setEntityPrompt] = useState('')
   const [feePrompt, setFeePrompt] = useState('')
@@ -37,6 +39,12 @@ export default function Home() {
   const [waitlistSuccess, setWaitlistSuccess] = useState(false)
   const [waitlistError, setWaitlistError] = useState('')
 
+  async function authHeader(): Promise<Record<string, string>> {
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    return token ? { 'x-supabase-auth': token } : {}
+  }
+
   const callAPI = async (endpoint: string, prompt: string, setResponse: (r: AIResponse | null) => void, setLoading: (l: boolean) => void) => {
     if (!prompt.trim()) return
     
@@ -44,9 +52,14 @@ export default function Home() {
     setResponse(null)
     
     try {
+      const headers = { 
+        'Content-Type': 'application/json',
+        ...(await authHeader())
+      }
+      
       const response = await fetch(`/api/${endpoint}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ prompt })
       })
       
