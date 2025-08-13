@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Textarea } from '../components/ui/textarea'
 import { Badge } from '../components/ui/badge'
 import { TrendingUp, Shield, DollarSign, Send, Loader2 } from 'lucide-react'
+import AuthWidget from '../components/AuthWidget'
 
 interface AIResponse {
   response: string
@@ -101,16 +102,7 @@ export default function Home() {
               <span className="text-xl font-bold text-emerald-900">MoneyXprt</span>
             </div>
             <div className="flex items-center space-x-4">
-              <Link href="/login">
-                <Button variant="ghost" className="text-emerald-700 hover:text-emerald-900">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/signup">
-                <Button className="bg-emerald-600 hover:bg-emerald-700">
-                  Get Started
-                </Button>
-              </Link>
+              <AuthWidget />
             </div>
           </div>
         </div>
