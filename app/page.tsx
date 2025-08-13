@@ -23,7 +23,7 @@ export default function Home() {
   const supabase = sbBrowser()
   const [taxPrompt, setTaxPrompt] = useState('')
   const [entityPrompt, setEntityPrompt] = useState('')
-  const [feePrompt, setFeePrompt] = useState('')
+  const [feeFile, setFeeFile] = useState<File | null>(null)
   
   const [taxResponse, setTaxResponse] = useState<AIResponse | null>(null)
   const [entityResponse, setEntityResponse] = useState<AIResponse | null>(null)
@@ -67,6 +67,33 @@ export default function Home() {
       setResponse(data)
     } catch (error) {
       setResponse({ response: 'Error: Unable to process request' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const callFileAPI = async (endpoint: string, file: File, setResponse: (r: AIResponse | null) => void, setLoading: (l: boolean) => void) => {
+    if (!file) return
+    
+    setLoading(true)
+    setResponse(null)
+    
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      const headers = await authHeader()
+      
+      const response = await fetch(`/api/${endpoint}`, {
+        method: 'POST',
+        headers,
+        body: formData
+      })
+      
+      const data = await response.json()
+      setResponse({ response: data.message || JSON.stringify(data) })
+    } catch (error) {
+      setResponse({ response: 'Error: Unable to process file' })
     } finally {
       setLoading(false)
     }
@@ -279,48 +306,52 @@ export default function Home() {
                 </div>
                 <CardTitle className="text-emerald-900">Fee Checker</CardTitle>
                 <CardDescription>
-                  Investment fee analysis and optimization recommendations
+                  Upload CSV portfolio holdings for automated fee analysis
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Textarea
-                  placeholder="Ask about investment fees, advisor costs, or expense ratios..."
-                  value={feePrompt}
-                  onChange={(e) => setFeePrompt(e.target.value)}
-                  className="min-h-[100px]"
-                />
+                <div className="border-2 border-dashed border-emerald-200 rounded-lg p-6 text-center">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) => setFeeFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                    id="fee-file-input"
+                  />
+                  <label htmlFor="fee-file-input" className="cursor-pointer">
+                    <div className="space-y-2">
+                      <DollarSign className="w-8 h-8 text-emerald-400 mx-auto" />
+                      <p className="text-sm text-gray-600">
+                        {feeFile ? feeFile.name : 'Upload CSV with Ticker, Shares, Price, ExpenseRatio columns'}
+                      </p>
+                      <Button variant="outline" className="mt-2">
+                        Choose File
+                      </Button>
+                    </div>
+                  </label>
+                </div>
                 <Button 
-                  onClick={() => callAPI('fee-check', feePrompt, setFeeResponse, setFeeLoading)}
-                  disabled={feeLoading || !feePrompt.trim()}
+                  onClick={() => feeFile && callFileAPI('fee-check', feeFile, setFeeResponse, setFeeLoading)}
+                  disabled={feeLoading || !feeFile}
                   className="w-full bg-emerald-600 hover:bg-emerald-700"
                 >
                   {feeLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Analyzing...
+                      Analyzing Portfolio...
                     </>
                   ) : (
                     <>
                       <Send className="w-4 h-4 mr-2" />
-                      Check Fees
+                      Analyze Fees
                     </>
                   )}
                 </Button>
                 {feeResponse && (
                   <div className="mt-4 p-4 bg-emerald-50 rounded-lg">
-                    <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                    <div className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
                       {feeResponse.response}
                     </div>
-                    {feeResponse.metadata && (
-                      <div className="mt-3 flex gap-2">
-                        {feeResponse.metadata.sanitized && (
-                          <Badge variant="secondary" className="text-xs">PII Protected</Badge>
-                        )}
-                        <Badge variant="outline" className="text-xs">
-                          ID: {feeResponse.metadata.requestHash.substring(0, 8)}
-                        </Badge>
-                      </div>
-                    )}
                   </div>
                 )}
               </CardContent>

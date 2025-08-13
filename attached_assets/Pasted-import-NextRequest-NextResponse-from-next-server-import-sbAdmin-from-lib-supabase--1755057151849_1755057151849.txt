@@ -59,20 +59,3 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true, message });
 }
-
-    if (result.error) {
-      return NextResponse.json({ error: result.error }, { status: 500 })
-    }
-
-    return NextResponse.json({ 
-      response: result.response,
-      metadata: {
-        requestHash: result.requestHash,
-        hasPII: result.hasPII,
-        sanitized: result.sanitized
-      }
-    })
-  } catch (err: any) {
-    return NextResponse.json({ error: 'Unexpected error' }, { status: 500 })
-  }
-}
