@@ -44,6 +44,17 @@ export const billing = pgTable("billing", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
+export const reports = pgTable("reports", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: uuid("user_id").notNull(), // references auth.users(id)
+  kind: text("kind").notNull(),
+  sha256Hex: text("sha256_hex"),
+  inputSummary: jsonb("input_summary"),
+  outputSummary: jsonb("output_summary"),
+  rawOutput: text("raw_output"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 export const insertWaitlistSchema = createInsertSchema(waitlist).omit({
   id: true,
   createdAt: true,
@@ -89,6 +100,18 @@ export const insertBillingSchema = createInsertSchema(billing).extend({
   stripeSubscriptionId: z.string().optional(),
 });
 
+export const insertReportSchema = createInsertSchema(reports).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  userId: z.string().uuid(),
+  kind: z.string().min(1),
+  sha256Hex: z.string().optional(),
+  inputSummary: z.record(z.any()).optional(),
+  outputSummary: z.record(z.any()).optional(),
+  rawOutput: z.string().optional(),
+});
+
 export type InsertWaitlist = z.infer<typeof insertWaitlistSchema>;
 export type Waitlist = typeof waitlist.$inferSelect;
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
@@ -99,3 +122,5 @@ export type InsertUsageDaily = z.infer<typeof insertUsageDailySchema>;
 export type UsageDaily = typeof usageDaily.$inferSelect;
 export type InsertBilling = z.infer<typeof insertBillingSchema>;
 export type Billing = typeof billing.$inferSelect;
+export type InsertReport = z.infer<typeof insertReportSchema>;
+export type Report = typeof reports.$inferSelect;

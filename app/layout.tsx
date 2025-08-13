@@ -11,7 +11,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           MoneyXprt outputs are for informational purposes. All AI content may include [Unverified] estimates.
         </div>
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold">MoneyXprt</h1>
+          <div className="flex items-center gap-6">
+            <h1 className="text-xl font-semibold">MoneyXprt</h1>
+            <nav className="flex gap-4">
+              <a href="/" className="text-sm text-neutral-600 hover:text-neutral-900">Home</a>
+              <a href="/reports" className="text-sm text-neutral-600 hover:text-neutral-900">Reports</a>
+            </nav>
+          </div>
           <AuthWidget />
         </div>
         <div className="max-w-5xl mx-auto p-6">{children}</div>
