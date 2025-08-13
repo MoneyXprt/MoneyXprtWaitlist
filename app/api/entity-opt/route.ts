@@ -1,45 +1,63 @@
-import { NextResponse } from 'next/server'
-import { entityOptRequest } from '@/lib/ai'
+import { NextRequest, NextResponse } from 'next/server'
+import { sha256Hex } from '@/lib/crypto'
+import { sbAdmin } from '@/lib/supabase'
+import { chat } from '@/lib/ai'
 import { redactPII } from '@/lib/redact'
 
-// Removed - now using secure AI utilities
+export const runtime = 'nodejs'
 
-// Fake user for now - will be replaced with real auth
-const fakeUser = {
-  id: 'temp-user-123',
-  income: 250000,
-  businessType: 'consulting',
-  businessRevenue: 75000,
-  state: 'California',
-  hasEmployees: false,
-  hasRealEstate: true
-}
-
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    // Check for JWT token in header
-    const authToken = req.headers.get('x-supabase-auth')
-    if (!authToken) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-    }
+    const token = req.headers.get('x-supabase-auth')
+    if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
-    const { prompt, context } = await req.json().catch(() => ({ }))
+    const admin = sbAdmin()
+    const { data: userData, error: uerr } = await admin.auth.getUser(token)
+    if (uerr || !userData?.user) return NextResponse.json({ error: 'Invalid auth' }, { status: 401 })
+
+    const { prompt, context } = await req.json().catch(() => ({}))
     const userPrompt = String(prompt ?? '').trim()
-    let extra = String(context ?? '').trim()
-
+    
     if (!userPrompt) {
       return NextResponse.json({ error: 'Missing prompt' }, { status: 400 })
     }
 
-    // Use authenticated user ID from JWT (simplified for now)
-    const userId = `auth-user-${authToken.slice(-8)}`
+    const systemPrompt = `You are MoneyXprt, an AI financial advisor specializing in business entity optimization for high-income professionals.
+Focus on:
+1) LLC vs S-Corp vs C-Corp analysis for tax efficiency
+2) Business structure optimization for W-2 + side income + real estate
+3) Specific recommendations for entity formation and tax planning
+Label any estimates or assumptions as [Unverified]. Keep responses concise and actionable.`
 
-    // Add fake user context for now (will be replaced with real auth)
-    const userContext = `User Profile: W-2 Income $${fakeUser.income}, Business: ${fakeUser.businessType} ($${fakeUser.businessRevenue}/year), State: ${fakeUser.state}, Employees: ${fakeUser.hasEmployees ? 'Yes' : 'No'}, Real Estate: ${fakeUser.hasRealEstate ? 'Yes' : 'No'}`
-    extra = extra ? `${extra}\n${userContext}` : userContext
+    const output = await chat([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ])
 
-    // Use secure AI request with automatic PII protection
-    const result = await entityOptRequest(userPrompt, extra, userId)
+    const redacted = redactPII(output)
+    const digest = sha256Hex(userPrompt + (context || ''))
+
+    // Log to database with real user ID
+    const { error } = await admin.from('conversations').insert({
+      user_id: userData.user.id,
+      prompt_hash: digest,
+      response: redacted,
+      metadata: { endpoint: 'entity-opt', timestamp: new Date().toISOString() }
+    })
+
+    if (error) {
+      console.error('Database logging failed:', error)
+      // Continue anyway - don't fail the request
+    }
+
+    return NextResponse.json({ 
+      response: redacted,
+      metadata: {
+        requestHash: digest,
+        hasPII: output !== redacted,
+        sanitized: true
+      }
+    })
 
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 500 })
