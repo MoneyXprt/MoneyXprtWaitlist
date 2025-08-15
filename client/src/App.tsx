@@ -8,6 +8,9 @@ import HomePage from "@/pages/home";
 import SignupPage from "@/pages/signup";
 import LoginPage from "@/pages/login";
 import DashboardPage from "@/pages/dashboard";
+import AboutPage from "@/pages/about";
+import BlogPage from "@/pages/blog";
+import CareersPage from "@/pages/careers";
 
 function Router() {
   return (
@@ -16,6 +19,9 @@ function Router() {
       <Route path="/signup" component={SignupPage} />
       <Route path="/login" component={LoginPage} />
       <Route path="/dashboard" component={DashboardPage} />
+      <Route path="/about" component={AboutPage} />
+      <Route path="/blog" component={BlogPage} />
+      <Route path="/careers" component={CareersPage} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>
