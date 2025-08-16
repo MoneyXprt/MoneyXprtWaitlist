@@ -1,74 +1,178 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { sbBrowser } from '../lib/supabase';
 
 export default function SimpleAuthWidget() {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
   const [msg, setMsg] = useState('');
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [userEmail, setUserEmail] = useState('');
+  const [showSignup, setShowSignup] = useState(false);
+  const supabase = sbBrowser();
 
-  const handleEmailSignup = async () => {
-    setMsg('Sending...');
-    
-    try {
-      const response = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() })
-      });
-      
-      const result = await response.json();
-      
-      if (response.ok) {
-        setMsg('✅ Added to waitlist! Check your email for beta access.');
-        setEmail('');
-        // Simulate sign-in for demo purposes
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) {
         setIsSignedIn(true);
-        setUserEmail(email.trim());
-      } else {
-        setMsg(result.message || result.error || 'Failed to join waitlist');
+        setUserEmail(data.user.email || '');
       }
-    } catch (err) {
-      setMsg('Network error. Please try again.');
-      console.error('Signup error:', err);
+    };
+    checkSession();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setIsSignedIn(true);
+        setUserEmail(session.user.email || '');
+        if (event === 'SIGNED_IN') {
+          window.location.assign('/app');
+        }
+      } else {
+        setIsSignedIn(false);
+        setUserEmail('');
+      }
+    });
+
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  const handleSignup = async () => {
+    if (!email || !password || !fullName) {
+      setMsg('All fields are required');
+      return;
+    }
+
+    setMsg('Creating account...');
+    
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: `${window.location.origin}/app`
+      }
+    });
+
+    if (error) {
+      console.error('Signup error:', error.message);
+      setMsg(`Signup failed: ${error.message}`);
+    } else {
+      setMsg('Signup successful! Check your email for confirmation.');
+      setEmail('');
+      setPassword('');
+      setFullName('');
+      setShowSignup(false);
     }
   };
 
-  const handleSignOut = () => {
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      setMsg('Email and password required');
+      return;
+    }
+
+    setMsg('Signing in...');
+    
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      setMsg(`Sign in failed: ${error.message}`);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
     setIsSignedIn(false);
     setUserEmail('');
     setMsg('');
   };
 
+  if (isSignedIn) {
+    return (
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-neutral-700">Signed in: {userEmail}</span>
+        <a href="/app" className="text-sm underline">Open Beta</a>
+        <button onClick={handleSignOut} className="rounded-lg px-3 py-1 bg-neutral-200">Sign out</button>
+      </div>
+    );
+  }
+
+  if (showSignup) {
+    return (
+      <div className="flex items-center gap-2">
+        <input
+          className="border rounded px-2 py-1 text-sm"
+          placeholder="Full Name"
+          value={fullName}
+          onChange={e => setFullName(e.target.value)}
+        />
+        <input
+          className="border rounded px-2 py-1 text-sm"
+          placeholder="Email"
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+        />
+        <input
+          className="border rounded px-2 py-1 text-sm"
+          placeholder="Password"
+          type="password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+        />
+        <button 
+          onClick={handleSignup}
+          className="rounded px-3 py-1 bg-green-600 text-white text-sm"
+        >
+          Sign Up
+        </button>
+        <button 
+          onClick={() => setShowSignup(false)}
+          className="rounded px-3 py-1 bg-gray-300 text-sm"
+        >
+          Cancel
+        </button>
+        {msg && <span className="text-xs text-red-600">{msg}</span>}
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-center gap-3">
-      {isSignedIn ? (
-        <>
-          <span className="text-sm text-neutral-700">Beta Access: {userEmail}</span>
-          <a href="/app" className="text-sm underline">Open Beta</a>
-          <button onClick={handleSignOut} className="rounded-lg px-3 py-1 bg-neutral-200">Sign out</button>
-        </>
-      ) : (
-        <>
-          <input
-            className="border rounded px-2 py-1"
-            placeholder="you@work.com"
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleEmailSignup()}
-          />
-          <button 
-            onClick={handleEmailSignup} 
-            disabled={!email.trim() || !email.includes('@')}
-            className="rounded-lg px-3 py-1 bg-black text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            Get Beta Access
-          </button>
-          {msg && <span className="text-sm text-green-600">{msg}</span>}
-        </>
-      )}
+    <div className="flex items-center gap-2">
+      <input
+        className="border rounded px-2 py-1"
+        placeholder="Email"
+        type="email"
+        value={email}
+        onChange={e => setEmail(e.target.value)}
+      />
+      <input
+        className="border rounded px-2 py-1"
+        placeholder="Password"
+        type="password"
+        value={password}
+        onChange={e => setPassword(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && handleSignIn()}
+      />
+      <button 
+        onClick={handleSignIn}
+        className="rounded px-3 py-1 bg-black text-white"
+      >
+        Sign In
+      </button>
+      <button 
+        onClick={() => setShowSignup(true)}
+        className="rounded px-3 py-1 bg-blue-600 text-white"
+      >
+        Sign Up
+      </button>
+      {msg && <span className="text-sm text-red-600">{msg}</span>}
     </div>
   );
 }

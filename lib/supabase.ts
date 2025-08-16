@@ -10,19 +10,8 @@ export function sbAdmin() {
 
 // Browser client persists session (localStorage) so user stays logged in
 export function sbBrowser() {
-  // Extract the correct URL from DATABASE_URL for now
-  const dbUrl = process.env.DATABASE_URL;
-  const supabaseUrl = dbUrl ? `https://ayeckgcillxfivvnyhaj.supabase.co` : process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  
-  console.log('Supabase config attempt:', { 
-    url: supabaseUrl, 
-    keyPrefix: supabaseAnonKey?.substring(0, 20) + '...'
-  });
-  
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Supabase configuration missing');
-  }
+  const supabaseUrl = 'https://ayeckgcillxfivvnyhaj.supabase.co';
+  const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5ZWNrZ2NpbGx4Zml2dm55aGFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMwNjcxODgsImV4cCI6MjA2ODY0MzE4OH0.5l4EufR-n8izghE5DTbWsweGU_a8im5J4GUnPpiPGTo';
   
   return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
