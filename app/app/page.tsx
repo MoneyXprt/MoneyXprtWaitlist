@@ -1,431 +1,93 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { Button } from '../components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
-import { Textarea } from '../components/ui/textarea'
-import { Badge } from '../components/ui/badge'
-import { TrendingUp, Shield, DollarSign, Send, Loader2 } from 'lucide-react'
-import AuthWidget from '../components/AuthWidget'
-import { sbBrowser } from '../lib/supabase'
+import { useState } from 'react';
+import { sbBrowser } from '@/lib/supabase';
 
-interface AIResponse {
-  response: string
-  metadata?: {
-    requestHash: string
-    hasPII: boolean
-    sanitized: boolean
-  }
-}
+export default function AppTools() {
+  const supabase = sbBrowser();
 
-export default function Home() {
-  const supabase = sbBrowser()
-  const [taxPrompt, setTaxPrompt] = useState('')
-  const [entityPrompt, setEntityPrompt] = useState('')
-  const [feeFile, setFeeFile] = useState<File | null>(null)
-  
-  const [taxResponse, setTaxResponse] = useState<AIResponse | null>(null)
-  const [entityResponse, setEntityResponse] = useState<AIResponse | null>(null)
-  const [feeResponse, setFeeResponse] = useState<AIResponse | null>(null)
-  
-  const [taxLoading, setTaxLoading] = useState(false)
-  const [entityLoading, setEntityLoading] = useState(false)
-  const [feeLoading, setFeeLoading] = useState(false)
+  const [taxPdf, setTaxPdf] = useState<File | null>(null);
+  const [entityForm, setEntityForm] = useState({ w2: '', re_units: '', side_income: '' });
+  const [holdingsCsv, setHoldingsCsv] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string>("");
 
-  // Waitlist state
-  const [email, setEmail] = useState('')
-  const [waitlistLoading, setWaitlistLoading] = useState(false)
-  const [waitlistSuccess, setWaitlistSuccess] = useState(false)
-  const [waitlistError, setWaitlistError] = useState('')
-
-  async function authHeader(): Promise<Record<string, string>> {
-    const { data } = await supabase.auth.getSession()
-    const token = data.session?.access_token
-    return token ? { 'x-supabase-auth': token } : {}
+  async function authHeader() {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    return token ? { 'x-supabase-auth': token } : {};
   }
 
-  const callAPI = async (endpoint: string, prompt: string, setResponse: (r: AIResponse | null) => void, setLoading: (l: boolean) => void) => {
-    if (!prompt.trim()) return
-    
-    setLoading(true)
-    setResponse(null)
-    
-    try {
-      const headers = { 
-        'Content-Type': 'application/json',
-        ...(await authHeader())
-      }
-      
-      const response = await fetch(`/api/${endpoint}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ prompt })
-      })
-      
-      const data = await response.json()
-      setResponse(data)
-    } catch (error) {
-      setResponse({ response: 'Error: Unable to process request' })
-    } finally {
-      setLoading(false)
-    }
+  async function runTaxScan() {
+    if (!taxPdf) return;
+    setBusy(true); setMsg('');
+    const fd = new FormData(); fd.append('file', taxPdf);
+    const headers = await authHeader();
+    const res = await fetch('/api/tax-scan', { method: 'POST', body: fd, headers: headers as any });
+    const out = await res.json(); setMsg(out.message || JSON.stringify(out));
+    setBusy(false);
   }
 
-  const callFileAPI = async (endpoint: string, file: File, setResponse: (r: AIResponse | null) => void, setLoading: (l: boolean) => void) => {
-    if (!file) return
-    
-    setLoading(true)
-    setResponse(null)
-    
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      
-      const headers = await authHeader()
-      
-      const response = await fetch(`/api/${endpoint}`, {
-        method: 'POST',
-        headers,
-        body: formData
-      })
-      
-      const data = await response.json()
-      setResponse({ response: data.message || JSON.stringify(data) })
-    } catch (error) {
-      setResponse({ response: 'Error: Unable to process file' })
-    } finally {
-      setLoading(false)
-    }
+  async function runEntityOpt() {
+    setBusy(true); setMsg('');
+    const headers = { 'Content-Type':'application/json', ...(await authHeader()) as any };
+    const res = await fetch('/api/entity-opt', { method: 'POST', headers, body: JSON.stringify(entityForm) });
+    const out = await res.json(); setMsg(out.message || JSON.stringify(out));
+    setBusy(false);
   }
 
-  const joinWaitlist = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email.trim()) return
-
-    setWaitlistLoading(true)
-    setWaitlistError('')
-    setWaitlistSuccess(false)
-
-    try {
-      const response = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        setWaitlistSuccess(true)
-        setEmail('')
-      } else {
-        setWaitlistError(data.error || 'Failed to join waitlist')
-      }
-    } catch (error) {
-      setWaitlistError('Network error. Please try again.')
-    } finally {
-      setWaitlistLoading(false)
-    }
+  async function runFeeCheck() {
+    if (!holdingsCsv) return;
+    setBusy(true); setMsg('');
+    const fd = new FormData(); fd.append('file', holdingsCsv);
+    const headers = await authHeader();
+    const res = await fetch('/api/fee-check', { method: 'POST', body: fd, headers: headers as any });
+    const out = await res.json(); setMsg(out.message || JSON.stringify(out));
+    setBusy(false);
   }
 
   return (
-    <div className="bg-gradient-to-br from-emerald-50 via-white to-emerald-50 min-h-screen -m-6">
-      <div className="p-6">
+    <main className="space-y-10 p-6">
+      <h1 className="text-3xl font-semibold">MoneyXprt — Beta Tools</h1>
 
-      {/* Hero */}
-      <section className="pt-8 pb-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <Badge className="mb-3 bg-emerald-100 text-emerald-800">
-            AI-Powered Financial Intelligence
-          </Badge>
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">
-            Your AI Financial <span className="text-emerald-600">Co-Pilot</span>
-          </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-4">
-            Test our specialized AI tools for tax optimization, entity structuring, and fee analysis
-          </p>
-          <div className="mb-6">
-            <a href="/reports" className="underline text-emerald-800 hover:text-emerald-900">
-              View Reports
-            </a>
-          </div>
-          
-          {/* Waitlist Signup */}
-          <div className="max-w-md mx-auto">
-            <form onSubmit={joinWaitlist} className="flex gap-2">
-              <input
-                type="email"
-                placeholder="Enter your email for early access"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                disabled={waitlistLoading}
-              />
-              <Button 
-                type="submit" 
-                disabled={waitlistLoading || !email.trim()}
-                className="bg-emerald-600 hover:bg-emerald-700"
-              >
-                {waitlistLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  'Join Waitlist'
-                )}
-              </Button>
-            </form>
-            {waitlistSuccess && (
-              <p className="mt-2 text-sm text-emerald-600">
-                Thanks for joining! We'll be in touch soon.
-              </p>
-            )}
-            {waitlistError && (
-              <p className="mt-2 text-sm text-red-600">
-                {waitlistError}
-              </p>
-            )}
-          </div>
-        </div>
+      <section className="bg-white shadow p-4 rounded-xl">
+        <h2 className="text-xl font-semibold">1) Tax Savings Scan (PDF)</h2>
+        <input type="file" accept="application/pdf" onChange={e => setTaxPdf(e.target.files?.[0] ?? null)} />
+        <button className="mt-3 rounded px-4 py-2 bg-black text-white" onClick={runTaxScan} disabled={busy || !taxPdf}>
+          Run Scan
+        </button>
       </section>
 
-      {/* AI Tools Grid */}
-      <section className="py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-3 gap-6">
-            
-            {/* Tax Scanner */}
-            <Card className="border-emerald-200">
-              <CardHeader>
-                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center mb-2">
-                  <TrendingUp className="w-5 h-5 text-emerald-600" />
-                </div>
-                <CardTitle className="text-emerald-900">Tax Scanner</CardTitle>
-                <CardDescription>
-                  AI-powered tax optimization analysis for high-income strategies
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Textarea
-                  placeholder="Ask about tax strategies for your income level..."
-                  value={taxPrompt}
-                  onChange={(e) => setTaxPrompt(e.target.value)}
-                  className="min-h-[100px]"
-                />
-                <Button 
-                  onClick={() => callAPI('tax-scan', taxPrompt, setTaxResponse, setTaxLoading)}
-                  disabled={taxLoading || !taxPrompt.trim()}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700"
-                >
-                  {taxLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Analyzing...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      Scan Tax Strategy
-                    </>
-                  )}
-                </Button>
-                {taxResponse && (
-                  <div className="mt-4 p-4 bg-emerald-50 rounded-lg">
-                    <div className="text-sm text-gray-700 whitespace-pre-wrap">
-                      {taxResponse.response}
-                    </div>
-                    {taxResponse.metadata && (
-                      <div className="mt-3 flex gap-2">
-                        {taxResponse.metadata.sanitized && (
-                          <Badge variant="secondary" className="text-xs">PII Protected</Badge>
-                        )}
-                        <Badge variant="outline" className="text-xs">
-                          ID: {taxResponse.metadata.requestHash.substring(0, 8)}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Entity Optimizer */}
-            <Card className="border-emerald-200">
-              <CardHeader>
-                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center mb-2">
-                  <Shield className="w-5 h-5 text-emerald-600" />
-                </div>
-                <CardTitle className="text-emerald-900">Entity Optimizer</CardTitle>
-                <CardDescription>
-                  Business structure recommendations for tax efficiency and protection
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Textarea
-                  placeholder="Ask about LLC, S-Corp, or other entity structures..."
-                  value={entityPrompt}
-                  onChange={(e) => setEntityPrompt(e.target.value)}
-                  className="min-h-[100px]"
-                />
-                <Button 
-                  onClick={() => callAPI('entity-opt', entityPrompt, setEntityResponse, setEntityLoading)}
-                  disabled={entityLoading || !entityPrompt.trim()}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700"
-                >
-                  {entityLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Analyzing...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      Optimize Entity
-                    </>
-                  )}
-                </Button>
-                {entityResponse && (
-                  <div className="mt-4 p-4 bg-emerald-50 rounded-lg">
-                    <div className="text-sm text-gray-700 whitespace-pre-wrap">
-                      {entityResponse.response}
-                    </div>
-                    {entityResponse.metadata && (
-                      <div className="mt-3 flex gap-2">
-                        {entityResponse.metadata.sanitized && (
-                          <Badge variant="secondary" className="text-xs">PII Protected</Badge>
-                        )}
-                        <Badge variant="outline" className="text-xs">
-                          ID: {entityResponse.metadata.requestHash.substring(0, 8)}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Fee Checker */}
-            <Card className="border-emerald-200">
-              <CardHeader>
-                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center mb-2">
-                  <DollarSign className="w-5 h-5 text-emerald-600" />
-                </div>
-                <CardTitle className="text-emerald-900">Fee Checker</CardTitle>
-                <CardDescription>
-                  Upload CSV portfolio holdings for automated fee analysis
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="border-2 border-dashed border-emerald-200 rounded-lg p-6 text-center">
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={(e) => setFeeFile(e.target.files?.[0] || null)}
-                    className="hidden"
-                    id="fee-file-input"
-                  />
-                  <label htmlFor="fee-file-input" className="cursor-pointer">
-                    <div className="space-y-2">
-                      <DollarSign className="w-8 h-8 text-emerald-400 mx-auto" />
-                      <p className="text-sm text-gray-600">
-                        {feeFile ? feeFile.name : 'Upload CSV with Ticker, Shares, Price, ExpenseRatio columns'}
-                      </p>
-                      <Button variant="outline" className="mt-2">
-                        Choose File
-                      </Button>
-                    </div>
-                  </label>
-                </div>
-                <Button 
-                  onClick={() => feeFile && callFileAPI('fee-check', feeFile, setFeeResponse, setFeeLoading)}
-                  disabled={feeLoading || !feeFile}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700"
-                >
-                  {feeLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Analyzing Portfolio...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      Analyze Fees
-                    </>
-                  )}
-                </Button>
-                {feeResponse && (
-                  <div className="mt-4 p-4 bg-emerald-50 rounded-lg">
-                    <div className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
-                      {feeResponse.response}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+      <section className="bg-white shadow p-4 rounded-xl">
+        <h2 className="text-xl font-semibold">2) Entity Optimizer</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <input className="border p-2 rounded" placeholder="W-2 income ($)" value={entityForm.w2}
+            onChange={e => setEntityForm(s => ({...s, w2: e.target.value}))}/>
+          <input className="border p-2 rounded" placeholder="Rental units (#)" value={entityForm.re_units}
+            onChange={e => setEntityForm(s => ({...s, re_units: e.target.value}))}/>
+          <input className="border p-2 rounded" placeholder="Side income ($)" value={entityForm.side_income}
+            onChange={e => setEntityForm(s => ({...s, side_income: e.target.value}))}/>
         </div>
+        <button className="mt-3 rounded px-4 py-2 bg-black text-white" onClick={runEntityOpt} disabled={busy}>
+          Recommend Entity Setup
+        </button>
       </section>
 
-      {/* How It Works */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              How MoneyXprt Works
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Three simple steps to optimize your financial future
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-20 h-20 bg-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold" data-testid="step-1-circle">
-                1
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Connect Your Accounts</h3>
-              <p className="text-gray-600">
-                Securely link your bank accounts, investments, and financial data through our encrypted platform.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-20 h-20 bg-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold">
-                2
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">AI Analysis</h3>
-              <p className="text-gray-600">
-                Our AI analyzes your financial patterns, goals, and market conditions to create personalized recommendations.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-20 h-20 bg-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold">
-                3
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Optimize & Execute</h3>
-              <p className="text-gray-600">
-                Receive actionable insights and automated optimizations to maximize your wealth growth and tax efficiency.
-              </p>
-            </div>
-          </div>
-        </div>
+      <section className="bg-white shadow p-4 rounded-xl">
+        <h2 className="text-xl font-semibold">3) Investment Fee Check (CSV)</h2>
+        <p className="text-sm text-neutral-600">CSV columns: Ticker, Shares, Price, ExpenseRatio (optional)</p>
+        <input type="file" accept=".csv,text/csv" onChange={e => setHoldingsCsv(e.target.files?.[0] ?? null)} />
+        <button className="mt-3 rounded px-4 py-2 bg-black text-white" onClick={runFeeCheck} disabled={busy || !holdingsCsv}>
+          Analyze Fees
+        </button>
       </section>
 
-      {/* Footer */}
-      <footer className="mt-12 py-8 bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
-              <DollarSign className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold">MoneyXprt</span>
-          </div>
-          <p className="text-sm text-gray-400">
-            © 2024 MoneyXprt. Financial AI for high-income professionals.
-          </p>
-        </div>
-      </footer>
-      </div>
-    </div>
-  )
+      {!!msg && (
+        <section className="bg-white shadow p-4 rounded-xl">
+          <h2 className="text-xl font-semibold">Result</h2>
+          <pre className="whitespace-pre-wrap text-sm">{msg}</pre>
+        </section>
+      )}
+    </main>
+  );
 }
