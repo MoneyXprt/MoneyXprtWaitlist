@@ -15,6 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <h1 className="text-xl font-semibold">MoneyXprt</h1>
             <nav className="flex gap-4">
               <a href="/" className="text-sm text-neutral-600 hover:text-neutral-900">Home</a>
+              <a href="/app" className="text-sm text-neutral-600 hover:text-neutral-900">Beta</a>
               <a href="/reports" className="text-sm text-neutral-600 hover:text-neutral-900">Reports</a>
             </nav>
           </div>
