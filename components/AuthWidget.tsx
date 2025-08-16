@@ -27,24 +27,32 @@ export default function AuthWidget() {
   }
 
   const handleEmail = async () => {
-    setMsg('');
-    const redirectTo = await emailRedirect();
+    setMsg('Sending...');
+    
+    try {
+      const redirectTo = await emailRedirect();
 
-    // First try signInWithOtp (works for both new and existing users)
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { 
-        emailRedirectTo: redirectTo,
-        shouldCreateUser: true  // This allows creating new users with magic links
+      console.log('Attempting Supabase auth with:', { email, redirectTo });
+      
+      // Use signInWithOtp for magic link authentication
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: { 
+          emailRedirectTo: redirectTo,
+          shouldCreateUser: true
+        }
+      });
+
+      if (error) {
+        console.error('Supabase auth error:', error);
+        setMsg(`Error: ${error.message || 'Connection failed'}`);
+      } else {
+        setMsg('Check your email for the login link.');
+        setEmail('');
       }
-    });
-
-    if (error) {
-      setMsg(`Authentication failed: ${error.message}`);
-      console.error('Supabase auth error:', error);
-    } else {
-      setMsg('Check your email for the login link.');
-      setEmail(''); // Clear the input on success
+    } catch (err) {
+      console.error('Network error:', err);
+      setMsg('Connection failed. Please check your internet and try again.');
     }
   };
 
