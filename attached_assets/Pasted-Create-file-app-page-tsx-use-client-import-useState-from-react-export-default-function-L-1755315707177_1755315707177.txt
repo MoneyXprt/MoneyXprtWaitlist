@@ -1,0 +1,98 @@
+Create file: app/page.tsx
+'use client';
+import { useState } from 'react';
+
+export default function Landing() {
+  const [email, setEmail] = useState('');
+  const [msg, setMsg] = useState('');
+
+  const join = async () => {
+    setMsg('');
+    const res = await fetch('/api/waitlist', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ email: email.trim() })
+    });
+    const j = await res.json();
+    setMsg(j.message || j.error || '');
+    if (j.ok) setEmail('');
+  };
+
+  return (
+    <main className="min-h-[80vh] flex flex-col">
+      {/* HERO */}
+      <section className="pt-16 pb-8">
+        <div className="max-w-5xl mx-auto px-6 grid md:grid-cols-2 gap-8 items-center">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold leading-tight">
+              Fire your financial advisor. <span className="bg-yellow-200 px-2 rounded">Keep the advice.</span>
+            </h1>
+            <p className="mt-4 text-lg text-neutral-700">
+              MoneyXprt is your AI-powered planner for tax savings, entity optimization, and fee-free investing — with
+              tamper-evident reports you can verify.
+            </p>
+            <div className="mt-6 flex gap-2">
+              <input
+                className="border rounded-xl px-4 py-3 flex-1"
+                placeholder="you@work.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+              />
+              <button onClick={join} className="rounded-xl px-5 py-3 bg-black text-white">
+                Join waitlist
+              </button>
+            </div>
+            {msg && <p className="mt-2 text-sm text-neutral-600">{msg}</p>}
+            <div className="mt-4 text-sm">
+              <a href="/app" className="underline">Try the beta</a>
+            </div>
+          </div>
+
+          {/* Right-side highlight card */}
+          <div className="bg-white shadow-lg rounded-2xl p-6">
+            <h3 className="font-semibold text-lg">What you can do today</h3>
+            <ul className="mt-3 space-y-2 text-sm text-neutral-700 list-disc list-inside">
+              <li>Upload last year’s return → <em>AI Tax Savings Scan</em></li>
+              <li>Enter W-2 + real estate → <em>Entity Optimizer</em></li>
+              <li>Upload holdings CSV → <em>Investment Fee Check</em></li>
+              <li>Every report gets a verifiable SHA-256 hash</li>
+            </ul>
+            <a href="/app" className="inline-block mt-4 rounded-xl px-4 py-2 bg-black text-white">
+              Open Beta Tools
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* VALUE PROPS */}
+      <section className="py-10 bg-white">
+        <div className="max-w-5xl mx-auto px-6 grid md:grid-cols-3 gap-6">
+          <div className="p-5 rounded-2xl border">
+            <h4 className="font-semibold">Proactive, not reactive</h4>
+            <p className="mt-2 text-sm text-neutral-700">Quarterly AI playbooks flag savings before tax season.</p>
+          </div>
+          <div className="p-5 rounded-2xl border">
+            <h4 className="font-semibold">Aligned incentives</h4>
+            <p className="mt-2 text-sm text-neutral-700">Flat subscription — no AUM fees, no commissions.</p>
+          </div>
+          <div className="p-5 rounded-2xl border">
+            <h4 className="font-semibold">Verifiable integrity</h4>
+            <p className="mt-2 text-sm text-neutral-700">Every plan is hashed; on-chain anchoring coming soon.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="mt-auto py-10">
+        <div className="max-w-5xl mx-auto px-6 flex items-center justify-between text-sm text-neutral-600">
+          <span>© {new Date().getFullYear()} MoneyXprt</span>
+          <nav className="flex items-center gap-4">
+            <a href="/app" className="underline">Beta</a>
+            <a href="/reports" className="underline">Reports</a>
+            <a href="/privacy" className="underline">Privacy</a>
+          </nav>
+        </div>
+      </footer>
+    </main>
+  );
+}
