@@ -1,7 +1,5 @@
 import './globals.css';
-import AuthWidget from '@/components/AuthWidget';
-import SupabaseTest from '@/components/SupabaseTest';
-import FallbackAuth from '@/components/FallbackAuth';
+import SimpleAuthWidget from '../components/SimpleAuthWidget';
 
 export const metadata = { title: 'MoneyXprt Beta' };
 
@@ -21,15 +19,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a href="/reports" className="text-sm text-neutral-600 hover:text-neutral-900">Reports</a>
             </nav>
           </div>
-          <AuthWidget />
+          <SimpleAuthWidget />
         </div>
-        <div className="max-w-5xl mx-auto p-6">
-          <div className="space-y-4 mb-6">
-            <SupabaseTest />
-            <FallbackAuth />
-          </div>
-          {children}
-        </div>
+        <div className="max-w-5xl mx-auto p-6">{children}</div>
       </body>
     </html>
   );
