@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { sbBrowser } from '../lib/supabase';
+import { sbBrowser } from '@/lib/supabase';
 
 export default function AuthWidget() {
   const supabase = sbBrowser();
@@ -30,17 +30,35 @@ export default function AuthWidget() {
     setMsg('');
     const redirectTo = await emailRedirect();
 
-    // Use signInWithOtp for magic link authentication
-    const { error } = await supabase.auth.signInWithOtp({
+    // 1) Try signUp (will create the user + send confirmation/magic link)
+    const { error: signUpErr } = await supabase.auth.signUp({
       email,
       options: { emailRedirectTo: redirectTo }
     });
 
-    if (error) {
-      setMsg(`Error: ${error.message}`);
-    } else {
+    if (!signUpErr) {
       setMsg('Check your email for the login link.');
+      return;
     }
+
+    // If signups are disabled, try signInWithOtp (for existing users)
+    if (signUpErr?.message?.toLowerCase().includes('signups not allowed') ||
+        signUpErr?.message?.toLowerCase().includes('signup disabled') ||
+        signUpErr?.status === 400) {
+      const { error: otpErr } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: redirectTo }
+      });
+      if (!otpErr) {
+        setMsg('We sent you a magic login link.');
+        return;
+      }
+      setMsg(`Sign-in error: ${otpErr.message}`);
+      return;
+    }
+
+    // Otherwise surface the real error
+    setMsg(`Sign-up error: ${signUpErr.message}`);
   };
 
   const signOut = async () => {
