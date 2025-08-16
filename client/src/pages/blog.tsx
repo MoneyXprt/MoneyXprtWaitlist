@@ -88,7 +88,7 @@ export default function BlogPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
               <img 
-                src="/attached_assets/Logo Money Expert - Elegant Emblem Design_1754451808238.png" 
+                src="/attached_assets/Logo Money Expert - Elegant Emblem Design_1755314325744.png" 
                 alt="MoneyXprt Logo" 
                 className="h-8 w-8"
               />
@@ -274,7 +274,7 @@ export default function BlogPage() {
             <div>
               <div className="flex items-center space-x-3 mb-4">
                 <img 
-                  src="/attached_assets/Logo Money Expert - Elegant Emblem Design_1754451808238.png" 
+                  src="/attached_assets/Logo Money Expert - Elegant Emblem Design_1755314325744.png" 
                   alt="MoneyXprt Logo" 
                   className="h-8 w-8"
                 />
