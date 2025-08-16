@@ -11,6 +11,7 @@ import DashboardPage from "@/pages/dashboard";
 import AboutPage from "@/pages/about";
 import BlogPage from "@/pages/blog";
 import CareersPage from "@/pages/careers";
+import AppPage from "@/pages/app";
 
 function Router() {
   return (
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/signup" component={SignupPage} />
       <Route path="/login" component={LoginPage} />
       <Route path="/dashboard" component={DashboardPage} />
+      <Route path="/app" component={AppPage} />
       <Route path="/about" component={AboutPage} />
       <Route path="/blog" component={BlogPage} />
       <Route path="/careers" component={CareersPage} />
