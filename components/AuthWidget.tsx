@@ -30,16 +30,21 @@ export default function AuthWidget() {
     setMsg('');
     const redirectTo = await emailRedirect();
 
-    // Use signInWithOtp for magic link authentication
+    // First try signInWithOtp (works for both new and existing users)
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: redirectTo }
+      options: { 
+        emailRedirectTo: redirectTo,
+        shouldCreateUser: true  // This allows creating new users with magic links
+      }
     });
 
     if (error) {
-      setMsg(`Error: ${error.message}`);
+      setMsg(`Authentication failed: ${error.message}`);
+      console.error('Supabase auth error:', error);
     } else {
       setMsg('Check your email for the login link.');
+      setEmail(''); // Clear the input on success
     }
   };
 
@@ -61,10 +66,16 @@ export default function AuthWidget() {
           <input
             className="border rounded px-2 py-1"
             placeholder="you@work.com"
+            type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleEmail()}
           />
-          <button onClick={handleEmail} className="rounded-lg px-3 py-1 bg-black text-white">
+          <button 
+            onClick={handleEmail} 
+            disabled={!email.trim() || !email.includes('@')}
+            className="rounded-lg px-3 py-1 bg-black text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
             Email me a link
           </button>
           {msg && <span className="text-sm text-red-600">{msg}</span>}
