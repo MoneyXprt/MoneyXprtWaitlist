@@ -4,29 +4,54 @@ import { useEffect, useState } from 'react';
 import { sbBrowser } from '../lib/supabase';
 
 export default function AuthWidget() {
-  const supabase = sbBrowser();
+  const [supabase, setSupabase] = useState<any>(null);
+  const [initError, setInitError] = useState('');
   const [email, setEmail] = useState('');
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
 
   useEffect(() => {
+    try {
+      const client = sbBrowser();
+      setSupabase(client);
+    } catch (err: any) {
+      setInitError(err.message);
+      console.error('Supabase initialization failed:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) return;
+    
     const getSession = async () => {
-      const { data } = await supabase.auth.getUser();
-      setSessionEmail(data.user?.email ?? null);
+      try {
+        const { data } = await supabase.auth.getUser();
+        setSessionEmail(data.user?.email ?? null);
+      } catch (err) {
+        console.error('Session check failed:', err);
+      }
     };
+    
     getSession();
+    
     const { data: sub } = supabase.auth.onAuthStateChange((evt) => {
       if (evt === 'SIGNED_IN') window.location.assign('/app');
       getSession();
     });
+    
     return () => { sub.subscription.unsubscribe(); };
-  }, []);
+  }, [supabase]);
 
   async function emailRedirect() {
     return `${window.location.origin}/`; // or '/app'
   }
 
   const handleEmail = async () => {
+    if (!supabase) {
+      setMsg('Authentication system not ready. Please try the waitlist instead.');
+      return;
+    }
+    
     setMsg('Sending...');
     
     try {
@@ -34,7 +59,6 @@ export default function AuthWidget() {
 
       console.log('Attempting Supabase auth with:', { email, redirectTo });
       
-      // Use signInWithOtp for magic link authentication
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: { 
@@ -52,7 +76,7 @@ export default function AuthWidget() {
       }
     } catch (err) {
       console.error('Network error:', err);
-      setMsg('Connection failed. Please check your internet and try again.');
+      setMsg('Connection failed. Please use the waitlist option below.');
     }
   };
 
@@ -60,6 +84,14 @@ export default function AuthWidget() {
     await supabase.auth.signOut();
     setSessionEmail(null);
   };
+
+  if (initError) {
+    return (
+      <div className="text-sm text-red-600">
+        Auth system error. Please use waitlist below.
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-3">
@@ -81,7 +113,7 @@ export default function AuthWidget() {
           />
           <button 
             onClick={handleEmail} 
-            disabled={!email.trim() || !email.includes('@')}
+            disabled={!email.trim() || !email.includes('@') || !supabase}
             className="rounded-lg px-3 py-1 bg-black text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             Email me a link
