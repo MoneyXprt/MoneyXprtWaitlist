@@ -145,34 +145,12 @@ export default function SimpleAuthWidget() {
 
   return (
     <div className="flex items-center gap-2">
-      <input
-        className="border rounded px-2 py-1"
-        placeholder="Email"
-        type="email"
-        value={email}
-        onChange={e => setEmail(e.target.value)}
-      />
-      <input
-        className="border rounded px-2 py-1"
-        placeholder="Password"
-        type="password"
-        value={password}
-        onChange={e => setPassword(e.target.value)}
-        onKeyDown={e => e.key === 'Enter' && handleSignIn()}
-      />
-      <button 
-        onClick={handleSignIn}
-        className="rounded px-3 py-1 bg-black text-white"
-      >
+      <a href="/login" className="rounded px-3 py-1 bg-black text-white text-sm">
         Sign In
-      </button>
-      <button 
-        onClick={() => setShowSignup(true)}
-        className="rounded px-3 py-1 bg-blue-600 text-white"
-      >
+      </a>
+      <a href="/signup" className="rounded px-3 py-1 bg-blue-600 text-white text-sm">
         Sign Up
-      </button>
-      {msg && <span className="text-sm text-red-600">{msg}</span>}
+      </a>
     </div>
   );
 }

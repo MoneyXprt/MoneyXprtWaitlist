@@ -4,7 +4,7 @@
 
 MoneyXprt is a modern, production-ready Next.js web application serving as an AI-powered financial co-pilot for high-income earners. The application features a complete waitlist system, user authentication, an AI chat interface powered by OpenAI GPT-4, and a secure dashboard for personalized financial advice. Built with Next.js 14 App Router, Supabase for authentication and database, and styled with Tailwind CSS and shadcn/ui components.
 
-**Recent Update**: Complete authentication system with Supabase magic links and JWT token validation. All three AI endpoints (tax-scan, entity-opt, fee-check) now require real user authentication and log conversations with actual user IDs. Enhanced fee-check endpoint with CSV file upload support for portfolio analysis. Application features end-to-end security from frontend AuthWidget to backend database logging with enterprise-grade privacy protection. Added comprehensive page structure with About, Blog, and Careers pages. Created new streamlined landing page with focused messaging and direct links to beta tools.
+**Recent Update**: Implemented proper Supabase authentication with dedicated signup and login pages using password-based authentication. Fixed environment variable configuration issues that were causing "load failed" errors. Authentication system now includes full form-based signup (/signup), login (/login), session management, and email confirmation workflow. Users can create accounts with full name, email, and password, receive confirmation emails, and access AI financial tools with persistent sessions. Streamlined header navigation and AuthWidget for better user experience.
 
 ## User Preferences
 

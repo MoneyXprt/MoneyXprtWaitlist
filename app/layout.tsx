@@ -17,6 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a href="/" className="text-sm text-neutral-600 hover:text-neutral-900">Home</a>
               <a href="/app" className="text-sm text-neutral-600 hover:text-neutral-900">Beta</a>
               <a href="/reports" className="text-sm text-neutral-600 hover:text-neutral-900">Reports</a>
+              <a href="/signup" className="text-sm text-neutral-600 hover:text-neutral-900">Sign Up</a>
             </nav>
           </div>
           <SimpleAuthWidget />
