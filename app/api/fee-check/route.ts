@@ -1,78 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { sbAdmin } from '@/lib/supabase';
+import { NextResponse } from 'next/server';
 
-export const runtime = 'nodejs';
-
-function parseCsv(text: string) {
-  const [header, ...rows] = text.trim().split(/\r?\n/);
-  const cols = header.split(',').map(s => s.trim());
-  return rows.map(r => {
-    const vals = r.split(',').map(s => s.trim());
-    const obj: any = {};
-    cols.forEach((c, i) => obj[c] = vals[i]);
-    return obj;
-  });
-}
-
-export async function POST(req: NextRequest) {
-  const token = req.headers.get('x-supabase-auth');
-  if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-
-  const admin = sbAdmin();
-  const { data: userData, error: uerr } = await admin.auth.getUser(token);
-  if (uerr || !userData?.user) return NextResponse.json({ error: 'Invalid auth' }, { status: 401 });
-
-  const form = await req.formData();
-  const file = form.get('file') as File | null;
-  if (!file) return NextResponse.json({ error: 'No file' }, { status: 400 });
-
-  const text = await file.text();
-  const rows = parseCsv(text);
-
-  let total = 0, annualFees = 0;
-  const details = rows.map(r => {
-    const shares = Number(r.Shares || 0);
-    const price = Number(r.Price || 0);
-    const er = r.ExpenseRatio ? Number(r.ExpenseRatio) : NaN;
-    const value = shares * price;
-    total += value;
-    const fee = isNaN(er) ? null : value * er;
-    if (fee !== null) annualFees += fee;
-    return { ticker: r.Ticker, value, er: isNaN(er) ? '[Unverified]' : er, estAnnualFee: fee ?? '[Unverified]' };
-  });
-
-  await admin.from('reports').insert({
-    user_id: userData.user.id,
-    kind: 'fee_check',
-    input_summary: { count: rows.length },
-    output_summary: { totalValue: total, annualFees },
-    raw_output: JSON.stringify(details, null, 2)
-  });
-
-  const message = [
-    `Portfolio Value: $${total.toFixed(2)}`,
-    `Est. Annual Fee Drag (if ER provided): $${annualFees.toFixed(2)}`,
-    ``,
-    `Line Items:`,
-    JSON.stringify(details, null, 2)
-  ].join('\n');
-
-  return NextResponse.json({ ok: true, message });
-}
-
-    if (result.error) {
-      return NextResponse.json({ error: result.error }, { status: 500 })
+export async function POST(req: Request) {
+  try {
+    const form = await req.formData();
+    const file = form.get('file');
+    if (!(file instanceof Blob)) {
+      return NextResponse.json({ error: 'CSV file is required (field name: file)' }, { status: 400 });
     }
-
-    return NextResponse.json({ 
-      response: result.response,
-      metadata: {
-        requestHash: result.requestHash,
-        hasPII: result.hasPII,
-        sanitized: result.sanitized
-      }
-    })
+    // TODO: parse CSV + fee math
+    const name = (file as any)?.name ?? 'upload.csv';
+    return NextResponse.json({ ok: true, message: 'Fee check stub ran', filename: name });
   } catch (err: any) {
-    return NextResponse.json({ error: 'Unexpected error' }, { status: 500 })
+    return NextResponse.json({ error: err?.message || 'Unexpected error' }, { status: 500 });
   }
 }
