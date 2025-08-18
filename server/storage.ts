@@ -74,17 +74,26 @@ export class DatabaseStorage implements IStorage {
     return rows[0];
   }
 
-  async upsertProfile(profile: InsertProfile): Promise<Profile> {
-  const newProfile: Profile = {
-    id: profile.id,                                   // required
-    fullName: profile.fullName ?? "",                 // safe default
-    incomeRange: profile.incomeRange ?? "100k-250k",  // default to lowest band
-    entityType: profile.entityType ?? "individual",   // sensible default
-    createdAt: new Date(),
-  };
+ async upsertProfile(profile: InsertProfile): Promise<Profile> {
+  const rows = await this.db
+    .insert(profiles)
+    .values({
+      id: profile.id,
+      fullName: profile.fullName ?? "",
+      incomeRange: profile.incomeRange ?? "100k-250k",
+      entityType: profile.entityType ?? "individual",
+    })
+    .onConflictDoUpdate({
+      target: profiles.id,
+      set: {
+        fullName: profile.fullName ?? "",
+        incomeRange: profile.incomeRange ?? "100k-250k",
+        entityType: profile.entityType ?? "individual",
+      },
+    })
+    .returning();
 
-  this.profilesMap.set(newProfile.id, newProfile);
-  return newProfile;
+  return rows[0]!;
 }
 
 
