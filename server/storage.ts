@@ -3,7 +3,6 @@ import { neon } from "@neondatabase/serverless";
 import { eq } from "drizzle-orm";
 import {
   type Waitlist,
-  // InsertWaitlist (unused on purpose to avoid optional inference issues)
   type Conversation,
   type InsertConversation,
   type Profile,
@@ -124,11 +123,16 @@ export class MemStorage implements IStorage {
 
   async createConversation(conversation: InsertConversation): Promise<Conversation> {
     const id = randomUUID();
+
     const newConversation: Conversation = {
-      ...conversation,
       id,
+      userId: conversation.userId,                     // required
+      prompt: conversation.prompt,                     // required
+      response: conversation.response ?? "",           // default if omitted
+      meta: (conversation as any).meta ?? {},          // default if omitted
       createdAt: new Date(),
     };
+
     this.conversationsList.push(newConversation);
     return newConversation;
   }
@@ -153,4 +157,3 @@ export class MemStorage implements IStorage {
 
 // Use database storage if DATABASE_URL is provided, otherwise fall back to memory storage
 export const storage = process.env.DATABASE_URL ? new DatabaseStorage() : new MemStorage();
-
