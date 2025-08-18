@@ -1,61 +1,54 @@
-'use client'
+'use client';
 
-export const dynamic = 'force-dynamic'
-export const revalidate = false
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;              // must be a number or false
+export const fetchCache = 'force-no-store';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import Link from 'next/link'
-import { supabase } from '@/lib/supabaseClient'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { supabase } from '@/lib/supabaseClient'; // direct client import (no Provider needed)
 
 export default function AuthPage() {
-  const [isSignUp, setIsSignUp] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
-  const router = useRouter()
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const router = useRouter();
 
   const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setMessage('')
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setMessage('');
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-        })
-        if (error) throw error
-        setMessage('Check your email for the confirmation link!')
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        setMessage('Check your email for the confirmation link!');
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
-        if (error) throw error
-        router.push('/dashboard')
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        router.push('/dashboard');
       }
     } catch (err: any) {
-      setError(err?.message ?? 'Something went wrong')
+      setError(err?.message ?? 'Something went wrong');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <Link href="/" className="text-2xl font-bold text-primary">
-            MoneyXprt
-          </Link>
+          <Link href="/" className="text-2xl font-bold text-primary">MoneyXprt</Link>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
             {isSignUp ? 'Create your account' : 'Sign in to your account'}
           </h2>
@@ -72,30 +65,26 @@ export default function AuthPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleAuth} className="space-y-4">
-              <div>
-                <Input
-                  type="email"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
+              <Input
+                type="email"
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
 
               {error && <div className="text-red-600 text-sm">{error}</div>}
               {message && <div className="text-green-600 text-sm">{message}</div>}
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
+                {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
               </Button>
             </form>
 
@@ -112,5 +101,5 @@ export default function AuthPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
