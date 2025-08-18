@@ -3,7 +3,7 @@ import { neon } from "@neondatabase/serverless";
 import { eq } from "drizzle-orm";
 import {
   type Waitlist,
-  type InsertWaitlist,
+  // InsertWaitlist (unused on purpose to avoid optional inference issues)
   type Conversation,
   type InsertConversation,
   type Profile,
@@ -11,13 +11,13 @@ import {
   waitlist,
   conversations,
   profiles,
-} from "@/shared/schema"; // switched to "@/..."
+} from "@/shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
   // Waitlist operations
   getWaitlistEntry(address: string): Promise<Waitlist | undefined>;
-  createWaitlistEntry(entry: InsertWaitlist): Promise<Waitlist>;
+  createWaitlistEntry(input: { address: string }): Promise<Waitlist>;
 
   // Conversation operations
   createConversation(conversation: InsertConversation): Promise<Conversation>;
@@ -39,44 +39,44 @@ export class DatabaseStorage implements IStorage {
     this.db = drizzle(sql);
   }
 
-  async createWaitlistEntry(entry: InsertWaitlist): Promise<Waitlist> {
-    const result = await this.db.insert(waitlist).values(entry).returning();
-    return result[0];
+  async createWaitlistEntry({ address }: { address: string }): Promise<Waitlist> {
+    const rows = await this.db.insert(waitlist).values({ address }).returning();
+    return rows[0]!;
   }
 
   async getWaitlistEntry(address: string): Promise<Waitlist | undefined> {
-    const result = await this.db
+    const rows = await this.db
       .select()
       .from(waitlist)
       .where(eq(waitlist.address, address))
       .limit(1);
-    return result[0];
+    return rows[0];
   }
 
   async createConversation(conversation: InsertConversation): Promise<Conversation> {
-    const result = await this.db.insert(conversations).values(conversation).returning();
-    return result[0];
+    const rows = await this.db.insert(conversations).values(conversation).returning();
+    return rows[0]!;
   }
 
   async getUserConversations(userId: string): Promise<Conversation[]> {
-    const result = await this.db
+    const rows = await this.db
       .select()
       .from(conversations)
       .where(eq(conversations.userId, userId));
-    return result;
+    return rows;
   }
 
   async getProfile(userId: string): Promise<Profile | undefined> {
-    const result = await this.db
+    const rows = await this.db
       .select()
       .from(profiles)
       .where(eq(profiles.id, userId))
       .limit(1);
-    return result[0];
+    return rows[0];
   }
 
   async upsertProfile(profile: InsertProfile): Promise<Profile> {
-    const result = await this.db
+    const rows = await this.db
       .insert(profiles)
       .values(profile)
       .onConflictDoUpdate({
@@ -88,7 +88,7 @@ export class DatabaseStorage implements IStorage {
         },
       })
       .returning();
-    return result[0];
+    return rows[0]!;
   }
 }
 
@@ -103,20 +103,23 @@ export class MemStorage implements IStorage {
     this.profilesMap = new Map();
   }
 
-  async createWaitlistEntry(entry: InsertWaitlist): Promise<Waitlist> {
+  async createWaitlistEntry({ address }: { address: string }): Promise<Waitlist> {
     const id = randomUUID();
+    const normalized = address.trim().toLowerCase();
+
     const waitlistEntry: Waitlist = {
-      ...entry,
       id,
+      address: normalized,
       createdAt: new Date(),
     };
-    // key by normalized address
-    this.waitlistEntries.set(entry.address, waitlistEntry);
+
+    this.waitlistEntries.set(normalized, waitlistEntry);
     return waitlistEntry;
   }
 
   async getWaitlistEntry(address: string): Promise<Waitlist | undefined> {
-    return this.waitlistEntries.get(address);
+    const normalized = address.trim().toLowerCase();
+    return this.waitlistEntries.get(normalized);
   }
 
   async createConversation(conversation: InsertConversation): Promise<Conversation> {
@@ -131,7 +134,7 @@ export class MemStorage implements IStorage {
   }
 
   async getUserConversations(userId: string): Promise<Conversation[]> {
-    return this.conversationsList.filter((conv) => conv.userId === userId);
+    return this.conversationsList.filter((c) => c.userId === userId);
   }
 
   async getProfile(userId: string): Promise<Profile | undefined> {
@@ -150,3 +153,4 @@ export class MemStorage implements IStorage {
 
 // Use database storage if DATABASE_URL is provided, otherwise fall back to memory storage
 export const storage = process.env.DATABASE_URL ? new DatabaseStorage() : new MemStorage();
+
