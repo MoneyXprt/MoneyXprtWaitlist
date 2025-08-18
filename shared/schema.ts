@@ -67,17 +67,12 @@ export const insertWaitlistSchema = z.object({
   address: z.string().email("Please enter a valid email address"),
 });
 
-export const insertConversationSchema = createInsertSchema(conversations)
-  .omit({
-    id: true,
-    createdAt: true,
-  })
-  .extend({
-    userId: z.string().uuid().optional(),
-    prompt: z.string().min(1),
-    response: z.string().min(1),
-    meta: z.record(z.any()).optional(),
-  });
+export const insertConversationSchema = z.object({
+  userId: z.string().uuid().optional(),
+  prompt: z.string().min(1),
+  response: z.string().min(1),
+  meta: z.record(z.any()).optional(),
+});
 
 export const insertProfileSchema = createInsertSchema(profiles)
   .omit({
