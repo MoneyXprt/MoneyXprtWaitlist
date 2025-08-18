@@ -74,20 +74,16 @@ export const insertConversationSchema = z.object({
   meta: z.record(z.any()).optional(),
 });
 
-export const insertProfileSchema = createInsertSchema(profiles)
-  .omit({
-    createdAt: true,
-  })
-  .extend({
-    id: z.string().uuid(),
-    fullName: z.string().min(1, "Full name is required"),
-    incomeRange: z.enum(["100k-250k", "250k-500k", "500k-1m", "1m-plus"], {
-      required_error: "Please select an income range",
-    }),
-    entityType: z.enum(["individual", "sole-proprietor", "llc", "s-corp", "c-corp"], {
-      required_error: "Please select an entity type",
-    }),
-  });
+export const insertProfileSchema = z.object({
+  id: z.string().uuid(),
+  fullName: z.string().min(1, "Full name is required"),
+  incomeRange: z.enum(["100k-250k", "250k-500k", "500k-1m", "1m-plus"], {
+    required_error: "Please select an income range",
+  }),
+  entityType: z.enum(["individual", "sole-proprietor", "llc", "s-corp", "c-corp"], {
+    required_error: "Please select an entity type",
+  }),
+});
 
 export const insertUsageDailySchema = createInsertSchema(usageDaily).extend({
   userId: z.string().uuid(),
@@ -104,19 +100,14 @@ export const insertBillingSchema = createInsertSchema(billing).extend({
   stripeSubscriptionId: z.string().optional(),
 });
 
-export const insertReportSchema = createInsertSchema(reports)
-  .omit({
-    id: true,
-    createdAt: true,
-  })
-  .extend({
-    userId: z.string().uuid(),
-    kind: z.string().min(1),
-    sha256Hex: z.string().optional(),
-    inputSummary: z.record(z.any()).optional(),
-    outputSummary: z.record(z.any()).optional(),
-    rawOutput: z.string().optional(),
-  });
+export const insertReportSchema = z.object({
+  userId: z.string().uuid(),
+  kind: z.string().min(1),
+  sha256Hex: z.string().optional(),
+  inputSummary: z.record(z.any()).optional(),
+  outputSummary: z.record(z.any()).optional(),
+  rawOutput: z.string().optional(),
+});
 
 // Types
 export type InsertWaitlist = z.infer<typeof insertWaitlistSchema>;
