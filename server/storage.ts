@@ -75,21 +75,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertProfile(profile: InsertProfile): Promise<Profile> {
-    const rows = await this.db
-      .insert(profiles)
-      .values(profile)
-      .onConflictDoUpdate({
-        target: profiles.id,
-        set: {
-          fullName: profile.fullName,
-          incomeRange: profile.incomeRange,
-          entityType: profile.entityType,
-        },
-      })
-      .returning();
-    return rows[0]!;
-  }
+  const newProfile: Profile = {
+    id: profile.id,                                   // required
+    fullName: profile.fullName ?? "",                 // safe default
+    incomeRange: profile.incomeRange ?? "100k-250k",  // default to lowest band
+    entityType: profile.entityType ?? "individual",   // sensible default
+    createdAt: new Date(),
+  };
+
+  this.profilesMap.set(newProfile.id, newProfile);
+  return newProfile;
 }
+
 
 export class MemStorage implements IStorage {
   private waitlistEntries: Map<string, Waitlist>;
