@@ -1,5 +1,6 @@
 'use client'
-import { useState } from 'react'
+
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useSession } from '@/lib/useSession'
@@ -7,12 +8,25 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
+// Optional: ensure this page never gets prerendered in a way that interferes with client hooks
+export const dynamic = 'force-dynamic'
+
 export default function PricingPage() {
-  const { user, loading } = useSession()
+  const session = useSession()
   const router = useRouter()
+
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center p-8">Loading pricing…</div>}>
+      <PricingContent session={session} router={router} />
+    </Suspense>
+  )
+}
+
+function PricingContent({ session, router }: { session: ReturnType<typeof useSession>; router: ReturnType<typeof useRouter> }) {
+  const { user, loading } = session
   const searchParams = useSearchParams()
   const [checkoutLoading, setCheckoutLoading] = useState(false)
-  
+
   const canceled = searchParams.get('canceled') === '1'
 
   async function handleCheckout() {
@@ -23,12 +37,14 @@ export default function PricingPage() {
 
     setCheckoutLoading(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       }
-      
+
       if (session?.user?.id) {
         headers['x-user-id'] = session.user.id
       }
@@ -39,7 +55,7 @@ export default function PricingPage() {
       })
 
       const data = await response.json()
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Checkout failed')
       }
@@ -72,10 +88,7 @@ export default function PricingPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => router.back()}
-                className="text-gray-600 hover:text-gray-900"
-              >
+              <button onClick={() => router.back()} className="text-gray-600 hover:text-gray-900">
                 ← Back
               </button>
               <h1 className="text-2xl font-bold text-gray-900">Pricing</h1>
@@ -102,12 +115,10 @@ export default function PricingPage() {
         )}
 
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Unlock Unlimited Financial Advice
-          </h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Unlock Unlimited Financial Advice</h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Get unlimited access to MoneyXprt's AI-powered financial guidance. 
-            Perfect for high-income professionals who need comprehensive wealth management strategies.
+            Get unlimited access to MoneyXprt's AI-powered financial guidance. Perfect for high-income professionals who
+            need comprehensive wealth management strategies.
           </p>
         </div>
 
@@ -115,11 +126,9 @@ export default function PricingPage() {
           <Card className="max-w-sm w-full border-2 border-emerald-200 relative">
             {/* Popular badge */}
             <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-              <span className="bg-emerald-600 text-white px-4 py-1 rounded-full text-sm font-medium">
-                Most Popular
-              </span>
+              <span className="bg-emerald-600 text-white px-4 py-1 rounded-full text-sm font-medium">Most Popular</span>
             </div>
-            
+
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">Starter Plan</CardTitle>
               <div className="text-4xl font-bold text-emerald-600 mb-1">$9</div>
@@ -160,17 +169,11 @@ export default function PricingPage() {
                 </li>
               </ul>
 
-              <Button
-                onClick={handleCheckout}
-                disabled={checkoutLoading}
-                className="w-full bg-emerald-600 hover:bg-emerald-700"
-              >
+              <Button onClick={handleCheckout} disabled={checkoutLoading} className="w-full bg-emerald-600 hover:bg-emerald-700">
                 {checkoutLoading ? 'Starting checkout...' : 'Start Subscription'}
               </Button>
 
-              <p className="text-xs text-gray-500 text-center">
-                Cancel anytime. 30-day money-back guarantee.
-              </p>
+              <p className="text-xs text-gray-500 text-center">Cancel anytime. 30-day money-back guarantee.</p>
             </CardContent>
           </Card>
         </div>
@@ -181,13 +184,11 @@ export default function PricingPage() {
             <div className="text-center">
               <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
               </div>
               <h4 className="font-semibold text-gray-900 mb-2">Expert Knowledge</h4>
-              <p className="text-gray-600 text-sm">
-                Advanced AI trained on comprehensive financial strategies for high-income earners
-              </p>
+              <p className="text-gray-600 text-sm">Advanced AI trained on comprehensive financial strategies for high-income earners</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mx-auto mb-4">
@@ -196,9 +197,7 @@ export default function PricingPage() {
                 </svg>
               </div>
               <h4 className="font-semibold text-gray-900 mb-2">Tax Optimization</h4>
-              <p className="text-gray-600 text-sm">
-                Personalized strategies to minimize tax burden and maximize wealth preservation
-              </p>
+              <p className="text-gray-600 text-sm">Personalized strategies to minimize tax burden and maximize wealth preservation</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mx-auto mb-4">
@@ -207,9 +206,7 @@ export default function PricingPage() {
                 </svg>
               </div>
               <h4 className="font-semibold text-gray-900 mb-2">Instant Answers</h4>
-              <p className="text-gray-600 text-sm">
-                Get immediate, personalized financial advice 24/7 without waiting for appointments
-              </p>
+              <p className="text-gray-600 text-sm">Get immediate, personalized financial advice 24/7 without waiting for appointments</p>
             </div>
           </div>
         </div>
