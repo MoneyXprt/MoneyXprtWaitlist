@@ -1,21 +1,31 @@
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
 import { eq } from "drizzle-orm";
-import { type Waitlist, type InsertWaitlist, type Conversation, type InsertConversation, type Profile, type InsertProfile, waitlist, conversations, profiles } from "@shared/schema";
+import {
+  type Waitlist,
+  type InsertWaitlist,
+  type Conversation,
+  type InsertConversation,
+  type Profile,
+  type InsertProfile,
+  waitlist,
+  conversations,
+  profiles,
+} from "@/shared/schema"; // switched to "@/..."
 import { randomUUID } from "crypto";
 
 export interface IStorage {
   // Waitlist operations
-  getWaitlistEntry(email: string): Promise<Waitlist | undefined>
-  createWaitlistEntry(entry: InsertWaitlist): Promise<Waitlist>
-  
+  getWaitlistEntry(address: string): Promise<Waitlist | undefined>;
+  createWaitlistEntry(entry: InsertWaitlist): Promise<Waitlist>;
+
   // Conversation operations
-  createConversation(conversation: InsertConversation): Promise<Conversation>
-  getUserConversations(userId: string): Promise<Conversation[]>
-  
+  createConversation(conversation: InsertConversation): Promise<Conversation>;
+  getUserConversations(userId: string): Promise<Conversation[]>;
+
   // Profile operations
-  getProfile(userId: string): Promise<Profile | undefined>
-  upsertProfile(profile: InsertProfile): Promise<Profile>
+  getProfile(userId: string): Promise<Profile | undefined>;
+  upsertProfile(profile: InsertProfile): Promise<Profile>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -34,8 +44,12 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async getWaitlistEntry(email: string): Promise<Waitlist | undefined> {
-    const result = await this.db.select().from(waitlist).where(eq(waitlist.email, email)).limit(1);
+  async getWaitlistEntry(address: string): Promise<Waitlist | undefined> {
+    const result = await this.db
+      .select()
+      .from(waitlist)
+      .where(eq(waitlist.address, address))
+      .limit(1);
     return result[0];
   }
 
@@ -45,24 +59,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserConversations(userId: string): Promise<Conversation[]> {
-    const result = await this.db.select().from(conversations).where(eq(conversations.userId, userId));
+    const result = await this.db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.userId, userId));
     return result;
   }
 
   async getProfile(userId: string): Promise<Profile | undefined> {
-    const result = await this.db.select().from(profiles).where(eq(profiles.id, userId)).limit(1);
+    const result = await this.db
+      .select()
+      .from(profiles)
+      .where(eq(profiles.id, userId))
+      .limit(1);
     return result[0];
   }
 
   async upsertProfile(profile: InsertProfile): Promise<Profile> {
-    const result = await this.db.insert(profiles).values(profile).onConflictDoUpdate({
-      target: profiles.id,
-      set: {
-        fullName: profile.fullName,
-        incomeRange: profile.incomeRange,
-        entityType: profile.entityType,
-      }
-    }).returning();
+    const result = await this.db
+      .insert(profiles)
+      .values(profile)
+      .onConflictDoUpdate({
+        target: profiles.id,
+        set: {
+          fullName: profile.fullName,
+          incomeRange: profile.incomeRange,
+          entityType: profile.entityType,
+        },
+      })
+      .returning();
     return result[0];
   }
 }
@@ -80,17 +105,18 @@ export class MemStorage implements IStorage {
 
   async createWaitlistEntry(entry: InsertWaitlist): Promise<Waitlist> {
     const id = randomUUID();
-    const waitlistEntry: Waitlist = { 
-      ...entry, 
-      id, 
-      createdAt: new Date()
+    const waitlistEntry: Waitlist = {
+      ...entry,
+      id,
+      createdAt: new Date(),
     };
-    this.waitlistEntries.set(entry.email, waitlistEntry);
+    // key by normalized address
+    this.waitlistEntries.set(entry.address, waitlistEntry);
     return waitlistEntry;
   }
 
-  async getWaitlistEntry(email: string): Promise<Waitlist | undefined> {
-    return this.waitlistEntries.get(email);
+  async getWaitlistEntry(address: string): Promise<Waitlist | undefined> {
+    return this.waitlistEntries.get(address);
   }
 
   async createConversation(conversation: InsertConversation): Promise<Conversation> {
@@ -98,14 +124,14 @@ export class MemStorage implements IStorage {
     const newConversation: Conversation = {
       ...conversation,
       id,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
     this.conversationsList.push(newConversation);
     return newConversation;
   }
 
   async getUserConversations(userId: string): Promise<Conversation[]> {
-    return this.conversationsList.filter(conv => conv.userId === userId);
+    return this.conversationsList.filter((conv) => conv.userId === userId);
   }
 
   async getProfile(userId: string): Promise<Profile | undefined> {
@@ -115,7 +141,7 @@ export class MemStorage implements IStorage {
   async upsertProfile(profile: InsertProfile): Promise<Profile> {
     const newProfile: Profile = {
       ...profile,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
     this.profilesMap.set(profile.id, newProfile);
     return newProfile;
