@@ -1,19 +1,13 @@
 "use client";
-export const dynamic = "force-dynamic"; // don't pre-render this route
-export const revalidate = 0;
+export const dynamic = "force-dynamic";        // disable prerendering for this page
+export const fetchCache = "force-no-store";    // (optional) no caching for any fetches here
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSupabase } from "../providers";
 
 export default function AuthPage() {
