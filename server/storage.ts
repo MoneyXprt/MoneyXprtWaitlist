@@ -39,7 +39,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createWaitlistEntry({ address }: { address: string }): Promise<Waitlist> {
-    const rows = await this.db.insert(waitlist).values({ address }).returning();
+    const rows = await this.db
+      .insert(waitlist)
+      .values({ address: address.trim().toLowerCase() })
+      .returning();
     return rows[0]!;
   }
 
@@ -47,13 +50,16 @@ export class DatabaseStorage implements IStorage {
     const rows = await this.db
       .select()
       .from(waitlist)
-      .where(eq(waitlist.address, address))
+      .where(eq(waitlist.address, address.trim().toLowerCase()))
       .limit(1);
     return rows[0];
   }
 
   async createConversation(conversation: InsertConversation): Promise<Conversation> {
-    const rows = await this.db.insert(conversations).values(conversation).returning();
+    const rows = await this.db
+      .insert(conversations)
+      .values(conversation)
+      .returning();
     return rows[0]!;
   }
 
@@ -74,28 +80,27 @@ export class DatabaseStorage implements IStorage {
     return rows[0];
   }
 
- async upsertProfile(profile: InsertProfile): Promise<Profile> {
-  const rows = await this.db
-    .insert(profiles)
-    .values({
-      id: profile.id,
-      fullName: profile.fullName ?? "",
-      incomeRange: profile.incomeRange ?? "100k-250k",
-      entityType: profile.entityType ?? "individual",
-    })
-    .onConflictDoUpdate({
-      target: profiles.id,
-      set: {
+  async upsertProfile(profile: InsertProfile): Promise<Profile> {
+    const rows = await this.db
+      .insert(profiles)
+      .values({
+        id: profile.id, // must be provided by caller
         fullName: profile.fullName ?? "",
         incomeRange: profile.incomeRange ?? "100k-250k",
         entityType: profile.entityType ?? "individual",
-      },
-    })
-    .returning();
-
-  return rows[0]!;
-}
-
+      })
+      .onConflictDoUpdate({
+        target: profiles.id,
+        set: {
+          fullName: profile.fullName ?? "",
+          incomeRange: profile.incomeRange ?? "100k-250k",
+          entityType: profile.entityType ?? "individual",
+        },
+      })
+      .returning();
+    return rows[0]!;
+  }
+} // <— make sure this brace exists so the class is closed!
 
 export class MemStorage implements IStorage {
   private waitlistEntries: Map<string, Waitlist>;
@@ -129,16 +134,11 @@ export class MemStorage implements IStorage {
 
   async createConversation(conversation: InsertConversation): Promise<Conversation> {
     const id = randomUUID();
-
     const newConversation: Conversation = {
+      ...conversation, // must include userId, prompt, response, meta (per schema)
       id,
-      userId: conversation.userId,                     // required
-      prompt: conversation.prompt,                     // required
-      response: conversation.response ?? "",           // default if omitted
-      meta: (conversation as any).meta ?? {},          // default if omitted
       createdAt: new Date(),
     };
-
     this.conversationsList.push(newConversation);
     return newConversation;
   }
@@ -152,9 +152,13 @@ export class MemStorage implements IStorage {
   }
 
   async upsertProfile(profile: InsertProfile): Promise<Profile> {
+    const existing = this.profilesMap.get(profile.id);
     const newProfile: Profile = {
-      ...profile,
-      createdAt: new Date(),
+      id: profile.id,
+      fullName: profile.fullName ?? existing?.fullName ?? "",
+      incomeRange: profile.incomeRange ?? existing?.incomeRange ?? "100k-250k",
+      entityType: profile.entityType ?? existing?.entityType ?? "individual",
+      createdAt: existing?.createdAt ?? new Date(),
     };
     this.profilesMap.set(profile.id, newProfile);
     return newProfile;
