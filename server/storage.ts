@@ -56,6 +56,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createConversation(conversation: InsertConversation): Promise<Conversation> {
+    // DB path: we assume InsertConversation already has the required fields per schema.
     const rows = await this.db
       .insert(conversations)
       .values(conversation)
@@ -100,7 +101,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return rows[0]!;
   }
-} // <— make sure this brace exists so the class is closed!
+}
 
 export class MemStorage implements IStorage {
   private waitlistEntries: Map<string, Waitlist>;
@@ -134,11 +135,37 @@ export class MemStorage implements IStorage {
 
   async createConversation(conversation: InsertConversation): Promise<Conversation> {
     const id = randomUUID();
-    const newConversation: Conversation = {
-      ...conversation, // must include userId, prompt, response, meta (per schema)
-      id,
-      createdAt: new Date(),
+
+    // Explicitly extract required fields; default meta to an empty object.
+    // If your InsertConversation already marks these as required, this is type-safe.
+    // If not, the guard below provides a clear runtime error instead of a TS mismatch.
+    const { userId, prompt, response } = conversation as {
+      userId?: string;
+      prompt?: string;
+      response?: string;
+      meta?: unknown;
     };
+
+    if (!userId || !prompt || !response) {
+      throw new Error(
+        "createConversation requires userId, prompt, and response to be provided"
+      );
+    }
+
+    const meta =
+      (conversation as { meta?: unknown }).meta !== undefined
+        ? (conversation as { meta?: unknown }).meta
+        : {};
+
+    const newConversation: Conversation = {
+      id,
+      userId,
+      prompt,
+      response,
+      createdAt: new Date(),
+      meta,
+    };
+
     this.conversationsList.push(newConversation);
     return newConversation;
   }
