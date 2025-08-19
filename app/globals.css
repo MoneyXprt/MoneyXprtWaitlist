@@ -2,68 +2,174 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------- Theme tokens (Light) ---------- */
 :root {
-  --background: hsl(0, 0%, 98%);
-  --foreground: hsl(157, 48%, 15%);
-  --muted: hsl(157, 20%, 95%);
-  --muted-foreground: hsl(157, 15%, 45%);
-  --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(157, 48%, 15%);
-  --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(157, 48%, 15%);
-  --border: hsl(157, 20%, 88%);
-  --input: hsl(157, 20%, 88%);
-  --primary: hsl(157, 48%, 25%);
-  --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(157, 15%, 92%);
-  --secondary-foreground: hsl(157, 48%, 15%);
-  --accent: hsl(45, 70%, 65%);
-  --accent-foreground: hsl(157, 48%, 15%);
-  --destructive: hsl(0, 84%, 60%);
-  --destructive-foreground: hsl(0, 0%, 100%);
-  --ring: hsl(157, 48%, 25%);
+  /* Neutrals */
+  --background: hsl(0 0% 98%);
+  --foreground: hsl(157 48% 14%);
+
+  --muted: hsl(157 20% 96%);
+  --muted-foreground: hsl(157 12% 38%);
+
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: var(--foreground);
+
+  --card: hsl(0 0% 100%);
+  --card-foreground: var(--foreground);
+
+  --border: hsl(157 18% 86%);
+  --input:  hsl(157 18% 86%);
+
+  /* Brand */
+  --primary: hsl(157 48% 24%);              /* emerald */
+  --primary-foreground: hsl(0 0% 100%);
+
+  --secondary: hsl(157 16% 92%);
+  --secondary-foreground: var(--foreground);
+
+  --accent: hsl(45 75% 62%);                 /* gold accent */
+  --accent-foreground: hsl(157 48% 14%);
+
+  --destructive: hsl(0 82% 58%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --ring: hsl(45 75% 62%);                   /* focus ring uses gold for brand pop */
   --radius: 0.5rem;
-  --success: hsl(157, 65%, 30%);
-  --success-foreground: hsl(0, 0%, 100%);
-  --warning: hsl(38, 92%, 50%);
-  --warning-foreground: hsl(0, 0%, 100%);
-  --gold: hsl(45, 70%, 65%);
-  --gold-foreground: hsl(157, 48%, 15%);
+
+  --success: hsl(157 60% 32%);
+  --success-foreground: hsl(0 0% 100%);
+
+  --warning: hsl(38 92% 50%);
+  --warning-foreground: hsl(0 0% 100%);
+
+  /* Convenience tokens */
+  --gold: hsl(45 75% 62%);
+  --gold-foreground: hsl(157 48% 14%);
 }
 
+/* ---------- Optional Dark theme ---------- */
+/* Enable by adding `class="dark"` on <html> or using a theme toggle. */
+.dark {
+  --background: hsl(157 26% 10%);
+  --foreground: hsl(0 0% 100%);
+
+  --muted: hsl(157 22% 16%);
+  --muted-foreground: hsl(157 12% 70%);
+
+  --popover: hsl(157 26% 12%);
+  --popover-foreground: var(--foreground);
+
+  --card: hsl(157 26% 12%);
+  --card-foreground: var(--foreground);
+
+  --border: hsl(157 18% 22%);
+  --input:  hsl(157 18% 22%);
+
+  --primary: hsl(157 48% 28%);
+  --primary-foreground: hsl(0 0% 100%);
+
+  --secondary: hsl(157 20% 16%);
+  --secondary-foreground: var(--foreground);
+
+  --accent: hsl(45 75% 62%);
+  --accent-foreground: hsl(157 26% 12%);
+
+  --ring: hsl(45 75% 62%);
+}
+
+/* ---------- Base resets & typography ---------- */
 @layer base {
   * {
     @apply border-border;
   }
 
+  html {
+    @apply antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
   }
+
+  ::selection {
+    background: hsl(45 90% 70% / 0.35);
+  }
+
+  a {
+    @apply underline-offset-4 decoration-[1.5px];
+  }
+
+  h1 { @apply tracking-tight; }
+  h2 { @apply tracking-tight; }
+  h3 { @apply tracking-tight; }
 }
 
+/* ---------- Utilities & design helpers ---------- */
 @layer utilities {
+  /* Brand gradients */
   .gradient-primary {
-    background: linear-gradient(135deg, hsl(157, 48%, 25%) 0%, hsl(157, 55%, 20%) 50%, hsl(157, 60%, 15%) 100%);
+    background: linear-gradient(
+      135deg,
+      hsl(157 48% 24%) 0%,
+      hsl(157 55% 20%) 50%,
+      hsl(157 60% 16%) 100%
+    );
   }
 
   .gradient-hero {
-    background: linear-gradient(135deg, hsl(157, 48%, 20%) 0%, hsl(157, 55%, 15%) 50%, hsl(157, 60%, 10%) 100%);
+    background: radial-gradient(1200px 600px at 20% -10%, hsl(157 42% 24% / .35), transparent 60%),
+                radial-gradient(900px 500px at 90% 10%,  hsl(157 60% 22% / .45), transparent 60%),
+                linear-gradient(135deg, hsl(157 48% 20%) 0%, hsl(157 55% 16%) 50%, hsl(157 60% 12%) 100%);
   }
 
   .gradient-gold {
-    background: linear-gradient(135deg, hsl(45, 70%, 65%) 0%, hsl(45, 75%, 60%) 50%, hsl(45, 80%, 55%) 100%);
+    background: linear-gradient(
+      135deg,
+      hsl(45 80% 66%) 0%,
+      hsl(45 78% 61%) 50%,
+      hsl(45 76% 56%) 100%
+    );
   }
 
-  .text-gold {
-    color: hsl(45, 70%, 65%);
+  /* On-hero text color helpers */
+  .on-hero { color: hsl(0 0% 98%); }
+  .on-hero-muted { color: hsl(0 0% 92%); }
+
+  /* Brand color shorthands */
+  .text-gold { color: var(--gold); }
+  .bg-emerald-deep { background-color: hsl(157 48% 15%); }
+  .bg-emerald-primary { background-color: var(--primary); }
+
+  /* Cards & elevation */
+  .card {
+    @apply bg-card text-card-foreground border rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)];
+  }
+  .shadow-soft { box-shadow: 0 10px 30px rgba(0,0,0,.08); }
+
+  /* Inputs */
+  .input {
+    @apply rounded-xl px-4 py-3 bg-white border focus:outline-none focus:ring-2;
+    box-shadow: inset 0 1px 0 rgba(0,0,0,.02);
   }
 
-  .bg-emerald-deep {
-    background-color: hsl(157, 48%, 15%);
+  /* Buttons (utility if you’re not using a component lib) */
+  .btn {
+    @apply inline-flex items-center justify-center rounded-xl px-5 py-3 font-medium transition-colors focus:outline-none focus:ring-2;
+  }
+  .btn-primary {
+    @apply btn bg-black text-white hover:bg-neutral-900 focus:ring-[var(--ring)];
+  }
+  .btn-emerald {
+    @apply btn bg-emerald-primary text-white hover:brightness-110 focus:ring-[var(--ring)];
+  }
+  .btn-gold {
+    @apply btn bg-[var(--gold)] text-[var(--gold-foreground)] hover:brightness-110 focus:ring-[var(--ring)];
   }
 
-  .bg-emerald-primary {
-    background-color: hsl(157, 48%, 25%);
+  /* Container helper to keep content nicely centered */
+  .container-bleed {
+    @apply max-w-5xl mx-auto px-6;
   }
 }
