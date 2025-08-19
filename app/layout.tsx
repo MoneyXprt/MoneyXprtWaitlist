@@ -1,4 +1,4 @@
-import 'globals.css';
+import './globals.css';
 import SimpleAuthWidget from '../components/SimpleAuthWidget';
 
 export const metadata = { title: 'MoneyXprt Beta' };
