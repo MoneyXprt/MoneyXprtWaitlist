@@ -1,20 +1,33 @@
 'use client';
-import { useState } from 'react';
 
-export default function Landing() {
+import { useState } from 'react';
+import Link from 'next/link';
+
+export default function HomePage() {
   const [email, setEmail] = useState('');
   const [msg, setMsg] = useState('');
 
   const join = async () => {
     setMsg('');
-    const res = await fetch('/api/waitlist', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ email: email.trim() })
-    });
-    const j = await res.json();
-    setMsg(j.message || j.error || '');
-    if (j.ok) setEmail('');
+    try {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+
+      let j: any = {};
+      try {
+        j = await res.json();
+      } catch {
+        /* swallow JSON parse errors */
+      }
+
+      setMsg(j.message || j.error || (res.ok ? 'Thanks for joining!' : 'Something went wrong.'));
+      if (res.ok && j?.ok) setEmail('');
+    } catch {
+      setMsg('Network error. Please try again.');
+    }
   };
 
   return (
@@ -32,10 +45,12 @@ export default function Landing() {
             </p>
             <div className="mt-6 flex gap-2">
               <input
+                type="email"
+                inputMode="email"
                 className="border rounded-xl px-4 py-3 flex-1"
                 placeholder="you@work.com"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
               />
               <button onClick={join} className="rounded-xl px-5 py-3 bg-black text-white">
                 Join waitlist
@@ -43,7 +58,7 @@ export default function Landing() {
             </div>
             {msg && <p className="mt-2 text-sm text-neutral-600">{msg}</p>}
             <div className="mt-4 text-sm">
-              <a href="/app" className="underline">Try the beta</a>
+              <Link href="/app" className="underline">Try the beta</Link>
             </div>
           </div>
 
@@ -51,14 +66,14 @@ export default function Landing() {
           <div className="bg-white shadow-lg rounded-2xl p-6">
             <h3 className="font-semibold text-lg">What you can do today</h3>
             <ul className="mt-3 space-y-2 text-sm text-neutral-700 list-disc list-inside">
-              <li>Upload last year's return → <em>AI Tax Savings Scan</em></li>
-              <li>Enter W-2 + real estate → <em>Entity Optimizer</em></li>
+              <li>Upload last year&apos;s return → <em>AI Tax Savings Scan</em></li>
+              <li>Enter W‑2 + real estate → <em>Entity Optimizer</em></li>
               <li>Upload holdings CSV → <em>Investment Fee Check</em></li>
-              <li>Every report gets a verifiable SHA-256 hash</li>
+              <li>Every report gets a verifiable SHA‑256 hash</li>
             </ul>
-            <a href="/app" className="inline-block mt-4 rounded-xl px-4 py-2 bg-black text-white">
+            <Link href="/app" className="inline-block mt-4 rounded-xl px-4 py-2 bg-black text-white">
               Open Beta Tools
-            </a>
+            </Link>
           </div>
         </div>
       </section>
@@ -86,9 +101,9 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto px-6 flex items-center justify-between text-sm text-neutral-600">
           <span>© {new Date().getFullYear()} MoneyXprt</span>
           <nav className="flex items-center gap-4">
-            <a href="/app" className="underline">Beta</a>
-            <a href="/reports" className="underline">Reports</a>
-            <a href="/privacy" className="underline">Privacy</a>
+            <Link href="/app" className="underline">Beta</Link>
+            <Link href="/reports" className="underline">Reports</Link>
+            <Link href="/privacy" className="underline">Privacy</Link>
           </nav>
         </div>
       </footer>
