@@ -173,3 +173,35 @@
     @apply max-w-5xl mx-auto px-6;
   }
 }
+/* --- MoneyXprt polish helpers --- */
+.highlight {
+  background: linear-gradient(0deg, hsl(45 85% 70% / .55), hsl(45 85% 70% / .55));
+  border-radius: .35rem;
+  padding: 0 .25rem;
+}
+
+.hero-wrap {
+  /* deep emerald hero like your Replit shot */
+  background: radial-gradient(1200px 600px at 20% -10%, hsl(157 42% 24% / .35), transparent 60%),
+              radial-gradient(900px 500px at 90% 10%,  hsl(157 60% 22% / .45), transparent 60%),
+              linear-gradient(135deg, hsl(157 48% 20%) 0%, hsl(157 55% 16%) 50%, hsl(157 60% 12%) 100%);
+}
+
+.on-hero { color: hsl(0 0% 98%); }
+.on-hero-muted { color: hsl(0 0% 90%); }
+
+.card-elevated {
+  @apply bg-white rounded-2xl border shadow-[0_10px_30px_rgba(0,0,0,.08)];
+}
+
+.btn-emerald {
+  @apply inline-flex items-center justify-center rounded-xl px-5 py-3 font-medium
+         bg-[hsl(157_48%_24%)] text-white hover:brightness-110 transition-colors
+         focus:outline-none focus:ring-2 focus:ring-[var(--ring)];
+}
+
+.btn-outline-dark {
+  @apply inline-flex items-center justify-center rounded-xl px-5 py-3 font-medium
+         border border-black/10 hover:bg-black hover:text-white transition-colors
+         focus:outline-none focus:ring-2 focus:ring-[var(--ring)];
+}
