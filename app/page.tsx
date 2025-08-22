@@ -24,70 +24,65 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[hsl(0_0%_98%)] text-[hsl(157_48%_15%)]">
-      {/* NAV */}
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-[hsl(157_20%_88%)]">
-        <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            {/* simple logo mark */}
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[hsl(157_48%_25%)] text-white font-bold">M</span>
-            <span className="font-semibold tracking-tight">MoneyXprt</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-6 text-sm">
-            <Link href="#features" className="hover:opacity-80">Features</Link>
-            <Link href="#security" className="hover:opacity-80">Security</Link>
-            <Link href="#pricing" className="hover:opacity-80">Pricing</Link>
-            <Link href="/signin" className="rounded-lg px-4 py-2 border border-[hsl(157_20%_88%)] hover:bg-[hsl(157_15%_92%)]">
-              Sign In
-            </Link>
-            <Link
-              href="/signup"
-              className="rounded-lg px-4 py-2 bg-[hsl(157_48%_25%)] text-white hover:brightness-110"
-            >
-              Get Started
-            </Link>
-          </nav>
-        </div>
-      </header>
-
+    <>
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 -z-10">
-          <div className="h-full w-full bg-[radial-gradient(1200px_600px_at_10%_-10%,hsl(45_70%_65%_/_0.15),transparent_60%),radial-gradient(800px_600px_at_90%_20%,hsl(157_48%_25%_/_0.35),transparent_60%),linear-gradient(135deg,hsl(157_48%_20%)_0%,hsl(157_55%_15%)_50%,hsl(157_60%_10%)_100%)]" />
+          {/* Brand gradient backdrop */}
+          <div className="h-full w-full bg-[radial-gradient(1200px_600px_at_10%_-10%,hsl(45_70%_65%/_0.15),transparent_60%),radial-gradient(800px_600px_at_90%_20%,hsl(157_48%_25%/_0.35),transparent_60%),linear-gradient(135deg,hsl(157_48%_20%)_0%,hsl(157_55%_15%)_50%,hsl(157_60%_10%)_100%)]" />
         </div>
 
-        <div className="mx-auto max-w-7xl px-6 py-20 md:py-28 grid lg:grid-cols-2 gap-12">
+        <div className="mx-auto max-w-7xl px-6 py-20 md:py-28 grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left: headline + form */}
           <div className="text-white">
             <h1 className="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight">
               AI‑powered financial co‑pilot
               <span className="block mt-2">
-                for <span className="bg-[hsl(45_70%_65%)] text-[hsl(157_48%_15%)] px-2 rounded-md">high‑income earners</span>
+                for{' '}
+                <span className="bg-[hsl(45_70%_65%)] text-[hsl(157_48%_15%)] px-2 rounded-md">
+                  high‑income earners
+                </span>
               </span>
             </h1>
-            <p className="mt-5 text-white/80 text-lg max-w-xl">
-              Optimize taxes, tighten fees, and grow wealth with verifiable, tamper‑evident plans—delivered in minutes, not weeks.
+
+            <p className="mt-5 text-white/85 text-lg max-w-xl">
+              Optimize taxes, tighten fees, and grow wealth with verifiable, tamper‑evident plans—delivered in minutes,
+              not weeks.
             </p>
 
-            <div className="mt-8 max-w-xl flex flex-col sm:flex-row gap-3">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void join();
+              }}
+              className="mt-8 max-w-xl flex flex-col sm:flex-row gap-3"
+              aria-label="Join the MoneyXprt waitlist"
+            >
+              <label className="sr-only" htmlFor="waitlist-email">
+                Work email
+              </label>
               <input
+                id="waitlist-email"
                 type="email"
                 inputMode="email"
                 placeholder="you@work.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
                 className="flex-1 rounded-xl px-4 py-3 bg-white text-[hsl(157_48%_15%)] placeholder:text-neutral-400 shadow-md focus:outline-none focus:ring-2 focus:ring-[hsl(157_48%_25%)]"
               />
               <button
-                onClick={join}
-                className="rounded-xl px-6 py-3 bg-[hsl(45_70%_65%)] text-[hsl(157_48%_15%)] font-semibold shadow-md hover:brightness-105"
+                type="submit"
+                className="rounded-xl px-6 py-3 bg-[hsl(45_70%_65%)] text-[hsl(157_48%_15%)] font-semibold shadow-md hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
               >
                 Join Waitlist
               </button>
-            </div>
-            {msg && <p className="mt-2 text-sm text-white/80">{msg}</p>}
+            </form>
 
-            {/* social proof */}
-            <div className="mt-10 flex items-center gap-6 text-white/70 text-sm">
+            {msg && <p className="mt-2 text-sm text-white/85">{msg}</p>}
+
+            {/* Social proof */}
+            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-white/75 text-sm">
               <span className="inline-flex items-center gap-2">
                 <ShieldIcon /> Bank‑grade security
               </span>
@@ -100,15 +95,23 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* hero card */}
+          {/* Right: capability card */}
           <div className="lg:pl-6">
             <div className="rounded-2xl bg-white/95 backdrop-blur shadow-xl ring-1 ring-black/5 p-6 md:p-8">
               <h3 className="text-lg font-semibold">What you can do today</h3>
               <ul className="mt-4 space-y-3 text-[15px] text-neutral-700">
-                <li className="flex gap-3"><Dot /> Upload last year’s return → <em>AI Tax Savings Scan</em></li>
-                <li className="flex gap-3"><Dot /> Enter W‑2 + real estate → <em>Entity Optimizer</em></li>
-                <li className="flex gap-3"><Dot /> Upload holdings CSV → <em>Investment Fee Check</em></li>
-                <li className="flex gap-3"><Dot /> Every report gets a verifiable SHA‑256 hash</li>
+                <li className="flex gap-3">
+                  <Dot /> Upload last year’s return → <em>AI Tax Savings Scan</em>
+                </li>
+                <li className="flex gap-3">
+                  <Dot /> Enter W‑2 + real estate → <em>Entity Optimizer</em>
+                </li>
+                <li className="flex gap-3">
+                  <Dot /> Upload holdings CSV → <em>Investment Fee Check</em>
+                </li>
+                <li className="flex gap-3">
+                  <Dot /> Every report gets a verifiable SHA‑256 hash
+                </li>
               </ul>
               <div className="mt-6">
                 <Link
@@ -129,7 +132,10 @@ export default function HomePage() {
           <p className="text-xs uppercase tracking-widest text-neutral-500">Trusted by professionals from</p>
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-6 text-neutral-400">
             {['Fortune Co', 'Acme Tax', 'Summit PE', 'Northlake', 'Vertex', 'Beacon'].map((n) => (
-              <div key={n} className="h-10 rounded-lg border border-neutral-200/70 flex items-center justify-center text-sm">
+              <div
+                key={n}
+                className="h-10 rounded-lg border border-neutral-200/70 flex items-center justify-center text-sm"
+              >
                 {n}
               </div>
             ))}
@@ -141,7 +147,9 @@ export default function HomePage() {
       <section id="features" className="py-20">
         <div className="mx-auto max-w-7xl px-6">
           <div className="max-w-2xl">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Everything you need to act with confidence</h2>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+              Everything you need to act with confidence
+            </h2>
             <p className="mt-3 text-neutral-600">
               Powerful planning—without the conflicts. Your data stays yours, your reports are verifiable, and your
               subscription is flat‑fee.
@@ -175,12 +183,21 @@ export default function HomePage() {
             <p className="text-xs uppercase tracking-widest text-[hsl(157_48%_25%)] font-semibold">Security</p>
             <h3 className="mt-2 text-3xl font-bold">Bank‑grade protection & verifiable integrity</h3>
             <ul className="mt-6 space-y-3 text-neutral-700">
-              <li className="flex gap-3"><Check /> Encryption in transit & at rest</li>
-              <li className="flex gap-3"><Check /> Row‑level security on all customer data</li>
-              <li className="flex gap-3"><Check /> Reports hashed with SHA‑256</li>
-              <li className="flex gap-3"><Check /> Role‑based access, audit logs, least privilege</li>
+              <li className="flex gap-3">
+                <Check /> Encryption in transit & at rest
+              </li>
+              <li className="flex gap-3">
+                <Check /> Row‑level security on all customer data
+              </li>
+              <li className="flex gap-3">
+                <Check /> Reports hashed with SHA‑256
+              </li>
+              <li className="flex gap-3">
+                <Check /> Role‑based access, audit logs, least privilege
+              </li>
             </ul>
           </div>
+
           <div className="rounded-2xl border border-[hsl(157_20%_88%)] p-6 md:p-8 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-[hsl(157_48%_25%)] text-white grid place-items-center">
@@ -188,9 +205,12 @@ export default function HomePage() {
               </div>
               <div>
                 <p className="font-semibold">Independently verifiable</p>
-                <p className="text-sm text-neutral-600">Each output includes its content hash so you can confirm nothing changed.</p>
+                <p className="text-sm text-neutral-600">
+                  Each output includes its content hash so you can confirm nothing changed.
+                </p>
               </div>
             </div>
+
             <div className="mt-6 grid sm:grid-cols-2 gap-4 text-sm">
               <Stat label="Uptime" value="99.95%" />
               <Stat label="Data exports" value="1‑click" />
@@ -220,7 +240,7 @@ export default function HomePage() {
           <div className="rounded-2xl bg-[hsl(157_48%_15%)] text-white p-8 md:p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div>
               <h3 className="text-2xl font-bold">Ready to retire hidden fees?</h3>
-              <p className="mt-1 text-white/80">Flat $9/month. Cancel anytime. 30‑day money‑back guarantee.</p>
+              <p className="mt-1 text-white/85">Flat $9/month. Cancel anytime. 30‑day money‑back guarantee.</p>
             </div>
             <div className="flex gap-3">
               <Link
@@ -229,39 +249,28 @@ export default function HomePage() {
               >
                 See Pricing
               </Link>
-              <Link
-                href="/signup"
-                className="rounded-xl px-5 py-3 border border-white/20 hover:bg-white/10"
-              >
+              <Link href="/signup" className="rounded-xl px-5 py-3 border border-white/20 hover:bg-white/10">
                 Start Free
               </Link>
             </div>
           </div>
         </div>
       </section>
-
-      {/* FOOTER */}
-      <footer className="border-t border-[hsl(157_20%_88%)] py-10">
-        <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-neutral-600">
-          <p>© {new Date().getFullYear()} MoneyXprt</p>
-          <nav className="flex items-center gap-4">
-            <Link href="/privacy" className="hover:underline">Privacy</Link>
-            <Link href="/security" className="hover:underline">Security</Link>
-            <Link href="/terms" className="hover:underline">Terms</Link>
-          </nav>
-        </div>
-      </footer>
-    </main>
+    </>
   );
 }
 
-/* ---------- tiny UI bits (inlined for simplicity) ---------- */
+/* ---------- small UI bits ---------- */
 
 function FeatureCard({
   title,
   body,
   icon,
-}: { title: string; body: string; icon: React.ReactNode }) {
+}: {
+  title: string;
+  body: string;
+  icon: React.ReactNode;
+}) {
   return (
     <div className="rounded-2xl bg-white border border-[hsl(157_20%_88%)] p-6 shadow-sm hover:shadow-md transition-shadow">
       <div className="h-10 w-10 rounded-lg bg-[hsl(157_48%_25%)] text-white grid place-items-center">{icon}</div>
@@ -280,7 +289,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-/* ---------- icons (inline SVG for reliability/perf) ---------- */
+/* ---------- inline icons ---------- */
 
 function ShieldIcon() {
   return (
