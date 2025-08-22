@@ -48,11 +48,11 @@ export default function RootLayout({
               aria-label="MoneyXprt home"
             >
               <Image
-                src="/logo.png"
+                src="/logo-alt.png"
                 alt="MoneyXprt logo"
                 width={36}
                 height={36}
-                className="rounded-full shadow-[0_0_0_1px_rgba(0,0,0,0.05)]"
+                className="rounded-full"
                 priority
               />
               <span className="text-lg font-semibold tracking-tight text-neutral-900 group-hover:opacity-90">
