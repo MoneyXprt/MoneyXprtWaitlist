@@ -1,57 +1,60 @@
-'use client'
-export const revalidate = false  // do not prerender or cache
+'use client';
+export const dynamic = 'force-dynamic'; // render on request; avoid prerender
 
-import { createBrowserClient } from '@supabase/ssr'
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { createBrowserClient } from '@supabase/ssr';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function ResetPasswordPage() {
-  const router = useRouter()
+  const router = useRouter();
   const [supabase] = useState(() =>
     createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
-  )
+  );
 
-  const [ready, setReady] = useState(false)
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
-  const [msg, setMsg] = useState<string | null>(null)
-  const [err, setErr] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
+  const [ready, setReady] = useState(false);
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // 1) Exchange the code from the email for a session
   useEffect(() => {
-    supabase.auth.exchangeCodeForSession(window.location.href).then(({ error }) => {
-      if (error) setErr(error.message)
-      else setReady(true)
-    })
-  }, [supabase])
+    (async () => {
+      const { error } = await supabase.auth.exchangeCodeForSession(
+        window.location.href
+      );
+      if (error) setErr(error.message);
+      else setReady(true);
+    })();
+  }, [supabase]);
 
   // 2) Let the user set a new password
   async function onSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setErr(null)
-    setMsg(null)
+    e.preventDefault();
+    setErr(null);
+    setMsg(null);
 
     if (password.length < 8) {
-      setErr('Password must be at least 8 characters.')
-      return
+      setErr('Password must be at least 8 characters.');
+      return;
     }
     if (password !== confirm) {
-      setErr('Passwords do not match.')
-      return
+      setErr('Passwords do not match.');
+      return;
     }
 
-    setSaving(true)
-    const { error } = await supabase.auth.updateUser({ password })
-    setSaving(false)
+    setSaving(true);
+    const { error } = await supabase.auth.updateUser({ password });
+    setSaving(false);
 
-    if (error) setErr(error.message)
+    if (error) setErr(error.message);
     else {
-      setMsg('Password updated. Redirecting to the app…')
-      setTimeout(() => router.replace('/app'), 1200)
+      setMsg('Password updated. Redirecting to the app…');
+      setTimeout(() => router.replace('/app'), 1200);
     }
   }
 
@@ -61,7 +64,9 @@ export default function ResetPasswordPage() {
         <h1 className="text-xl font-semibold">Set a new password</h1>
 
         {!ready ? (
-          <p className="mt-3 text-sm text-neutral-600">Validating your reset link…</p>
+          <p className="mt-3 text-sm text-neutral-600">
+            Validating your reset link…
+          </p>
         ) : (
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div>
@@ -97,5 +102,5 @@ export default function ResetPasswordPage() {
         )}
       </div>
     </div>
-  )
+  );
 }
