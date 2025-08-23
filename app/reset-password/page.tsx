@@ -1,8 +1,5 @@
 'use client'
-
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
-export const fetchCache = 'force-no-store'
+export const revalidate = false  // do not prerender or cache
 
 import { createBrowserClient } from '@supabase/ssr'
 import { useEffect, useState } from 'react'
