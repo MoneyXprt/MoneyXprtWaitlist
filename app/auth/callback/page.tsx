@@ -1,9 +1,5 @@
 'use client'
-
-/** Avoid caching this page */
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
-export const fetchCache = 'force-no-store'
+export const revalidate = false  // do not prerender or cache
 
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
