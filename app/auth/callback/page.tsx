@@ -1,36 +1,33 @@
-'use client'
-export const revalidate = false  // do not prerender or cache
+'use client';
+export const dynamic = 'force-dynamic'; // do not prerender; render on request
 
-import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { createBrowserClient } from '@supabase/ssr';
 
 export default function AuthCallback() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const [error, setError] = useState<string | null>(null)
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    );
 
-    async function run() {
-      // Turn the code in the URL into a session
-      const { error } = await supabase.auth.exchangeCodeForSession(window.location.href)
+    (async () => {
+      const { error } = await supabase.auth.exchangeCodeForSession(
+        window.location.href
+      );
       if (error) {
-        setError(error.message)
-        return
+        setError(error.message);
+        return;
       }
-
-      // Optional: support ?redirect_to=/somewhere
-      const to = searchParams.get('redirect_to') || '/app'
-      router.replace(to)
-    }
-
-    run()
-  }, [router, searchParams])
+      const to = searchParams.get('redirect_to') || '/app';
+      router.replace(to);
+    })();
+  }, [router, searchParams]);
 
   return (
     <div className="min-h-[60vh] grid place-items-center">
@@ -54,5 +51,5 @@ export default function AuthCallback() {
         )}
       </div>
     </div>
-  )
+  );
 }
