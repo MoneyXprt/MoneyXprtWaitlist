@@ -3,78 +3,97 @@
 import Link from 'next/link';
 
 /**
- * Live product landing (no waitlist).
- * - Primary CTA: Get Started → /signup
- * - Secondary CTA: Open Beta Tools → /app
+ * MoneyXprt — Live product landing (no waitlist).
+ * Primary CTA: Get Started → /signup
+ * Secondary CTA: Launch the App → /app
  */
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-[hsl(0_0%_98%)] text-[hsl(157_48%_15%)]">
       {/* HERO */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 -z-10">
-          <div className="h-full w-full bg-[radial-gradient(1200px_600px_at_10%_-10%,hsl(45_70%_65%_/_0.15),transparent_60%),radial-gradient(800px_600px_at_90%_20%,hsl(157_48%_25%_/_0.35),transparent_60%),linear-gradient(135deg,hsl(157_48%_20%)_0%,hsl(157_55%_15%)_50%,hsl(157_60%_10%)_100%)]" />
-        </div>
+      <section className="py-12 md:py-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <div
+            className="relative overflow-hidden rounded-3xl px-6 py-16 md:px-12 md:py-24 text-white
+                       bg-[radial-gradient(1200px_600px_at_10%_-10%,hsl(45_70%_65%_/_0.15),transparent_60%),radial-gradient(800px_600px_at_90%_20%,hsl(157_48%_25%_/_0.35),transparent_60%),linear-gradient(135deg,hsl(157_48%_20%)_0%,hsl(157_55%_15%)_50%,hsl(157_60%_10%)_100%)]"
+          >
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              {/* LEFT */}
+              <div className="space-y-6">
+                <h1 className="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight">
+                  AI‑powered financial co‑pilot
+                  <span className="block mt-2">
+                    for{' '}
+                    <span className="bg-[hsl(45_70%_65%)] text-[hsl(157_48%_15%)] px-2 rounded-md">
+                      high‑income earners
+                    </span>
+                  </span>
+                </h1>
 
-        <div className="mx-auto max-w-7xl px-6 py-20 md:py-28 grid lg:grid-cols-2 gap-12">
-          <div className="text-white">
-            <h1 className="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight">
-              AI‑powered financial co‑pilot
-              <span className="block mt-2">
-                for <span className="bg-[hsl(45_70%_65%)] text-[hsl(157_48%_15%)] px-2 rounded-md">high‑income earners</span>
-              </span>
-            </h1>
-            <p className="mt-5 text-white/80 text-lg max-w-xl">
-              Optimize taxes, tighten fees, and grow wealth with verifiable, tamper‑evident plans—delivered in minutes, not weeks.
-            </p>
+                <p className="text-white/85 text-lg max-w-xl">
+                  Optimize taxes, tighten fees, and grow wealth with verifiable, tamper‑evident
+                  plans—delivered in minutes, not weeks.
+                </p>
 
-            {/* CTAs (no email/waitlist) */}
-            <div className="mt-8 flex flex-col sm:flex-row gap-3">
-              <Link
-                href="/signup"
-                className="rounded-xl px-6 py-3 bg-[hsl(45_70%_65%)] text-[hsl(157_48%_15%)] font-semibold shadow-md hover:brightness-105 text-center"
-              >
-                Get Started
-              </Link>
-              <Link
-                href="/app"
-                className="rounded-xl px-6 py-3 border border-white/30 text-white/95 hover:bg-white/10 text-center"
-              >
-                Open Beta Tools
-              </Link>
-            </div>
+                <div className="flex flex-col sm:flex-row gap-4 pt-2">
+                  <Link
+                    href="/signup"
+                    className="rounded-xl px-6 py-3 font-semibold shadow-md text-center
+                               bg-[hsl(45_70%_65%)] text-[hsl(157_48%_15%)] hover:brightness-105"
+                  >
+                    Get Started
+                  </Link>
 
-            {/* social proof */}
-            <div className="mt-10 flex items-center gap-6 text-white/70 text-sm">
-              <span className="inline-flex items-center gap-2">
-                <ShieldIcon /> Bank‑grade security
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <StarsIcon /> 10k+ professionals
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <HashIcon /> SHA‑256 verification
-              </span>
-            </div>
-          </div>
+                  <Link
+                    href="/app"
+                    className="rounded-xl px-6 py-3 text-center border border-white/25
+                               text-white/95 hover:bg-white/10"
+                  >
+                    Launch the App →
+                  </Link>
+                </div>
 
-          {/* hero card */}
-          <div className="lg:pl-6">
-            <div className="rounded-2xl bg-white/95 backdrop-blur shadow-xl ring-1 ring-black/5 p-6 md:p-8">
-              <h3 className="text-lg font-semibold">What you can do today</h3>
-              <ul className="mt-4 space-y-3 text-[15px] text-neutral-700">
-                <li className="flex gap-3"><Dot /> Upload last year’s return → <em>AI Tax Savings Scan</em></li>
-                <li className="flex gap-3"><Dot /> Enter W‑2 + real estate → <em>Entity Optimizer</em></li>
-                <li className="flex gap-3"><Dot /> Upload holdings CSV → <em>Investment Fee Check</em></li>
-                <li className="flex gap-3"><Dot /> Every report gets a verifiable SHA‑256 hash</li>
-              </ul>
-              <div className="mt-6">
-                <Link
-                  href="/app"
-                  className="inline-flex items-center justify-center rounded-xl px-4 py-2 border border-neutral-200 hover:bg-neutral-50"
-                >
-                  Launch the App →
-                </Link>
+                <div className="flex flex-wrap gap-6 text-white/75 text-sm pt-2">
+                  <span className="inline-flex items-center gap-2">
+                    <ShieldIcon /> Bank‑grade security
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <StarsIcon /> 10k+ professionals
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <HashIcon /> SHA‑256 verification
+                  </span>
+                </div>
+              </div>
+
+              {/* RIGHT */}
+              <div className="lg:pl-6">
+                <div className="rounded-2xl bg-white/95 backdrop-blur shadow-xl ring-1 ring-black/5 p-6 md:p-8">
+                  <h3 className="text-lg font-semibold text-[hsl(157_48%_15%)]">What you can do today</h3>
+                  <ul className="mt-4 space-y-3 text-[15px] text-neutral-700">
+                    <li className="flex gap-3">
+                      <Dot /> Upload last year’s return → <em>AI Tax Savings Scan</em>
+                    </li>
+                    <li className="flex gap-3">
+                      <Dot /> Enter W‑2 + real estate → <em>Entity Optimizer</em>
+                    </li>
+                    <li className="flex gap-3">
+                      <Dot /> Upload holdings CSV → <em>Investment Fee Check</em>
+                    </li>
+                    <li className="flex gap-3">
+                      <Dot /> Every report gets a verifiable SHA‑256 hash
+                    </li>
+                  </ul>
+                  <div className="mt-6">
+                    <Link
+                      href="/app"
+                      className="inline-flex items-center justify-center rounded-xl px-4 py-2
+                                 border border-neutral-200 hover:bg-neutral-50"
+                    >
+                      Launch the App →
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -87,7 +106,10 @@ export default function HomePage() {
           <p className="text-xs uppercase tracking-widest text-neutral-500">Trusted by professionals from</p>
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-6 text-neutral-400">
             {['Fortune Co', 'Acme Tax', 'Summit PE', 'Northlake', 'Vertex', 'Beacon'].map((n) => (
-              <div key={n} className="h-10 rounded-lg border border-neutral-200/70 flex items-center justify-center text-sm">
+              <div
+                key={n}
+                className="h-10 rounded-lg border border-neutral-200/70 flex items-center justify-center text-sm"
+              >
                 {n}
               </div>
             ))}
@@ -99,7 +121,9 @@ export default function HomePage() {
       <section id="features" className="py-20">
         <div className="mx-auto max-w-7xl px-6">
           <div className="max-w-2xl">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Everything you need to act with confidence</h2>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+              Everything you need to act with confidence
+            </h2>
             <p className="mt-3 text-neutral-600">
               Powerful planning—without the conflicts. Your data stays yours, your reports are verifiable, and your
               subscription is flat‑fee.
@@ -133,10 +157,18 @@ export default function HomePage() {
             <p className="text-xs uppercase tracking-widest text-[hsl(157_48%_25%)] font-semibold">Security</p>
             <h3 className="mt-2 text-3xl font-bold">Bank‑grade protection & verifiable integrity</h3>
             <ul className="mt-6 space-y-3 text-neutral-700">
-              <li className="flex gap-3"><Check /> Encryption in transit & at rest</li>
-              <li className="flex gap-3"><Check /> Row‑level security on all customer data</li>
-              <li className="flex gap-3"><Check /> Reports hashed with SHA‑256</li>
-              <li className="flex gap-3"><Check /> Role‑based access, audit logs, least privilege</li>
+              <li className="flex gap-3">
+                <Check /> Encryption in transit & at rest
+              </li>
+              <li className="flex gap-3">
+                <Check /> Row‑level security on all customer data
+              </li>
+              <li className="flex gap-3">
+                <Check /> Reports hashed with SHA‑256
+              </li>
+              <li className="flex gap-3">
+                <Check /> Role‑based access, audit logs, least privilege
+              </li>
             </ul>
           </div>
           <div className="rounded-2xl border border-[hsl(157_20%_88%)] p-6 md:p-8 shadow-sm">
@@ -146,7 +178,9 @@ export default function HomePage() {
               </div>
               <div>
                 <p className="font-semibold">Independently verifiable</p>
-                <p className="text-sm text-neutral-600">Each output includes its content hash so you can confirm nothing changed.</p>
+                <p className="text-sm text-neutral-600">
+                  Each output includes its content hash so you can confirm nothing changed.
+                </p>
               </div>
             </div>
             <div className="mt-6 grid sm:grid-cols-2 gap-4 text-sm">
@@ -175,7 +209,8 @@ export default function HomePage() {
       {/* CTA */}
       <section id="pricing" className="py-16">
         <div className="mx-auto max-w-7xl px-6">
-          <div className="rounded-2xl bg-[hsl(157_48%_15%)] text-white p-8 md:p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="rounded-2xl bg-[hsl(157_48%_15%)] text-white p-8 md:p-10
+                          flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div>
               <h3 className="text-2xl font-bold">Ready to retire hidden fees?</h3>
               <p className="mt-1 text-white/80">Flat $9/month. Cancel anytime. 30‑day money‑back guarantee.</p>
@@ -187,10 +222,7 @@ export default function HomePage() {
               >
                 See Pricing
               </Link>
-              <Link
-                href="/signup"
-                className="rounded-xl px-5 py-3 border border-white/20 hover:bg-white/10"
-              >
+              <Link href="/signup" className="rounded-xl px-5 py-3 border border-white/20 hover:bg-white/10">
                 Start Free
               </Link>
             </div>
@@ -203,9 +235,15 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-neutral-600">
           <p>© {new Date().getFullYear()} MoneyXprt</p>
           <nav className="flex items-center gap-4">
-            <Link href="/privacy" className="hover:underline">Privacy</Link>
-            <Link href="/security" className="hover:underline">Security</Link>
-            <Link href="/terms" className="hover:underline">Terms</Link>
+            <Link href="/privacy" className="hover:underline">
+              Privacy
+            </Link>
+            <Link href="/security" className="hover:underline">
+              Security
+            </Link>
+            <Link href="/terms" className="hover:underline">
+              Terms
+            </Link>
           </nav>
         </div>
       </footer>
@@ -213,16 +251,22 @@ export default function HomePage() {
   );
 }
 
-/* ---------- tiny UI bits (unchanged) ---------- */
+/* ---------- tiny UI bits ---------- */
 
 function FeatureCard({
   title,
   body,
   icon,
-}: { title: string; body: string; icon: React.ReactNode }) {
+}: {
+  title: string;
+  body: string;
+  icon: React.ReactNode;
+}) {
   return (
     <div className="rounded-2xl bg-white border border-[hsl(157_20%_88%)] p-6 shadow-sm hover:shadow-md transition-shadow">
-      <div className="h-10 w-10 rounded-lg bg-[hsl(157_48%_25%)] text-white grid place-items-center">{icon}</div>
+      <div className="h-10 w-10 rounded-lg bg-[hsl(157_48%_25%)] text-white grid place-items-center">
+        {icon}
+      </div>
       <h4 className="mt-4 font-semibold text-lg">{title}</h4>
       <p className="mt-2 text-sm text-neutral-700">{body}</p>
     </div>
@@ -238,7 +282,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-/* ---------- icons ---------- */
+/* ---------- icons (inline SVGs) ---------- */
 
 function ShieldIcon() {
   return (
@@ -262,7 +306,7 @@ function HashIcon() {
   );
 }
 function Dot() {
-  return <span className="mt-2 h-2 w-2 rounded-full bg-[hsl(157_48%_25%)] translate-y-1.5" />;
+  return <span aria-hidden className="mt-2 h-2 w-2 rounded-full bg-[hsl(157_48%_25%)] translate-y-1.5" />;
 }
 function CalendarIcon() {
   return (
