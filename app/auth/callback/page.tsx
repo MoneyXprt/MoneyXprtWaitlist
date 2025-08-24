@@ -1,11 +1,11 @@
+// app/auth/callback/CallbackClient.tsx
 'use client';
-export const dynamic = 'force-dynamic'; // do not prerender; render on request
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 
-export default function AuthCallback() {
+export default function CallbackClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -17,9 +17,7 @@ export default function AuthCallback() {
     );
 
     (async () => {
-      const { error } = await supabase.auth.exchangeCodeForSession(
-        window.location.href
-      );
+      const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
       if (error) {
         setError(error.message);
         return;
