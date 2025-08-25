@@ -1,5 +1,6 @@
 // app/auth/callback/page.tsx
-export const dynamic = 'force-dynamic'; // render on request; avoid prerender
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 import CallbackClient from './CallbackClient';
 
