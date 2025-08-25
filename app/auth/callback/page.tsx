@@ -1,5 +1,6 @@
-// app/auth/callback/CallbackClient.tsx
+// app/auth/callback/page.tsx
 'use client';
+export const dynamic = 'force-dynamic'; // don't prerender/cached-export this page
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
