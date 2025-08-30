@@ -1,78 +1,54 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
-import type { Session } from '@supabase/supabase-js';
 
 export default function SimpleAuthWidget() {
-  // Create supabase client once
-  const supabase = useMemo(
-    () =>
-      createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      ),
-    []
-  );
-
-  const [ready, setReady] = useState(false);
-  const [session, setSession] = useState<Session | null>(null);
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!mounted) return;
-      setSession(data.session ?? null);
-      setReady(true);
-    })();
-
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
-      setSession(s);
+    setMounted(true);
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    supabase.auth.getUser().then(({ data }) => {
+      setEmail(data.user?.email ?? null);
     });
+  }, []);
 
-    return () => {
-      mounted = false;
-      sub.subscription.unsubscribe();
-    };
-  }, [supabase]);
+  if (!mounted) {
+    // Prevent header flashing while client hydrates
+    return <div className="h-9 w-24 rounded-md bg-neutral-200 animate-pulse" />;
+  }
 
-  // Two important anti-flicker tricks:
-  // 1) Reserve width so the header doesn’t shift (min-w).
-  // 2) Hide content until the session state is known (visibility).
-  return (
-    <div className="min-w-[220px]">
-      <div style={{ visibility: ready ? 'visible' : 'hidden' }}>
-        {session ? (
-          <div className="flex items-center gap-3">
-            <Link href="/app" className="text-sm underline">
-              App
-            </Link>
-            <button
-              className="text-sm rounded-lg px-3 py-2 border"
-              onClick={async () => {
-                await supabase.auth.signOut();
-              }}
-            >
-              Sign out
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <Link href="/signin" className="text-sm px-3 py-2 border rounded-lg">
-              Sign In
-            </Link>
-            <Link
-              href="/signup"
-              className="text-sm px-3 py-2 bg-emerald-700 text-white rounded-lg"
-            >
-              Sign Up
-            </Link>
-          </div>
-        )}
-      </div>
-    </div>
+  return email ? (
+    <form
+      action={async () => {
+        const supabase = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+        await supabase.auth.signOut();
+        router.refresh();
+      }}
+    >
+      <button
+        type="submit"
+        className="text-sm rounded-lg px-3 py-2 border border-neutral-300 hover:bg-neutral-50"
+      >
+        Sign out ({email})
+      </button>
+    </form>
+  ) : (
+    <a
+      href="/signup"
+      className="text-sm rounded-lg px-3 py-2 bg-emerald-700 text-white shadow hover:bg-emerald-800"
+    >
+      Sign in
+    </a>
   );
 }
