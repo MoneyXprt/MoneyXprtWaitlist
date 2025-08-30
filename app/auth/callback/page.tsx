@@ -1,5 +1,7 @@
-export const revalidate = false;           // must be a boolean false or a number
-export const dynamic = 'force-dynamic';    // ensures no prerender
+'use client';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = false;
 
 import Client from './Client';
 
