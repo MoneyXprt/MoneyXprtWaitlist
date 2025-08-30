@@ -2,7 +2,8 @@
 
 // Force runtime rendering and disable any caching/prerender
 export const dynamic = 'force-dynamic';
-export const revalidate = 0; // <-- number is also valid (0 = no cache)
+export const revalidate = false;          // ✅ must be boolean false (not {} or 0)
+export const fetchCache = 'force-no-store';
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
