@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 export const revalidate = false;
-export const fetchCache = 'force-no-store';
+export const fetchCache = 'force-no-store'; //safe value
 
 import ResetPasswordClient from './ResetPasswordClient';
 

@@ -1,7 +1,7 @@
 'use client';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = false;        // <= safe value
+export const revalidate = false;        // <= safe value go
 export const fetchCache = 'force-no-store';
 
 import Client from './Client';
