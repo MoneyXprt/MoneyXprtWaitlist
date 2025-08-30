@@ -1,7 +1,7 @@
 import "./globals.css";
 import Link from "next/link";
 import Image from "next/image";
-import SimpleAuthWidget from "../components/SimpleAuthWidget";
+import SimpleAuthWidget from "./components/SimpleAuthWidget";
 import type { Metadata } from "next";
 
 // (Optional) If you want guaranteed Inter loading regardless of OS fonts,
