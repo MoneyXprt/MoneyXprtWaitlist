@@ -1,9 +1,7 @@
 'use client';
 
-// Force runtime rendering and disable any caching/prerender
 export const dynamic = 'force-dynamic';
-export const revalidate = false;          // ✅ must be boolean false (not {} or 0)
-export const fetchCache = 'force-no-store';
+export const revalidate = 0;
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -22,12 +20,8 @@ export default function AuthCallbackPage() {
 
     (async () => {
       const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
-      if (error) {
-        setError(error.message);
-        return;
-      }
-      const to = searchParams.get('redirect_to') || '/app';
-      router.replace(to);
+      if (error) { setError(error.message); return; }
+      router.replace(searchParams.get('redirect_to') || '/app');
     })();
   }, [router, searchParams]);
 
@@ -36,19 +30,13 @@ export default function AuthCallbackPage() {
       <div className="text-center">
         {!error ? (
           <>
-            <div className="animate-spin h-8 w-8 rounded-full border-2 border-[hsl(157_48%_25%)] border-t-transparent mx-auto mb-3" />
+            <div className="animate-spin h-8 w-8 rounded-full border-2 border-emerald-700 border-t-transparent mx-auto mb-3" />
             <p className="text-sm text-neutral-600">Signing you in…</p>
           </>
         ) : (
           <>
             <p className="font-semibold mb-2">Link error</p>
             <p className="text-sm text-neutral-600">{error}</p>
-            <button
-              onClick={() => router.push('/signin')}
-              className="mt-4 px-4 py-2 rounded-lg border"
-            >
-              Go to sign in
-            </button>
           </>
         )}
       </div>
