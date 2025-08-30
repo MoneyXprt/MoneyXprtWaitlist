@@ -1,8 +1,8 @@
-export const dynamic = 'force-dynamic';
-export const revalidate = 0; // or: export const revalidate = false;
+export const revalidate = false;           // must be a boolean false or a number
+export const dynamic = 'force-dynamic';    // ensures no prerender
 
-import CallbackClient from './Client';
+import Client from './Client';
 
 export default function Page() {
-  return <CallbackClient />;
+  return <Client />;
 }
