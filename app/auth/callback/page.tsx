@@ -1,6 +1,8 @@
 'use client';
-export const dynamic = 'force-dynamic'; // force runtime render
-export const revalidate = false;       // no caching
+
+// Force runtime rendering and disable any caching/prerender
+export const dynamic = 'force-dynamic';
+export const revalidate = 0; // <-- number is also valid (0 = no cache)
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -40,7 +42,10 @@ export default function AuthCallbackPage() {
           <>
             <p className="font-semibold mb-2">Link error</p>
             <p className="text-sm text-neutral-600">{error}</p>
-            <button onClick={() => router.push('/signin')} className="mt-4 px-4 py-2 rounded-lg border">
+            <button
+              onClick={() => router.push('/signin')}
+              className="mt-4 px-4 py-2 rounded-lg border"
+            >
               Go to sign in
             </button>
           </>
