@@ -1,8 +1,9 @@
 'use client';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = false;              // ✅ number, not an object
+export const revalidate = 0;            // <= must be a number (or false)
 export const fetchCache = 'force-no-store';
+export const runtime = 'nodejs';        // avoid Edge for safety
 
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -12,10 +13,9 @@ export default function Page() {
   const params = useSearchParams();
 
   useEffect(() => {
-    const err = params.get('error_description') || params.get('error');
-    if (err) console.error('Auth error:', err);
-    router.replace('/'); // or '/planner'
+    const next = params.get('next') || '/';
+    router.replace(next);
   }, [params, router]);
 
-  return null;
+  return null; // nothing to render; we immediately redirect
 }
