@@ -1,4 +1,3 @@
-'use client';
 
 import PlannerClient from './PlannerClient';
 
