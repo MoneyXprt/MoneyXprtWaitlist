@@ -244,7 +244,7 @@ export default function PlannerClient() {
             <Num label="HSA contribution ($)" value={data.hsaContrib} onChange={(n)=>set('hsaContrib', n)} step={500}/>
             <Num label="Health FSA ($)" value={data.fsaContrib} onChange={(n)=>set('fsaContrib', n)} step={250}/>
             <Num label="Solo-401k / SEP ($)" value={data.solo401kSEP} onChange={(n)=>set('solo401kSEP', n)} step={500}/>
-            <Num label="529 contribution ($)" value={data.contrib529} onChange={(n)=>set('529Contrib', n)} step={500}/>
+            <Num label="529 contribution ($)" value={data.contrib529} onChange={(n)=>set('contrib529', n)} step={500}/>
           </div>
         </section>
 
