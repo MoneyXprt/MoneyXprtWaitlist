@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 type FilingStatus = 'single' | 'married_joint' | 'married_separate' | 'head';
 const STATES = [
@@ -105,18 +105,99 @@ const empty: PlannerInput = {
   liquidityNeed12mo: 0,
 };
 
+/** ---------- UI Primitives ---------- **/
+
+function HelpTip({
+  title,
+  children,
+  side = 'right',
+}: {
+  title: string;
+  children: React.ReactNode;
+  side?: 'right' | 'left';
+}): any {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="relative inline-block align-middle">
+      <button
+        type="button"
+        aria-label={`Help: ${title}`}
+        className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full border text-xs leading-none hover:bg-gray-50"
+        onClick={() => setOpen((o) => !o)}
+      >
+        ?
+      </button>
+      {open && (
+        <div
+          role="dialog"
+          aria-label={title}
+          className={`absolute z-30 mt-2 w-80 rounded border bg-white p-3 text-sm shadow-lg ${
+            side === 'right' ? 'left-6' : 'right-6'
+          }`}
+        >
+          <div className="mb-1 font-medium">{title}</div>
+          <div className="text-gray-700">{children}</div>
+          <div className="mt-3 text-right">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
+    </span>
+  );
+}
+
+function SectionTitle({
+  children,
+  help,
+}: {
+  children: React.ReactNode;
+  help?: React.ReactNode;
+}) {
+  return (
+    <h2 className="text-xl font-medium mb-3">
+      {children}
+      {help && <HelpTip title={`${children}`} children={undefined}>{help}</HelpTip>}
+    </h2>
+  );
+}
+
+function FieldHint({ children }: { children: React.ReactNode }) {
+  return <div className="mt-1 text-xs text-gray-500">{children}</div>;
+}
+
 function Num({
-  label, value, onChange, step = 1, suffix = '$'
-}: { label: string; value: number; onChange: (n:number)=>void; step?: number; suffix?: string }) {
+  label,
+  value,
+  onChange,
+  step = 1,
+  suffix = '$',
+  help,
+}: {
+  label: string;
+  value: number;
+  onChange: (n: number) => void;
+  step?: number;
+  suffix?: string;
+  help?: React.ReactNode;
+}) {
   return (
     <label className="block mb-3">
-      <span className="block text-sm font-medium mb-1">{label}</span>
+      <span className="block text-sm font-medium mb-1">
+        {label}
+        {help && <HelpTip title={label} children={undefined}>{help}</HelpTip>}
+      </span>
       <input
         type="number"
         inputMode="decimal"
         step={step}
         value={Number.isFinite(value) ? value : 0}
-        onChange={(e)=>onChange(parseFloat(e.target.value || '0'))}
+        onChange={(e) => onChange(parseFloat(e.target.value || '0'))}
         className="w-full border rounded px-3 py-2"
         placeholder={suffix}
       />
@@ -124,31 +205,49 @@ function Num({
   );
 }
 
-function Txt({ label, value, onChange }: { label: string; value: string; onChange: (s:string)=>void }) {
+function Txt({
+  label,
+  value,
+  onChange,
+  help,
+}: {
+  label: string;
+  value: string;
+  onChange: (s: string) => void;
+  help?: React.ReactNode;
+}) {
   return (
     <label className="block mb-3">
-      <span className="block text-sm font-medium mb-1">{label}</span>
+      <span className="block text-sm font-medium mb-1">
+        {label}
+        {help && <HelpTip title={label} children={undefined}>{help}</HelpTip>}
+      </span>
       <input
         type="text"
         value={value}
-        onChange={(e)=>onChange(e.target.value)}
+        onChange={(e) => onChange(e.target.value)}
         className="w-full border rounded px-3 py-2"
       />
     </label>
   );
 }
 
+/** ---------- Planner Client ---------- **/
+
 export default function PlannerClient() {
   const [data, setData] = useState<PlannerInput>(empty);
-
-  // New UI state for recommendations flow
   const [recs, setRecs] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDebug, setShowDebug] = useState(false);
 
   const set = <K extends keyof PlannerInput>(key: K, val: PlannerInput[K]) =>
-    setData(d => ({ ...d, [key]: val }));
+    setData((d) => ({ ...d, [key]: val }));
+
+  const showSpouseAge = useMemo(
+    () => data.filingStatus === 'married_joint' || data.filingStatus === 'married_separate',
+    [data.filingStatus]
+  );
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -162,14 +261,11 @@ export default function PlannerClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-
       if (!res.ok) {
         const msg = await res.text();
         throw new Error(msg || `Request failed: ${res.status}`);
       }
-
       const json = await res.json();
-      // Expecting { recommendations: string[] }
       setRecs(Array.isArray(json.recommendations) ? json.recommendations : []);
     } catch (err: any) {
       setError(err?.message ?? 'Failed to get recommendations.');
@@ -186,16 +282,36 @@ export default function PlannerClient() {
 
         {/* 1) Profile */}
         <section>
-          <h2 className="text-xl font-medium mb-3">1) Profile</h2>
+          <SectionTitle
+                      help={<>
+                          This tells us who we’re planning for and how you file taxes.
+                          Your filing status and state drive many thresholds (brackets,
+                          credits, SALT limits, etc.).
+                      </>} children={undefined}          >
+            1) Profile
+          </SectionTitle>
+
           <div className="grid md:grid-cols-3 gap-4">
-            <Txt label="First name" value={data.firstName} onChange={(v)=>set('firstName', v)} />
+            <Txt
+              label="First name"
+              value={data.firstName}
+              onChange={(v) => set('firstName', v)}
+              help="Used to personalize recommendations."
+            />
 
             <label className="block">
-              <span className="block text-sm font-medium mb-1">Filing status</span>
+              <span className="block text-sm font-medium mb-1">
+                Filing status
+                <HelpTip title="Filing status" children={undefined}>
+                  Your IRS filing status (single, married filing jointly,
+                  married filing separately, head of household). This affects
+                  brackets, deductions, credits, and phase-outs.
+                </HelpTip>
+              </span>
               <select
                 className="w-full border rounded px-3 py-2"
                 value={data.filingStatus}
-                onChange={(e)=>set('filingStatus', e.target.value as FilingStatus)}
+                onChange={(e) => set('filingStatus', e.target.value as FilingStatus)}
               >
                 <option value="single">Single</option>
                 <option value="married_joint">Married filing jointly</option>
@@ -205,96 +321,291 @@ export default function PlannerClient() {
             </label>
 
             <label className="block">
-              <span className="block text-sm font-medium mb-1">State</span>
+              <span className="block text-sm font-medium mb-1">
+                State
+                <HelpTip title="State" children={undefined}>
+                  Your resident state for tax purposes. States differ on
+                  income tax rates, deductions, and 529 plan rules.
+                </HelpTip>
+              </span>
               <select
                 className="w-full border rounded px-3 py-2"
                 value={data.state}
-                onChange={(e)=>set('state', e.target.value)}
+                onChange={(e) => set('state', e.target.value)}
               >
-                {STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                {STATES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
               </select>
             </label>
 
-            <Num label="Your age" value={data.age} onChange={(n)=>set('age', n)} />
-            <Num label="Spouse age (if any)" value={data.spouseAge ?? 0} onChange={(n)=>set('spouseAge', n)} />
-            <Num label="Dependents (#)" value={data.dependents} onChange={(n)=>set('dependents', n)} />
+            <Num
+              label="Your age"
+              value={data.age}
+              onChange={(n) => set('age', n)}
+              help="Age gates catch-up contributions for retirement plans and Medicare timing."
+            />
+
+            {showSpouseAge && (
+              <Num
+                label="Spouse age"
+                value={data.spouseAge ?? 0}
+                onChange={(n) => set('spouseAge', n)}
+                help="If you file as married, spouse age helps with retirement and HSA planning."
+              />
+            )}
+
+            <Num
+              label="Dependents (#)"
+              value={data.dependents}
+              onChange={(n) => set('dependents', n)}
+              help="People you can claim, which can influence credits and tax strategy."
+            />
 
             <label className="flex items-center gap-2 mt-2">
               <input
                 type="checkbox"
                 checked={data.hdhpEligible}
-                onChange={(e)=>set('hdhpEligible', e.target.checked)}
+                onChange={(e) => set('hdhpEligible', e.target.checked)}
               />
               <span>HDHP / HSA Eligible</span>
+              <HelpTip title="HDHP / HSA" children={undefined}>
+                If your health plan qualifies as a High-Deductible Health Plan,
+                you may contribute to a Health Savings Account (HSA), which is
+                triple tax-advantaged.
+              </HelpTip>
             </label>
           </div>
         </section>
 
         {/* 2) Income */}
         <section>
-          <h2 className="text-xl font-medium mb-3">2) Income</h2>
+          <SectionTitle
+                      help={<>
+                          Enter income you expect this year. Ballpark is fine — the tool
+                          will suggest strategies (withholding, deductions, timing) to
+                          hit your goals.
+                      </>} children={undefined}          >
+            2) Income
+          </SectionTitle>
+
           <div className="grid md:grid-cols-3 gap-4">
-            <Num label="W-2 income ($)" value={data.w2Income} onChange={(n)=>set('w2Income', n)} step={1000}/>
-            <Num label="Bonus ($)" value={data.bonusIncome} onChange={(n)=>set('bonusIncome', n)} step={1000}/>
-            <Num label="RSU vesting value ($)" value={data.rsuVestedValue} onChange={(n)=>set('rsuVestedValue', n)} step={1000}/>
-            <Num label="ISO bargain element ($)" value={data.isoExerciseBargain} onChange={(n)=>set('isoExerciseBargain', n)} step={1000}/>
-            <Num label="Self-employment net profit ($)" value={data.selfEmploymentNet} onChange={(n)=>set('selfEmploymentNet', n)} step={1000}/>
-            <Num label="K-1 ordinary (active) ($)" value={data.k1Active} onChange={(n)=>set('k1Active', n)} step={1000}/>
-            <Num label="K-1 ordinary (passive) ($)" value={data.k1Passive} onChange={(n)=>set('k1Passive', n)} step={1000}/>
-            <Num label="Short-term cap gains ($)" value={data.capGainsShort} onChange={(n)=>set('capGainsShort', n)} step={1000}/>
-            <Num label="Long-term cap gains ($)" value={data.capGainsLong} onChange={(n)=>set('capGainsLong', n)} step={1000}/>
-            <Num label="Qualified dividends ($)" value={data.qualifiedDividends} onChange={(n)=>set('qualifiedDividends', n)} step={1000}/>
-            <Num label="Ordinary dividends ($)" value={data.ordinaryDividends} onChange={(n)=>set('ordinaryDividends', n)} step={1000}/>
-            <Num label="Interest income ($)" value={data.interestIncome} onChange={(n)=>set('interestIncome', n)} step={1000}/>
-            <Num label="Crypto gains ($)" value={data.cryptoGains} onChange={(n)=>set('cryptoGains', n)} step={1000}/>
-            <Num label="Other income ($)" value={data.otherIncome} onChange={(n)=>set('otherIncome', n)} step={1000}/>
-            <Num label="Rental units (#)" value={data.rentalUnits} onChange={(n)=>set('rentalUnits', n)} />
-            <Num label="Rental NOI (all units) ($)" value={data.rentalNOI} onChange={(n)=>set('rentalNOI', n)} step={1000}/>
+            <Num label="W-2 income ($)" value={data.w2Income} onChange={(n) => set('w2Income', n)} step={1000}
+              help="Your salary/wages reported on a W-2 from your employer."/>
+            <Num label="Bonus ($)" value={data.bonusIncome} onChange={(n) => set('bonusIncome', n)} step={1000}
+              help="Expected cash bonuses for the year."/>
+            <Num label="RSU vesting value ($)" value={data.rsuVestedValue} onChange={(n) => set('rsuVestedValue', n)} step={1000}
+              help="Value of stock units vesting this year; employers typically withhold taxes but gaps are common."/>
+            <Num label="ISO bargain element ($)" value={data.isoExerciseBargain} onChange={(n) => set('isoExerciseBargain', n)} step={1000}
+              help="For incentive stock options: spread at exercise; can trigger AMT."/>
+            <Num label="Self-employment net profit ($)" value={data.selfEmploymentNet} onChange={(n) => set('selfEmploymentNet', n)} step={1000}
+              help="Schedule C profit after expenses; drives SE tax and retirement plan options (Solo-401k/SEP)."/>
+            <Num label="K-1 ordinary (active) ($)" value={data.k1Active} onChange={(n) => set('k1Active', n)} step={1000}
+              help="Active partnership/S-corp pass-through income reported on a K-1."/>
+            <Num label="K-1 ordinary (passive) ($)" value={data.k1Passive} onChange={(n) => set('k1Passive', n)} step={1000}
+              help="Passive K-1 income (e.g., rentals/limited partnerships)."/>
+            <Num label="Short-term cap gains ($)" value={data.capGainsShort} onChange={(n) => set('capGainsShort', n)} step={1000}
+              help="Net short-term trading gains (taxed like ordinary income)."/>
+            <Num label="Long-term cap gains ($)" value={data.capGainsLong} onChange={(n) => set('capGainsLong', n)} step={1000}
+              help="Net long-term gains (preferential capital gains rates)."/>
+            <Num label="Qualified dividends ($)" value={data.qualifiedDividends} onChange={(n) => set('qualifiedDividends', n)} step={1000}
+              help="Dividends that get capital-gains-like treatment if holding period met."/>
+            <Num label="Ordinary dividends ($)" value={data.ordinaryDividends} onChange={(n) => set('ordinaryDividends', n)} step={1000}
+              help="Dividends taxed as ordinary income (not qualified)."/>
+            <Num label="Interest income ($)" value={data.interestIncome} onChange={(n) => set('interestIncome', n)} step={1000}
+              help="Bank/CD/bond interest (taxed as ordinary income)."/>
+            <Num label="Crypto gains ($)" value={data.cryptoGains} onChange={(n) => set('cryptoGains', n)} step={1000}
+              help="Taxable crypto disposals or staking income."/>
+            <Num label="Other income ($)" value={data.otherIncome} onChange={(n) => set('otherIncome', n)} step={1000}
+              help="Anything material not listed above (e.g., royalties)."/>
+            <Num label="Rental units (#)" value={data.rentalUnits} onChange={(n) => set('rentalUnits', n)}
+              help="Count of rental doors/units owned."/>
+            <Num label="Rental NOI (all units) ($)" value={data.rentalNOI} onChange={(n) => set('rentalNOI', n)} step={1000}
+              help="Annual net operating income across rentals (rents minus expenses, before depreciation)."/>
           </div>
 
           <label className="flex items-center gap-2 mt-2">
             <input
               type="checkbox"
               checked={data.niitSubject}
-              onChange={(e)=>set('niitSubject', e.target.checked)}
+              onChange={(e) => set('niitSubject', e.target.checked)}
             />
             <span>Investment income likely subject to NIIT (3.8%)</span>
+            <HelpTip title="NIIT (3.8%)" children={undefined}>
+              High-income households may owe the Net Investment Income Tax on
+              investment income (gains/dividends/interest/rental). We’ll
+              factor that in if this is checked.
+            </HelpTip>
           </label>
         </section>
 
         {/* 3) Pretax deductions / savings */}
         <section>
-          <h2 className="text-xl font-medium mb-3">3) Pretax Deductions / Savings</h2>
+          <SectionTitle
+                      help={<>
+                          These reduce taxable income before it’s calculated. We’ll
+                          check for contribution limits, catch-ups (50+), and HSA
+                          eligibility based on your profile.
+                      </>} children={undefined}          >
+            3) Pretax Deductions / Savings
+          </SectionTitle>
+
           <div className="grid md:grid-cols-3 gap-4">
-            <Num label="Employee 401(k) deferral ($)" value={data.employee401k} onChange={(n)=>set('employee401k', n)} step={500}/>
-            <Num label="Employer 401(k) match/profit share ($)" value={data.employer401k} onChange={(n)=>set('employer401k', n)} step={500}/>
-            <Num label="HSA contribution ($)" value={data.hsaContrib} onChange={(n)=>set('hsaContrib', n)} step={500}/>
-            <Num label="Health FSA ($)" value={data.fsaContrib} onChange={(n)=>set('fsaContrib', n)} step={250}/>
-            <Num label="Solo-401k / SEP ($)" value={data.solo401kSEP} onChange={(n)=>set('solo401kSEP', n)} step={500}/>
-            <Num label="529 contribution ($)" value={data.contrib529} onChange={(n)=>set('contrib529', n)} step={500}/>
+            <div>
+              <Num
+                label="Employee 401(k) deferral ($)"
+                value={data.employee401k}
+                onChange={(n) => set('employee401k', n)}
+                step={500}
+                help="What you choose to defer from paychecks into your 401(k). Plans often allow Roth or pre-tax."
+              />
+              <FieldHint children={undefined}>
+                Typical annual limit exists and can have a catch-up if age 50+ (varies by year).
+              </FieldHint>
+            </div>
+
+            <Num
+              label="Employer 401(k) match/profit share ($)"
+              value={data.employer401k}
+              onChange={(n) => set('employer401k', n)}
+              step={500}
+              help="Company match and/or profit sharing. Not your deferral, but helps total retirement savings."
+            />
+
+            <div>
+              <Num
+                label="HSA contribution ($)"
+                value={data.hsaContrib}
+                onChange={(n) => set('hsaContrib', n)}
+                step={500}
+                help="Available only if you have an HSA-eligible HDHP. Contributions are triple tax-advantaged."
+              />
+              {!data.hdhpEligible && (
+                <FieldHint children={undefined}>Only available if HDHP/HSA-eligible is checked.</FieldHint>
+              )}
+            </div>
+
+            <Num
+              label="Health FSA ($)"
+              value={data.fsaContrib}
+              onChange={(n) => set('fsaContrib', n)}
+              step={250}
+              help="Use-it-or-lose-it medical FSA through your employer. Not the same as an HSA."
+            />
+
+            <Num
+              label="Solo-401k / SEP ($)"
+              value={data.solo401kSEP}
+              onChange={(n) => set('solo401kSEP', n)}
+              step={500}
+              help="For self-employment income. Contribution space is tied to net profit and plan type."
+            />
+
+            <Num
+              label="529 contribution ($)"
+              value={data.contrib529}
+              onChange={(n) => set('contrib529', n)}
+              step={500}
+              help="Education savings. Federal tax-free growth; some states offer tax deductions/credits."
+            />
           </div>
         </section>
 
         {/* 4) Itemized deductions */}
         <section>
-          <h2 className="text-xl font-medium mb-3">4) Itemized Deductions</h2>
+          <SectionTitle
+                      help={<>
+                          If itemized deductions exceed the standard deduction, you
+                          benefit from itemizing. SALT (state + local tax) deductions
+                          face a federal cap; we’ll compare scenarios for you.
+                      </>} children={undefined}          >
+            4) Itemized Deductions
+          </SectionTitle>
+
           <div className="grid md:grid-cols-3 gap-4">
-            <Num label="Mortgage interest ($)" value={data.mortgageInterest} onChange={(n)=>set('mortgageInterest', n)} step={500}/>
-            <Num label="Property tax ($)" value={data.propertyTax} onChange={(n)=>set('propertyTax', n)} step={500}/>
-            <Num label="State income tax paid ($)" value={data.stateIncomeTaxPaid} onChange={(n)=>set('stateIncomeTaxPaid', n)} step={500}/>
-            <Num label="Charitable cash ($)" value={data.charityCash} onChange={(n)=>set('charityCash', n)} step={500}/>
-            <Num label="Charitable non-cash ($)" value={data.charityNonCash} onChange={(n)=>set('charityNonCash', n)} step={500}/>
-            <Num label="Medical (unreimbursed) ($)" value={data.medicalExpenses} onChange={(n)=>set('medicalExpenses', n)} step={500}/>
+            <Num
+              label="Mortgage interest ($)"
+              value={data.mortgageInterest}
+              onChange={(n) => set('mortgageInterest', n)}
+              step={500}
+              help="Interest paid on qualified home loans. Subject to mortgage balance limits."
+            />
+            <div>
+              <Num
+                label="Property tax ($)"
+                value={data.propertyTax}
+                onChange={(n) => set('propertyTax', n)}
+                step={500}
+                help="Real estate taxes paid."
+              />
+              <FieldHint children={undefined}>SALT (state + local) deductions face a federal cap when itemizing.</FieldHint>
+            </div>
+            <Num
+              label="State income tax paid ($)"
+              value={data.stateIncomeTaxPaid}
+              onChange={(n) => set('stateIncomeTaxPaid', n)}
+              step={500}
+              help="Withholding and estimated payments to your state/local income tax."
+            />
+            <Num
+              label="Charitable cash ($)"
+              value={data.charityCash}
+              onChange={(n) => set('charityCash', n)}
+              step={500}
+              help="Cash gifts to qualified charities. Bunching can improve value in some years."
+            />
+            <Num
+              label="Charitable non-cash ($)"
+              value={data.charityNonCash}
+              onChange={(n) => set('charityNonCash', n)}
+              step={500}
+              help="Donations of appreciated securities or property can avoid capital gains."
+            />
+            <Num
+              label="Medical (unreimbursed) ($)"
+              value={data.medicalExpenses}
+              onChange={(n) => set('medicalExpenses', n)}
+              step={500}
+              help="Out-of-pocket medical expenses; only the amount above an AGI % floor is deductible."
+            />
           </div>
         </section>
 
         {/* 5) Goals */}
         <section>
-          <h2 className="text-xl font-medium mb-3">5) Goals & Constraints</h2>
+          <SectionTitle
+                      help={<>
+                          These preferences guide trade-offs. For example, if you want a
+                          lower effective rate, we’ll look harder at deferrals and timing;
+                          liquidity needs push us toward cash-friendly options.
+                      </>} children={undefined}          >
+            5) Goals & Constraints
+          </SectionTitle>
+
           <div className="grid md:grid-cols-3 gap-4">
-            <Num label="Target effective tax rate (%)" value={data.targetEffRate} onChange={(n)=>set('targetEffRate', n)} step={0.5} suffix="%"/>
-            <Num label="Retirement age" value={data.retireAge} onChange={(n)=>set('retireAge', n)} />
-            <Num label="Liquidity needed next 12 months ($)" value={data.liquidityNeed12mo} onChange={(n)=>set('liquidityNeed12mo', n)} step={1000}/>
+            <Num
+              label="Target effective tax rate (%)"
+              value={data.targetEffRate}
+              onChange={(n) => set('targetEffRate', n)}
+              step={0.5}
+              suffix="%"
+              help="Your end-of-year target: total tax ÷ total income."
+            />
+            <Num
+              label="Retirement age"
+              value={data.retireAge}
+              onChange={(n) => set('retireAge', n)}
+              help="Used to frame savings horizon and Roth vs. pre-tax trade-offs."
+            />
+            <Num
+              label="Liquidity needed next 12 months ($)"
+              value={data.liquidityNeed12mo}
+              onChange={(n) => set('liquidityNeed12mo', n)}
+              step={1000}
+              help="Cash you’ll need soon (house down payment, education, large purchases)."
+            />
           </div>
         </section>
 
@@ -322,7 +633,9 @@ export default function PlannerClient() {
             <p>No recommendations returned.</p>
           ) : (
             <ul className="list-disc pl-5 space-y-2">
-              {recs.map((r, i) => <li key={i}>{r}</li>)}
+              {recs.map((r, i) => (
+                <li key={i}>{r}</li>
+              ))}
             </ul>
           )}
 
@@ -332,7 +645,7 @@ export default function PlannerClient() {
               <input
                 type="checkbox"
                 checked={showDebug}
-                onChange={(e)=>setShowDebug(e.target.checked)}
+                onChange={(e) => setShowDebug(e.target.checked)}
               />
               <span className="text-sm">Show inputs (debug)</span>
             </label>
