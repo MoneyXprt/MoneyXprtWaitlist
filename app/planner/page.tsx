@@ -1,11 +1,9 @@
+// app/planner/page.tsx
+import Wizard from './Wizard';
 
-import PlannerClient from './PlannerClient';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-export default function PlannerPage() {
-  return (
-    <section className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Financial Planner</h1>
-      <PlannerClient />
-    </section>
-  );
+export default function Page() {
+  return <Wizard />;
 }
