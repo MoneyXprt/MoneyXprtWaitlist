@@ -251,6 +251,23 @@ export default function PlannerClient() {
     [data.filingStatus]
   );
 
+  // ── 3.1: Sticky-section helpers (for a section nav we’ll add next) ─────────
+  const sectionList = [
+    { id: 'profile',  label: 'Profile' },
+    { id: 'income',   label: 'Income' },
+    { id: 'pretax',   label: 'Pretax' },
+    { id: 'itemized', label: 'Itemized' },
+    { id: 'goals',    label: 'Goals' },
+  ];
+
+  function go(id: string) {
+    document.getElementById(id)?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  }
+  // ─────────────────────────────────────────────────────────────────────────────
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -279,10 +296,24 @@ export default function PlannerClient() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-semibold mb-6">Financial Planner</h1>
+      <div className="sticky top-0 z-20 -mx-4 mb-6 border-b bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex flex-wrap gap-2">
+          {sectionList.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => go(s.id)}
+              className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50"
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <form onSubmit={onSubmit} className="space-y-8">
         {/* 1) Profile */}
-        <section>
+        <section id="profile" className="scroll-mt-24">
           <SectionTitle
             help={
               <>
@@ -387,7 +418,7 @@ export default function PlannerClient() {
         </section>
 
         {/* 2) Income */}
-        <section>
+        <section id="income" className="scroll-mt-24">
           <SectionTitle
             help={
               <>
@@ -451,7 +482,7 @@ export default function PlannerClient() {
         </section>
 
         {/* 3) Pretax deductions / savings */}
-        <section>
+        <section id="pretax" className="scroll-mt-24">
           <SectionTitle
             help={
               <>
@@ -526,7 +557,7 @@ export default function PlannerClient() {
         </section>
 
         {/* 4) Itemized deductions */}
-        <section>
+        <section id="itemized" className="scroll-mt-24">
           <SectionTitle
             help={
               <>
@@ -589,7 +620,7 @@ export default function PlannerClient() {
         </section>
 
         {/* 5) Goals */}
-        <section>
+        <section id="goals" className="scroll-mt-24">
           <SectionTitle
             help={
               <>
