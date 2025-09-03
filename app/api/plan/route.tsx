@@ -1,35 +1,38 @@
 // app/api/plan/route.ts
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
+import { getRecommendations, PlannerInput } from '@/lib/planner/engine';
+
+export const runtime = 'nodejs'; // keep it on Node runtime
 
 export async function POST(req: Request) {
-  const input = await req.json(); // PlannerInput
-  const recs: string[] = [];
+  try {
+    const body = (await req.json()) as Partial<PlannerInput>;
 
-  // Simple, deterministic suggestions (replace with AI later if you want)
-  if (input.w2Income > 200_000) {
-    recs.push("Max out 401(k) employee deferrals; consider mega backdoor Roth if plan allows.");
-  }
-  if (input.hdhpEligible) {
-    recs.push("Open and fully fund an HSA; invest the HSA for long-term growth.");
-  }
-  if ((input.capitalGains ?? 0) + (input.ordinaryDividends ?? 0) + (input.qualifiedDividends ?? 0) > 0) {
-    recs.push("Harvest losses to offset gains; locate taxable bonds in tax-advantaged accounts.");
-  }
-  if ((input.rentalUnits ?? 0) > 0) {
-    recs.push("Track real estate professional hours / material participation; consider cost segregation.");
-  }
-  if ((input.mortgageInterest ?? 0) + (input.propertyTax ?? 0) + (input.charitableCash ?? 0) > 12_000) {
-    recs.push("Run standard vs. itemized deduction comparison; bunch charitable giving via donor-advised fund.");
-  }
-  if ((input.contrib529 ?? 0) > 0) {
-    recs.push("Confirm state tax benefits for 529 contributions; automate monthly 529 funding.");
-  }
-  if ((input.rsuVestedValue ?? 0) > 0) {
-    recs.push("Plan RSU tax withholding gaps; consider 83(b)/10b5-1 strategy where applicable.");
-  }
+    // very light validation: ensure required shape exists
+    const required: (keyof PlannerInput)[] = [
+      'filingStatus','state','age','dependents',
+      'w2Income','bonusIncome','rsuVestedValue','isoExerciseBargain','selfEmploymentNet',
+      'k1Active','k1Passive','capGainsShort','capGainsLong','qualifiedDividends','ordinaryDividends',
+      'cryptoGains','interestIncome','otherIncome','rentalUnits','rentalNOI','niitSubject',
+      'employee401k','employer401k','hsaContrib','fsaContrib','solo401kSEP','contrib529',
+      'mortgageInterest','propertyTax','stateIncomeTaxPaid','charityCash','charityNonCash','medicalExpenses',
+      'targetEffRate','retireAge','liquidityNeed12mo','firstName','hdhpEligible'
+    ];
+    for (const k of required) {
+      if (body[k] === undefined) {
+        return NextResponse.json(
+          { error: `Missing field: ${k}` },
+          { status: 400 }
+        );
+      }
+    }
 
-  // Always return at least one
-  if (recs.length === 0) recs.push("No obvious opportunities detected—tune inputs for more detailed suggestions.");
-
-  return NextResponse.json({ recommendations: recs });
+    const recommendations = getRecommendations(body as PlannerInput);
+    return NextResponse.json({ recommendations });
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err?.message ?? 'Unexpected error' },
+      { status: 500 }
+    );
+  }
 }
