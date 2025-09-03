@@ -140,15 +140,42 @@ function Txt({ label, value, onChange }: { label: string; value: string; onChang
 
 export default function PlannerClient() {
   const [data, setData] = useState<PlannerInput>(empty);
-  const [preview, setPreview] = useState<string>('');
+
+  // New UI state for recommendations flow
+  const [recs, setRecs] = useState<string[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
 
   const set = <K extends keyof PlannerInput>(key: K, val: PlannerInput[K]) =>
     setData(d => ({ ...d, [key]: val }));
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // For now, just preview the payload we’ll send to our planner engine.
-    setPreview(JSON.stringify(data, null, 2));
+    setLoading(true);
+    setError(null);
+    setRecs(null);
+
+    try {
+      const res = await fetch('/api/plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || `Request failed: ${res.status}`);
+      }
+
+      const json = await res.json();
+      // Expecting { recommendations: string[] }
+      setRecs(Array.isArray(json.recommendations) ? json.recommendations : []);
+    } catch (err: any) {
+      setError(err?.message ?? 'Failed to get recommendations.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -273,20 +300,51 @@ export default function PlannerClient() {
 
         <button
           type="submit"
-          className="inline-flex items-center px-4 py-2 rounded bg-black text-white hover:opacity-90"
+          className="inline-flex items-center px-4 py-2 rounded bg-black text-white hover:opacity-90 disabled:opacity-60"
+          disabled={loading}
         >
-          Continue to Recommendations
+          {loading ? 'Generating…' : 'Continue to Recommendations'}
         </button>
       </form>
 
-      {preview && (
-        <div className="mt-6">
-          <h3 className="font-medium mb-2">Inputs captured</h3>
-          <textarea
-            className="w-full h-64 border rounded p-3 font-mono text-sm"
-            value={preview}
-            readOnly
-          />
+      {/* Errors */}
+      {error && (
+        <div className="mt-6 rounded border border-red-300 bg-red-50 p-3 text-red-800">
+          {error}
+        </div>
+      )}
+
+      {/* Recommendations */}
+      {recs && (
+        <div className="mt-6 rounded border p-4">
+          <h3 className="font-semibold mb-2">Personalized Recommendations</h3>
+          {recs.length === 0 ? (
+            <p>No recommendations returned.</p>
+          ) : (
+            <ul className="list-disc pl-5 space-y-2">
+              {recs.map((r, i) => <li key={i}>{r}</li>)}
+            </ul>
+          )}
+
+          {/* Debug toggle */}
+          <div className="mt-4">
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={showDebug}
+                onChange={(e)=>setShowDebug(e.target.checked)}
+              />
+              <span className="text-sm">Show inputs (debug)</span>
+            </label>
+          </div>
+
+          {showDebug && (
+            <textarea
+              className="mt-3 w-full h-64 border rounded p-3 font-mono text-sm"
+              value={JSON.stringify(data, null, 2)}
+              readOnly
+            />
+          )}
         </div>
       )}
     </div>
