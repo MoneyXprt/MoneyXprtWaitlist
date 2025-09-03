@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, ReactNode } from 'react';
 
 type FilingStatus = 'single' | 'married_joint' | 'married_separate' | 'head';
 const STATES = [
@@ -16,47 +16,47 @@ type PlannerInput = {
   dependents: number;
   age: number;
   spouseAge?: number;
-  hdhpEligible: boolean; // HSA eligible?
+  hdhpEligible: boolean;
 
   // 2) Income (annual, pre-tax unless noted)
   w2Income: number;
   bonusIncome: number;
-  rsuVestedValue: number;          // value of shares vesting this year
-  isoExerciseBargain: number;      // bargain element from ISOs (AMT driver)
-  selfEmploymentNet: number;       // Schedule C net profit (pre-SE tax)
-  k1Active: number;                // K-1 ordinary (active)
-  k1Passive: number;               // K-1 ordinary (passive)
-  capGainsShort: number;           // net ST capital gains
-  capGainsLong: number;            // net LT capital gains
+  rsuVestedValue: number;
+  isoExerciseBargain: number;
+  selfEmploymentNet: number;
+  k1Active: number;
+  k1Passive: number;
+  capGainsShort: number;
+  capGainsLong: number;
   qualifiedDividends: number;
   ordinaryDividends: number;
   cryptoGains: number;
   interestIncome: number;
   otherIncome: number;
   rentalUnits: number;
-  rentalNOI: number;               // net operating income across rentals
-  niitSubject: boolean;            // likely subject to 3.8% NIIT
+  rentalNOI: number;
+  niitSubject: boolean;
 
   // 3) Pretax deductions / savings
-  employee401k: number;            // employee deferrals
-  employer401k: number;            // employer match/profit share (context)
+  employee401k: number;
+  employer401k: number;
   hsaContrib: number;
-  fsaContrib: number;              // health FSA
-  solo401kSEP: number;             // self-employed retirement contrib
+  fsaContrib: number;
+  solo401kSEP: number;
   contrib529: number;
 
   // 4) Itemized deductions (federal)
   mortgageInterest: number;
   propertyTax: number;
-  stateIncomeTaxPaid: number;      // state/local income taxes (SALT)
+  stateIncomeTaxPaid: number;
   charityCash: number;
   charityNonCash: number;
-  medicalExpenses: number;         // unreimbursed
+  medicalExpenses: number;
 
   // 5) Goals / constraints (for recs)
-  targetEffRate: number;           // goal effective tax rate
+  targetEffRate: number;
   retireAge: number;
-  liquidityNeed12mo: number;       // cash need next 12 months
+  liquidityNeed12mo: number;
 };
 
 const empty: PlannerInput = {
@@ -113,9 +113,9 @@ function HelpTip({
   side = 'right',
 }: {
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
   side?: 'right' | 'left';
-}): any {
+}): JSX.Element {
   const [open, setOpen] = useState(false);
   return (
     <span className="relative inline-block align-middle">
@@ -156,18 +156,18 @@ function SectionTitle({
   children,
   help,
 }: {
-  children: React.ReactNode;
-  help?: React.ReactNode;
+  children: ReactNode;
+  help?: ReactNode;
 }) {
   return (
-    <h2 className="text-xl font-medium mb-3">
-      {children}
-      {help && <HelpTip title={`${children}`} children={undefined}>{help}</HelpTip>}
+    <h2 className="text-xl font-medium mb-3 flex items-center">
+      <span>{children}</span>
+      {help && <HelpTip title={`${children}`}>{help}</HelpTip>}
     </h2>
   );
 }
 
-function FieldHint({ children }: { children: React.ReactNode }) {
+function FieldHint({ children }: { children: ReactNode }) {
   return <div className="mt-1 text-xs text-gray-500">{children}</div>;
 }
 
@@ -184,13 +184,13 @@ function Num({
   onChange: (n: number) => void;
   step?: number;
   suffix?: string;
-  help?: React.ReactNode;
+  help?: ReactNode;
 }) {
   return (
     <label className="block mb-3">
       <span className="block text-sm font-medium mb-1">
         {label}
-        {help && <HelpTip title={label} children={undefined}>{help}</HelpTip>}
+        {help && <HelpTip title={label}>{help}</HelpTip>}
       </span>
       <input
         type="number"
@@ -214,13 +214,13 @@ function Txt({
   label: string;
   value: string;
   onChange: (s: string) => void;
-  help?: React.ReactNode;
+  help?: ReactNode;
 }) {
   return (
     <label className="block mb-3">
       <span className="block text-sm font-medium mb-1">
         {label}
-        {help && <HelpTip title={label} children={undefined}>{help}</HelpTip>}
+        {help && <HelpTip title={label}>{help}</HelpTip>}
       </span>
       <input
         type="text"
@@ -245,7 +245,9 @@ export default function PlannerClient() {
     setData((d) => ({ ...d, [key]: val }));
 
   const showSpouseAge = useMemo(
-    () => data.filingStatus === 'married_joint' || data.filingStatus === 'married_separate',
+    () =>
+      data.filingStatus === 'married_joint' ||
+      data.filingStatus === 'married_separate',
     [data.filingStatus]
   );
 
@@ -279,15 +281,17 @@ export default function PlannerClient() {
       <h1 className="text-2xl font-semibold mb-6">Financial Planner</h1>
 
       <form onSubmit={onSubmit} className="space-y-8">
-
         {/* 1) Profile */}
         <section>
           <SectionTitle
-                      help={<>
-                          This tells us who we’re planning for and how you file taxes.
-                          Your filing status and state drive many thresholds (brackets,
-                          credits, SALT limits, etc.).
-                      </>} children={undefined}          >
+            help={
+              <>
+                This tells us who we’re planning for and how you file taxes.
+                Your filing status and state drive many thresholds (brackets,
+                credits, SALT limits, etc.).
+              </>
+            }
+          >
             1) Profile
           </SectionTitle>
 
@@ -302,7 +306,7 @@ export default function PlannerClient() {
             <label className="block">
               <span className="block text-sm font-medium mb-1">
                 Filing status
-                <HelpTip title="Filing status" children={undefined}>
+                <HelpTip title="Filing status">
                   Your IRS filing status (single, married filing jointly,
                   married filing separately, head of household). This affects
                   brackets, deductions, credits, and phase-outs.
@@ -311,7 +315,9 @@ export default function PlannerClient() {
               <select
                 className="w-full border rounded px-3 py-2"
                 value={data.filingStatus}
-                onChange={(e) => set('filingStatus', e.target.value as FilingStatus)}
+                onChange={(e) =>
+                  set('filingStatus', e.target.value as FilingStatus)
+                }
               >
                 <option value="single">Single</option>
                 <option value="married_joint">Married filing jointly</option>
@@ -323,7 +329,7 @@ export default function PlannerClient() {
             <label className="block">
               <span className="block text-sm font-medium mb-1">
                 State
-                <HelpTip title="State" children={undefined}>
+                <HelpTip title="State">
                   Your resident state for tax purposes. States differ on
                   income tax rates, deductions, and 529 plan rules.
                 </HelpTip>
@@ -371,7 +377,7 @@ export default function PlannerClient() {
                 onChange={(e) => set('hdhpEligible', e.target.checked)}
               />
               <span>HDHP / HSA Eligible</span>
-              <HelpTip title="HDHP / HSA" children={undefined}>
+              <HelpTip title="HDHP / HSA">
                 If your health plan qualifies as a High-Deductible Health Plan,
                 you may contribute to a Health Savings Account (HSA), which is
                 triple tax-advantaged.
@@ -383,11 +389,14 @@ export default function PlannerClient() {
         {/* 2) Income */}
         <section>
           <SectionTitle
-                      help={<>
-                          Enter income you expect this year. Ballpark is fine — the tool
-                          will suggest strategies (withholding, deductions, timing) to
-                          hit your goals.
-                      </>} children={undefined}          >
+            help={
+              <>
+                Enter income you expect this year. Ballpark is fine — the tool
+                will suggest strategies (withholding, deductions, timing) to
+                hit your goals.
+              </>
+            }
+          >
             2) Income
           </SectionTitle>
 
@@ -433,7 +442,7 @@ export default function PlannerClient() {
               onChange={(e) => set('niitSubject', e.target.checked)}
             />
             <span>Investment income likely subject to NIIT (3.8%)</span>
-            <HelpTip title="NIIT (3.8%)" children={undefined}>
+            <HelpTip title="NIIT (3.8%)">
               High-income households may owe the Net Investment Income Tax on
               investment income (gains/dividends/interest/rental). We’ll
               factor that in if this is checked.
@@ -444,11 +453,14 @@ export default function PlannerClient() {
         {/* 3) Pretax deductions / savings */}
         <section>
           <SectionTitle
-                      help={<>
-                          These reduce taxable income before it’s calculated. We’ll
-                          check for contribution limits, catch-ups (50+), and HSA
-                          eligibility based on your profile.
-                      </>} children={undefined}          >
+            help={
+              <>
+                These reduce taxable income before it’s calculated. We’ll
+                check for contribution limits, catch-ups (50+), and HSA
+                eligibility based on your profile.
+              </>
+            }
+          >
             3) Pretax Deductions / Savings
           </SectionTitle>
 
@@ -461,7 +473,7 @@ export default function PlannerClient() {
                 step={500}
                 help="What you choose to defer from paychecks into your 401(k). Plans often allow Roth or pre-tax."
               />
-              <FieldHint children={undefined}>
+              <FieldHint>
                 Typical annual limit exists and can have a catch-up if age 50+ (varies by year).
               </FieldHint>
             </div>
@@ -483,7 +495,7 @@ export default function PlannerClient() {
                 help="Available only if you have an HSA-eligible HDHP. Contributions are triple tax-advantaged."
               />
               {!data.hdhpEligible && (
-                <FieldHint children={undefined}>Only available if HDHP/HSA-eligible is checked.</FieldHint>
+                <FieldHint>Only available if HDHP/HSA-eligible is checked.</FieldHint>
               )}
             </div>
 
@@ -516,11 +528,14 @@ export default function PlannerClient() {
         {/* 4) Itemized deductions */}
         <section>
           <SectionTitle
-                      help={<>
-                          If itemized deductions exceed the standard deduction, you
-                          benefit from itemizing. SALT (state + local tax) deductions
-                          face a federal cap; we’ll compare scenarios for you.
-                      </>} children={undefined}          >
+            help={
+              <>
+                If itemized deductions exceed the standard deduction, you
+                benefit from itemizing. SALT (state + local tax) deductions
+                face a federal cap; we’ll compare scenarios for you.
+              </>
+            }
+          >
             4) Itemized Deductions
           </SectionTitle>
 
@@ -540,7 +555,7 @@ export default function PlannerClient() {
                 step={500}
                 help="Real estate taxes paid."
               />
-              <FieldHint children={undefined}>SALT (state + local) deductions face a federal cap when itemizing.</FieldHint>
+              <FieldHint>SALT (state + local) deductions face a federal cap when itemizing.</FieldHint>
             </div>
             <Num
               label="State income tax paid ($)"
@@ -576,11 +591,14 @@ export default function PlannerClient() {
         {/* 5) Goals */}
         <section>
           <SectionTitle
-                      help={<>
-                          These preferences guide trade-offs. For example, if you want a
-                          lower effective rate, we’ll look harder at deferrals and timing;
-                          liquidity needs push us toward cash-friendly options.
-                      </>} children={undefined}          >
+            help={
+              <>
+                These preferences guide trade-offs. For example, if you want a
+                lower effective rate, we’ll look harder at deferrals and timing;
+                liquidity needs push us toward cash-friendly options.
+              </>
+            }
+          >
             5) Goals & Constraints
           </SectionTitle>
 
