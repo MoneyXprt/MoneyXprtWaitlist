@@ -43,7 +43,7 @@ type PlannerInput = {
   hsaContrib: number;
   fsaContrib: number;              // health FSA
   solo401kSEP: number;             // self-employed retirement contrib
-  529Contrib: number;
+  contrib529: number;
 
   // 4) Itemized deductions (federal)
   mortgageInterest: number;
@@ -91,7 +91,7 @@ const empty: PlannerInput = {
   hsaContrib: 0,
   fsaContrib: 0,
   solo401kSEP: 0,
-  529Contrib: 0,
+  contrib529: 0,
 
   mortgageInterest: 0,
   propertyTax: 0,
@@ -244,7 +244,7 @@ export default function PlannerClient() {
             <Num label="HSA contribution ($)" value={data.hsaContrib} onChange={(n)=>set('hsaContrib', n)} step={500}/>
             <Num label="Health FSA ($)" value={data.fsaContrib} onChange={(n)=>set('fsaContrib', n)} step={250}/>
             <Num label="Solo-401k / SEP ($)" value={data.solo401kSEP} onChange={(n)=>set('solo401kSEP', n)} step={500}/>
-            <Num label="529 contribution ($)" value={data.529Contrib} onChange={(n)=>set('529Contrib', n)} step={500}/>
+            <Num label="529 contribution ($)" value={data.contrib529} onChange={(n)=>set('529Contrib', n)} step={500}/>
           </div>
         </section>
 
