@@ -1,5 +1,7 @@
 // lib/recommend.ts
 
+// If you already export PlannerInput from a shared types file, import it instead.
+// For now we mirror the shape used in PlannerClient.
 export type FilingStatus = 'single' | 'married_joint' | 'married_separate' | 'head';
 
 export type PlannerInput = {
@@ -31,7 +33,7 @@ export type PlannerInput = {
   rentalNOI: number;
   niitSubject: boolean;
 
-  // 3) Pretax / savings
+  // 3) Pretax deductions / savings
   employee401k: number;
   employer401k: number;
   hsaContrib: number;
@@ -39,7 +41,7 @@ export type PlannerInput = {
   solo401kSEP: number;
   contrib529: number;
 
-  // 4) Itemized
+  // 4) Itemized deductions
   mortgageInterest: number;
   propertyTax: number;
   stateIncomeTaxPaid: number;
@@ -53,144 +55,105 @@ export type PlannerInput = {
   liquidityNeed12mo: number;
 };
 
-function stdDeduction(status: FilingStatus): number {
-  // 2024-ish ballparks; you can refine later or source from a table.
-  switch (status) {
-    case 'married_joint': return 29200;
-    case 'head': return 21900;
-    case 'married_separate': return 14600;
-    case 'single':
-    default: return 14600;
-  }
+// Small helpers
+const fmt = (n: number) => `$${Math.round(n).toLocaleString()}`;
+
+function sum(...nums: number[]) {
+  return nums.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
 }
 
-function isHighTaxState(state: string): boolean {
-  return ['CA','NY','NJ','CT','MD','MA','OR','MN','DC','IL','WA','PA','VA'].includes(state);
+function approxAGI(i: PlannerInput) {
+  // VERY rough AGI proxy (before standard/itemized): ordinary-ish + gains + passive
+  const ordinary =
+    i.w2Income + i.bonusIncome + i.selfEmploymentNet + i.k1Active + i.k1Passive +
+    i.ordinaryDividends + i.interestIncome + i.otherIncome + i.rentalNOI + i.cryptoGains;
+  const equity = i.rsuVestedValue + i.isoExerciseBargain;
+  const gains = i.capGainsShort + i.capGainsLong + i.qualifiedDividends;
+  // subtract common pre-tax contributions
+  const pretax = i.employee401k + i.hsaContrib + i.fsaContrib + i.solo401kSEP;
+  return Math.max(0, ordinary + equity + gains - pretax);
 }
 
 export function buildRecommendations(input: PlannerInput): string[] {
   const R: string[] = [];
 
   // --- Quick aggregates
-  const totalOrdinaryIncome =
-    input.w2Income + input.bonusIncome + input.selfEmploymentNet +
-    input.k1Active + input.k1Passive + input.interestIncome +
-    input.ordinaryDividends + input.otherIncome + input.cryptoGains;
+  const agi = approxAGI(input);
+  const totalIncome = sum(
+    input.w2Income, input.bonusIncome, input.rsuVestedValue, input.isoExerciseBargain,
+    input.selfEmploymentNet, input.k1Active, input.k1Passive, input.capGainsShort,
+    input.capGainsLong, input.qualifiedDividends, input.ordinaryDividends,
+    input.cryptoGains, input.interestIncome, input.otherIncome, input.rentalNOI
+  );
 
-  const totalCGDiv =
-    input.capGainsShort + input.capGainsLong + input.qualifiedDividends;
+  const pretax = sum(input.employee401k, input.hsaContrib, input.fsaContrib, input.solo401kSEP);
+  const itemized = sum(
+    input.mortgageInterest, input.propertyTax, input.stateIncomeTaxPaid,
+    input.charityCash, input.charityNonCash, input.medicalExpenses
+  );
 
-  const totalIncome = totalOrdinaryIncome + totalCGDiv + input.rentalNOI;
-
-  const pretaxDeferrals =
-    input.employee401k + input.hsaContrib + input.fsaContrib + input.solo401kSEP;
-
-  const itemized =
-    input.mortgageInterest + input.propertyTax + input.stateIncomeTaxPaid +
-    input.charityCash + input.charityNonCash + input.medicalExpenses;
-
-  const standard = stdDeduction(input.filingStatus);
-  const usesItemized = itemized > standard;
-
-  // --- General cash flow / savings rate
-  if (totalIncome > 0) {
-    const impliedSavings = pretaxDeferrals + input.employer401k + input.contrib529;
-    const targetSavingsRate = Math.min(0.4, Math.max(0.2, input.targetEffRate / 100)); // simple proxy
-    const currentRate = impliedSavings / totalIncome;
-    if (currentRate < targetSavingsRate) {
-      R.push(
-        `Increase savings: current ~${(currentRate*100).toFixed(1)}% vs target ~${(targetSavingsRate*100).toFixed(0)}%. ` +
-        `Consider diverting bonus/RSU proceeds to 401(k)/HSA/mega-backdoor or brokerage auto-investments.`
-      );
-    }
+  // --- Guardrails / friendly prompts
+  if (!input.firstName) {
+    R.push('Add your first name to personalize your plan.');
   }
 
-  // --- 401(k) deferrals
-  if (input.w2Income > 0) {
-    R.push(
-      `Max employee 401(k) deferrals if cash flow allows. If age 50+, enable catch-up in plan settings. ` +
-      `Coordinate Roth vs pre-tax deferral based on your target effective rate and expected future brackets.`
-    );
+  // --- Retirement savings / deferral strategy
+  if (input.employee401k <= 0 && input.w2Income > 0) {
+    R.push('Start or increase 401(k) deferrals; consider pre-tax vs Roth based on your marginal rate.');
+  } else if (input.employee401k > 0 && totalIncome > 200_000) {
+    R.push('Evaluate maximizing 401(k) deferrals; if plan allows, explore Mega Backdoor Roth after-tax contributions.');
+  }
+  if (input.selfEmploymentNet > 0 && input.solo401kSEP <= 0) {
+    R.push('For self-employment income, open a Solo-401k or SEP-IRA to shelter additional income.');
   }
 
-  // --- HSA
-  if (input.hdhpEligible) {
-    if (input.hsaContrib <= 0) {
-      R.push(`You’re HSA-eligible. Contribute to the HSA and invest it; it’s triple tax-advantaged.`);
-    } else {
-      R.push(`Verify HSA contributions hit the annual limit (and catch-up at 55+). Invest the HSA rather than leaving in cash.`);
-    }
+  // --- HSA / FSA
+  if (input.hdhpEligible && input.hsaContrib <= 0) {
+    R.push('You are HSA-eligible; contribute to HSA for triple tax advantage.');
+  }
+  if (input.fsaContrib <= 0 && input.w2Income > 0) {
+    R.push('If available, consider a Health FSA for predictable medical expenses.');
   }
 
-  // --- Self-employment / Solo 401k / SEP
-  if (input.selfEmploymentNet > 0) {
-    if (input.solo401kSEP <= 0) {
-      R.push(
-        `You have self-employment income. Open a Solo-401(k) (often superior to SEP for employee deferral + Roth options) and contribute based on net profit.`
-      );
-    } else {
-      R.push(`Review Solo-401(k)/SEP contribution space vs net profit; ensure employee vs employer portions are maximized correctly.`);
-    }
-    R.push(
-      `Assess S-Corp vs Schedule C for reasonable comp, payroll taxes, and retirement plan space. Keep QBI (199A) eligibility in mind.`
-    );
-  }
-
-  // --- RSUs / ISOs
+  // --- Equity comp / ISO / RSU
   if (input.rsuVestedValue > 0) {
-    R.push(
-      `RSUs: confirm withholding is adequate (often 22%/37% flat can under-withhold for high earners). ` +
-      `Consider same-day sale to manage concentration risk and set aside tax reserves.`
-    );
+    R.push('RSUs vesting this year—confirm withholding is sufficient; consider 83(b)/sell-to-cover and diversification.');
   }
   if (input.isoExerciseBargain > 0) {
-    R.push(
-      `ISOs: bargain element can trigger AMT. Model AMT impact before exercising more; consider disqualifying dispositions if needed.`
-    );
+    R.push('ISO exercises may trigger AMT—model AMT impact and consider partial exercises/timing.');
   }
 
-  // --- NIIT / investment
-  if (input.niitSubject || (totalCGDiv + input.rentalNOI) > 0) {
-    R.push(
-      `Plan around NIIT (3.8%) on investment income. Use tax-loss harvesting, muni bonds, asset location, and timing of gains.`
-    );
-  }
-  if (input.capGainsShort > 0) {
-    R.push(`Short-term gains are taxed at ordinary rates; prefer holding ≥1 year where practical to shift to long-term rates.`);
+  // --- NIIT / investment income
+  if (input.niitSubject || sum(input.capGainsLong, input.qualifiedDividends, input.interestIncome, input.rentalNOI) > 0) {
+    R.push('Review Net Investment Income Tax exposure; consider tax-loss harvesting, muni bonds, or asset location.');
   }
 
-  // --- Itemized vs standard
-  if (usesItemized) {
-    R.push(
-      `You’re likely itemizing (estimated itemized ≈ $${itemized.toLocaleString()} vs standard ≈ $${standard.toLocaleString()}). ` +
-      `Consider charitable bunching/DAF and SALT timing to maximize deduction value.`
-    );
-  } else {
-    R.push(
-      `You likely use the standard deduction (≈ $${standard.toLocaleString()}). ` +
-      `If charitable, consider bunching gifts into a Donor-Advised Fund in high-income years.`
-    );
+  // --- Itemized vs standard (rough)
+  // (Just a hint; real calc is more complex and filing-status dependent.)
+  const roughStandard = 14_000; // placeholder; refine per filing status if desired
+  if (itemized > 0) {
+    if (itemized > roughStandard) {
+      R.push(`You likely itemize—optimize SALT cap, charitable bunching/DAF, and mortgage interest (${fmt(itemized)} vs ~${fmt(roughStandard)} std).`);
+    } else {
+      R.push(`You likely take the standard deduction—consider bunching charitable gifts (DAF) to exceed standard (~${fmt(roughStandard)}).`);
+    }
   }
 
-  // --- SALT / high tax states
-  if (isHighTaxState(input.state)) {
-    R.push(
-      `State tax planning: review SALT cap exposure, estimated payments, and possible timing strategies. ` +
-      `If relocating, compare effective tax rates and domicile rules.`
-    );
+  // --- 529 / education
+  if (input.contrib529 <= 0 && input.dependents > 0) {
+    R.push('Consider funding 529 plans; check your state’s deduction/credit for contributions.');
   }
 
-  // --- 529
-  if (input.contrib529 <= 0) {
-    R.push(`If education goals exist, fund a 529. Check your state for deductions/credits and consider front-loading (5-year election).`);
-  }
-
-  // --- Liquidity needs
+  // --- Liquidity
   if (input.liquidityNeed12mo > 0) {
-    R.push(
-      `Maintain an adequate emergency fund plus earmarked cash for the next 12 months ($${input.liquidityNeed12mo.toLocaleString()}). ` +
-      `Keep near-term dollars in HYSA/short-duration instruments; avoid equity risk on this slice.`
-    );
+    R.push(`Reserve at least ${fmt(input.liquidityNeed12mo)} in cash or short-term treasuries to cover 12-month needs.`);
   }
 
-  // --- Insurance & protection light
+  // --- Effective tax rate target (nudge)
+  if (input.targetEffRate > 0 && totalIncome > 0) {
+    R.push(`To approach a ${input.targetEffRate}% effective rate, expand pre-tax space (401k/SEP/HSA) and time capital gains across years.`);
+  }
+
+  // Always return an array
+  return R;
+}
