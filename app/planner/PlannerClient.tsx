@@ -251,6 +251,11 @@ export default function PlannerClient() {
     [data.filingStatus]
   );
 
+  // Allow debug UI only when explicitly enabled via env or URL (?debug=1)
+  const canDebug =
+    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_SHOW_DEBUG === '1') ||
+    (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1');
+
   // ── 3.1: Sticky-section helpers (for a section nav we’ll add next) ─────────
   const sectionList = [
     { id: 'profile',  label: 'Profile' },
@@ -415,7 +420,17 @@ export default function PlannerClient() {
               </HelpTip>
             </label>
           </div>
-        </section>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={() => go('income')}
+            className="inline-flex items-center px-4 py-2 rounded bg-black text-white hover:opacity-90"
+          >
+            Continue to Income
+          </button>
+        </div>
+      </section>
 
         {/* 2) Income */}
         <section id="income" className="scroll-mt-24">
@@ -479,7 +494,17 @@ export default function PlannerClient() {
               factor that in if this is checked.
             </HelpTip>
           </label>
-        </section>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={() => go('pretax')}
+            className="inline-flex items-center px-4 py-2 rounded bg-black text-white hover:opacity-90"
+          >
+            Continue to Pretax
+          </button>
+        </div>
+      </section>
 
         {/* 3) Pretax deductions / savings */}
         <section id="pretax" className="scroll-mt-24">
@@ -554,7 +579,17 @@ export default function PlannerClient() {
               help="Education savings. Federal tax-free growth; some states offer tax deductions/credits."
             />
           </div>
-        </section>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={() => go('itemized')}
+            className="inline-flex items-center px-4 py-2 rounded bg-black text-white hover:opacity-90"
+          >
+            Continue to Itemized
+          </button>
+        </div>
+      </section>
 
         {/* 4) Itemized deductions */}
         <section id="itemized" className="scroll-mt-24">
@@ -617,7 +652,17 @@ export default function PlannerClient() {
               help="Out-of-pocket medical expenses; only the amount above an AGI % floor is deductible."
             />
           </div>
-        </section>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={() => go('goals')}
+            className="inline-flex items-center px-4 py-2 rounded bg-black text-white hover:opacity-90"
+          >
+            Continue to Goals
+          </button>
+        </div>
+      </section>
 
         {/* 5) Goals */}
         <section id="goals" className="scroll-mt-24">
@@ -688,24 +733,28 @@ export default function PlannerClient() {
             </ul>
           )}
 
-          {/* Debug toggle */}
-          <div className="mt-4">
-            <label className="inline-flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={showDebug}
-                onChange={(e) => setShowDebug(e.target.checked)}
-              />
-              <span className="text-sm">Show inputs (debug)</span>
-            </label>
-          </div>
+          {canDebug && (
+            <>
+              {/* Debug toggle */}
+              <div className="mt-4">
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={showDebug}
+                    onChange={(e) => setShowDebug(e.target.checked)}
+                  />
+                  <span className="text-sm">Show inputs (debug)</span>
+                </label>
+              </div>
 
-          {showDebug && (
-            <textarea
-              className="mt-3 w-full h-64 border rounded p-3 font-mono text-sm"
-              value={JSON.stringify(data, null, 2)}
-              readOnly
-            />
+              {showDebug && (
+                <textarea
+                  className="mt-3 w-full h-64 border rounded p-3 font-mono text-sm"
+                  value={JSON.stringify(data, null, 2)}
+                  readOnly
+                />
+              )}
+            </>
           )}
         </div>
       )}
