@@ -1,159 +1,173 @@
-// lib/recommend.ts
+import type { PlanInput } from './types';
 
-// If you already export PlannerInput from a shared types file, import it instead.
-// For now we mirror the shape used in PlannerClient.
-export type FilingStatus = 'single' | 'married_joint' | 'married_separate' | 'head';
-
-export type PlannerInput = {
-  // 1) Profile
-  firstName: string;
-  filingStatus: FilingStatus;
-  state: string;
-  dependents: number;
-  age: number;
-  spouseAge?: number;
-  hdhpEligible: boolean;
-
-  // 2) Income
-  w2Income: number;
-  bonusIncome: number;
-  rsuVestedValue: number;
-  isoExerciseBargain: number;
-  selfEmploymentNet: number;
-  k1Active: number;
-  k1Passive: number;
-  capGainsShort: number;
-  capGainsLong: number;
-  qualifiedDividends: number;
-  ordinaryDividends: number;
-  cryptoGains: number;
-  interestIncome: number;
-  otherIncome: number;
-  rentalUnits: number;
-  rentalNOI: number;
-  niitSubject: boolean;
-
-  // 3) Pretax deductions / savings
-  employee401k: number;
-  employer401k: number;
-  hsaContrib: number;
-  fsaContrib: number;
-  solo401kSEP: number;
-  contrib529: number;
-
-  // 4) Itemized deductions
-  mortgageInterest: number;
-  propertyTax: number;
-  stateIncomeTaxPaid: number;
-  charityCash: number;
-  charityNonCash: number;
-  medicalExpenses: number;
-
-  // 5) Goals
-  targetEffRate: number;
-  retireAge: number;
-  liquidityNeed12mo: number;
-};
-
-// Small helpers
-const fmt = (n: number) => `$${Math.round(n).toLocaleString()}`;
-
-function sum(...nums: number[]) {
-  return nums.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
+function fmt(n: number) {
+  if (!Number.isFinite(n)) return '$0';
+  return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
 }
 
-function approxAGI(i: PlannerInput) {
-  // VERY rough AGI proxy (before standard/itemized): ordinary-ish + gains + passive
-  const ordinary =
-    i.w2Income + i.bonusIncome + i.selfEmploymentNet + i.k1Active + i.k1Passive +
-    i.ordinaryDividends + i.interestIncome + i.otherIncome + i.rentalNOI + i.cryptoGains;
-  const equity = i.rsuVestedValue + i.isoExerciseBargain;
-  const gains = i.capGainsShort + i.capGainsLong + i.qualifiedDividends;
-  // subtract common pre-tax contributions
-  const pretax = i.employee401k + i.hsaContrib + i.fsaContrib + i.solo401kSEP;
-  return Math.max(0, ordinary + equity + gains - pretax);
-}
-
-export function buildRecommendations(input: PlannerInput): string[] {
+export function buildRecommendations(input: PlanInput): string[] {
   const R: string[] = [];
 
-  // --- Quick aggregates
-  const agi = approxAGI(input);
-  const totalIncome = sum(
-    input.w2Income, input.bonusIncome, input.rsuVestedValue, input.isoExerciseBargain,
-    input.selfEmploymentNet, input.k1Active, input.k1Passive, input.capGainsShort,
-    input.capGainsLong, input.qualifiedDividends, input.ordinaryDividends,
-    input.cryptoGains, input.interestIncome, input.otherIncome, input.rentalNOI
-  );
+  // ── 0) Convenience totals ────────────────────────────────────────────────
+  const annualIncome =
+    (input.salary || 0) +
+    (input.bonus || 0) +
+    (input.selfEmployment || 0) +
+    (input.rsuVesting || 0) +
+    (input.k1Active || 0) +
+    (input.k1Passive || 0) +
+    (input.rentNOI || 0) +
+    (input.otherIncome || 0);
 
-  const pretax = sum(input.employee401k, input.hsaContrib, input.fsaContrib, input.solo401kSEP);
-  const itemized = sum(
-    input.mortgageInterest, input.propertyTax, input.stateIncomeTaxPaid,
-    input.charityCash, input.charityNonCash, input.medicalExpenses
-  );
+  const monthlySpend =
+    (input.fixedMonthlySpend || 0) + (input.lifestyleMonthlySpend || 0);
 
-  // --- Guardrails / friendly prompts
-  if (!input.firstName) {
+  const annualSpend = monthlySpend * 12;
+  const annualSavingsNow = (input.savingsMonthly || 0) * 12;
+
+  const impliedSavings = Math.max(0, annualIncome - annualSpend);
+  const effectiveSavings = Math.max(0, annualSavingsNow, impliedSavings);
+
+  const savingsRate =
+    annualIncome > 0 ? (effectiveSavings / annualIncome) : 0;
+
+  // ── 1) Personal touch (but no sensitive data) ────────────────────────────
+  const name = (input.goals5y?.join(' ') ?? '').trim(); // if Discovery captured first name separately you can switch
+  if (!name) {
     R.push('Add your first name to personalize your plan.');
   }
 
-  // --- Retirement savings / deferral strategy
-  if (input.employee401k <= 0 && input.w2Income > 0) {
-    R.push('Start or increase 401(k) deferrals; consider pre-tax vs Roth based on your marginal rate.');
-  } else if (input.employee401k > 0 && totalIncome > 200_000) {
-    R.push('Evaluate maximizing 401(k) deferrals; if plan allows, explore Mega Backdoor Roth after-tax contributions.');
-  }
-  if (input.selfEmploymentNet > 0 && input.solo401kSEP <= 0) {
-    R.push('For self-employment income, open a Solo-401k or SEP-IRA to shelter additional income.');
-  }
-
-  // --- HSA / FSA
-  if (input.hdhpEligible && input.hsaContrib <= 0) {
-    R.push('You are HSA-eligible; contribute to HSA for triple tax advantage.');
-  }
-  if (input.fsaContrib <= 0 && input.w2Income > 0) {
-    R.push('If available, consider a Health FSA for predictable medical expenses.');
-  }
-
-  // --- Equity comp / ISO / RSU
-  if (input.rsuVestedValue > 0) {
-    R.push('RSUs vesting this year—confirm withholding is sufficient; consider 83(b)/sell-to-cover and diversification.');
-  }
-  if (input.isoExerciseBargain > 0) {
-    R.push('ISO exercises may trigger AMT—model AMT impact and consider partial exercises/timing.');
-  }
-
-  // --- NIIT / investment income
-  if (input.niitSubject || sum(input.capGainsLong, input.qualifiedDividends, input.interestIncome, input.rentalNOI) > 0) {
-    R.push('Review Net Investment Income Tax exposure; consider tax-loss harvesting, muni bonds, or asset location.');
-  }
-
-  // --- Itemized vs standard (rough)
-  // (Just a hint; real calc is more complex and filing-status dependent.)
-  const roughStandard = 14_000; // placeholder; refine per filing status if desired
-  if (itemized > 0) {
-    if (itemized > roughStandard) {
-      R.push(`You likely itemize—optimize SALT cap, charitable bunching/DAF, and mortgage interest (${fmt(itemized)} vs ~${fmt(roughStandard)} std).`);
+  // ── 2) Cash-flow & savings strategy ──────────────────────────────────────
+  if (annualIncome <= 0) {
+    R.push('Enter your income to unlock cash-flow, tax, and savings recommendations.');
+  } else {
+    if (savingsRate < 0.2) {
+      R.push(
+        `Target a 20–30% savings rate. Today you’re at ~${Math.round(
+          savingsRate * 100
+        )}%. Consider trimming $${fmt(
+          Math.max(0, 0.2 * annualIncome - effectiveSavings)
+        )}/yr from spending or boosting income to hit 20%.`
+      );
     } else {
-      R.push(`You likely take the standard deduction—consider bunching charitable gifts (DAF) to exceed standard (~${fmt(roughStandard)}).`);
+      R.push(
+        `Great job: your implied savings rate is ~${Math.round(
+          savingsRate * 100
+        )}%. Keep at least 20–30% to accelerate financial freedom.`
+      );
     }
   }
 
-  // --- 529 / education
-  if (input.contrib529 <= 0 && input.dependents > 0) {
-    R.push('Consider funding 529 plans; check your state’s deduction/credit for contributions.');
+  // ── 3) Emergency fund ────────────────────────────────────────────────────
+  const targetEFMonths = Math.max(3, Math.min(12, input.emergencyFundMonths || 6)); // simple anchor
+  const efNeeded = Math.max(0, targetEFMonths * monthlySpend);
+  if ((input.emergencyFundMonths || 0) < 6) {
+    R.push(
+      `Build an emergency fund of ~6 months’ expenses (~$${fmt(
+        6 * monthlySpend
+      )}). Park this in high-yield savings or T-bills.`
+    );
+  } else {
+    R.push(
+      `Maintain your emergency fund (~${input.emergencyFundMonths} months) in high-yield, safe accounts.`
+    );
   }
 
-  // --- Liquidity
-  if (input.liquidityNeed12mo > 0) {
-    R.push(`Reserve at least ${fmt(input.liquidityNeed12mo)} in cash or short-term treasuries to cover 12-month needs.`);
+  // ── 4) Tax & account optimization (high-level; no sensitive data) ───────
+  if (annualIncome > 0) {
+    R.push(
+      'Max out tax-advantaged space: 401(k)/403(b), IRA/backdoor Roth, and HSA if eligible.'
+    );
+  }
+  if (input.charitableInclination) {
+    R.push(
+      'Consider “charitable bunching” or a Donor-Advised Fund to group gifts into high-income years for larger deductions.'
+    );
+  }
+  if (input.entityOrSideBiz || input.selfEmployment > 0) {
+    R.push(
+      'Review entity optimization (e.g., S-Corp when appropriate) and set up Solo-401(k)/SEP-IRA for side-business income.'
+    );
   }
 
-  // --- Effective tax rate target (nudge)
-  if (input.targetEffRate > 0 && totalIncome > 0) {
-    R.push(`To approach a ${input.targetEffRate}% effective rate, expand pre-tax space (401k/SEP/HSA) and time capital gains across years.`);
+  // RSU / K-1 specifics
+  if ((input.rsuVesting || 0) > 0) {
+    R.push(
+      'RSUs: check tax withholding; many plans under-withhold. Consider a 10b5-1 trading plan and diversify concentrated stock.'
+    );
+  }
+  if ((input.k1Passive || 0) + (input.k1Active || 0) > 0) {
+    R.push(
+      'Partnership/K-1 income: plan quarterly estimates and track passive vs. active buckets for losses and NIIT exposure.'
+    );
   }
 
-  // Always return an array
+  // ── 5) Debt & interest optimization ──────────────────────────────────────
+  const totalDebt =
+    (input.mortgageDebt || 0) +
+    (input.studentLoans || 0) +
+    (input.autoLoans || 0) +
+    (input.creditCards || 0) +
+    (input.otherDebt || 0);
+
+  if (totalDebt > 0) {
+    R.push(
+      'Prioritize high-interest debt (credit cards) first, then student/auto, while making required mortgage payments.'
+    );
+  }
+  if ((input.mortgageDebt || 0) > 0 && (input.cash || 0) > 3 * monthlySpend) {
+    R.push(
+      'With strong liquidity, consider modest extra principal payments on your mortgage if the rate is above your safe yield.'
+    );
+  }
+
+  // ── 6) Diversification & risk ────────────────────────────────────────────
+  if (input.concentrationRisk || (input.rsuVesting || 0) > 0) {
+    R.push('Reduce concentration risk by setting target weights and auto-selling excess positions on a schedule.');
+  }
+  if (!input.hasUmbrella) {
+    R.push('Add an umbrella liability policy (often $1–2M). Inexpensive protection against lawsuit risks.');
+  }
+  if (!input.hasDisability) {
+    R.push('Add long-term disability insurance; it’s the most important coverage for income protection.');
+  }
+  if (!input.hasTermLife) {
+    R.push('If anyone relies on your income, add level term life (e.g., 10–20 years).');
+  }
+
+  // ── 7) Retirement target & glidepath ─────────────────────────────────────
+  if ((input.targetRetireIncomeMonthly || 0) > 0) {
+    const desiredAnnual = input.targetRetireIncomeMonthly * 12;
+    const roughNestEgg = desiredAnnual / 0.04; // 4% rule heuristic
+    R.push(
+      `Retirement income target ~$${fmt(
+        desiredAnnual
+      )}/yr ⇒ long-run portfolio ~$${fmt(
+        roughNestEgg
+      )} (4% rule). Adjust with pensions/real estate as applicable.`
+    );
+  }
+  if (input.usingRothBackdoor) {
+    R.push('Continue the backdoor Roth annually; coordinate with pro-rata rules and any pre-tax IRA roll-ins.');
+  }
+  if (input.usingMegaBackdoor) {
+    R.push('Use mega backdoor Roth if your plan allows: after-tax 401(k) + in-plan Roth conversions.');
+  }
+
+  // ── 8) Estate & legacy ───────────────────────────────────────────────────
+  if (!input.hasWillOrTrust) {
+    R.push('Create a will and (if appropriate) a revocable living trust. Add powers of attorney and healthcare directives.');
+  }
+  if (input.givingIntent) {
+    R.push('Map multi-year charitable plan (DAF, appreciated securities) to align impact with tax efficiency.');
+  }
+
+  // ── 9) Friendly next steps ───────────────────────────────────────────────
+  R.push('Set a 12-month roadmap: automate savings, schedule quarterly reviews, and rebalance annually.');
+
+  // Make sure we always return at least something
+  if (R.length === 0) {
+    R.push('Add a few inputs to unlock personalized recommendations.');
+  }
   return R;
 }
