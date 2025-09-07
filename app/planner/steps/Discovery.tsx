@@ -1,41 +1,175 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import * as React from 'react';
+import type { PlanInput } from '../../../lib/types';
 
-type Discovery = {
-  goals5y: string[];
-  goals20y: string[];
-  freedom: string;
-  confidence: number;
+type Props = {
+  value: PlanInput;
+  onChange: (next: PlanInput) => void;
+  /** optional: parent can pass a handler to move to the next step */
+  onNext?: () => void;
 };
 
-const EMPTY: Discovery = {
-  goals5y: ['', '', ''],
-  goals20y: ['', '', ''],
-  freedom: '',
-  confidence: 5,
-};
+/**
+ * This component reads/writes `value.discovery`.
+ * To be resilient to type shape changes, it falls back to sane defaults
+ * if `value.discovery` is missing.
+ */
+export default function Discovery({ value, onChange, onNext }: Props) {
+  // Pull discovery safely with fallbacks
+  const discovery = React.useMemo(() => {
+    const d: any = (value as any).discovery ?? {};
+    return {
+      goals5: Array.isArray(d.goals5) ? [...d.goals5, '', '', ''].slice(0, 3) : ['', '', ''],
+      goals20: Array.isArray(d.goals20) ? [...d.goals20, '', '', ''].slice(0, 3) : ['', '', ''],
+      freedom: typeof d.freedom === 'string' ? d.freedom : '',
+      confidence: Number.isFinite(d.confidence) ? d.confidence : 5,
+    };
+  }, [value]);
 
-function HelpTip({ title, children }: { title: string; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
+  function updateDiscovery(nextPartial: Partial<typeof discovery>) {
+    const next = {
+      ...(value as any),
+      discovery: {
+        ...discovery,
+        ...nextPartial,
+      },
+    } as PlanInput;
+    onChange(next);
+  }
+
+  const setGoal5 = (i: number, v: string) => {
+    const arr = [...discovery.goals5];
+    arr[i] = v;
+    updateDiscovery({ goals5: arr });
+  };
+
+  const setGoal20 = (i: number, v: string) => {
+    const arr = [...discovery.goals20];
+    arr[i] = v;
+    updateDiscovery({ goals20: arr });
+  };
+
   return (
-    <span className="relative inline-block align-middle">
+    <section>
+      {/* 5-year goals */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium mb-1">
+          Your top goals in ~5 years
+          <HelpTip>Short-term priorities. Examples: buy a home, start a business, take a sabbatical.</HelpTip>
+        </label>
+        <div className="space-y-3">
+          <input
+            className="w-full border rounded px-3 py-2"
+            placeholder="5-year goal #1"
+            value={discovery.goals5[0]}
+            onChange={(e) => setGoal5(0, e.target.value)}
+          />
+          <input
+            className="w-full border rounded px-3 py-2"
+            placeholder="5-year goal #2"
+            value={discovery.goals5[1]}
+            onChange={(e) => setGoal5(1, e.target.value)}
+          />
+          <input
+            className="w-full border rounded px-3 py-2"
+            placeholder="5-year goal #3"
+            value={discovery.goals5[2]}
+            onChange={(e) => setGoal5(2, e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* 20-year goals */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium mb-1">
+          Your top goals in ~20 years
+          <HelpTip>Long-term targets. Examples: financial independence, second home, college funding, philanthropy.</HelpTip>
+        </label>
+        <div className="space-y-3">
+          <input
+            className="w-full border rounded px-3 py-2"
+            placeholder="20-year goal #1"
+            value={discovery.goals20[0]}
+            onChange={(e) => setGoal20(0, e.target.value)}
+          />
+          <input
+            className="w-full border rounded px-3 py-2"
+            placeholder="20-year goal #2"
+            value={discovery.goals20[1]}
+            onChange={(e) => setGoal20(1, e.target.value)}
+          />
+          <input
+            className="w-full border rounded px-3 py-2"
+            placeholder="20-year goal #3"
+            value={discovery.goals20[2]}
+            onChange={(e) => setGoal20(2, e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Financial freedom */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium mb-1">
+          What does “financial freedom” look like to you?
+          <HelpTip>Write a sentence or two. This frames how we prioritize trade-offs (risk, liquidity, timeline).</HelpTip>
+        </label>
+        <textarea
+          className="w-full min-h-[140px] border rounded px-3 py-2"
+          placeholder="Write a sentence or two…"
+          value={discovery.freedom}
+          onChange={(e) => updateDiscovery({ freedom: e.target.value })}
+        />
+      </div>
+
+      {/* Confidence slider/select */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium mb-1">
+          How confident are you in your current financial path? (1–10)
+          <HelpTip>Gut check. We’ll use this to tune the plan’s aggressiveness vs. safety.</HelpTip>
+        </label>
+        <select
+          className="border rounded px-3 py-2"
+          value={discovery.confidence}
+          onChange={(e) => updateDiscovery({ confidence: Number(e.target.value) })}
+        >
+          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-6 flex justify-end">
+        <button
+          type="button"
+          onClick={() => onNext?.()}
+          className="inline-flex items-center px-4 py-2 rounded bg-black text-white hover:opacity-90"
+        >
+          Continue
+        </button>
+      </div>
+    </section>
+  );
+}
+
+/** Minimal tooltip to match your planner’s style */
+function HelpTip({ children }: { children: React.ReactNode }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <span className="relative inline-block align-middle ml-2">
       <button
         type="button"
-        aria-label={`Help: ${title}`}
-        className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full border text-xs leading-none hover:bg-gray-50"
-        onClick={() => setOpen(o => !o)}
+        aria-label="Help"
+        className="inline-flex h-5 w-5 items-center justify-center rounded-full border text-xs leading-none hover:bg-gray-50"
+        onClick={() => setOpen((o) => !o)}
       >
         ?
       </button>
       {open && (
-        <div
-          role="dialog"
-          aria-label={title}
-          className="absolute z-30 mt-2 w-80 rounded border bg-white p-3 text-sm shadow-lg left-6"
-        >
-          <div className="mb-1 font-medium">{title}</div>
+        <div className="absolute left-6 z-30 mt-2 w-80 rounded border bg-white p-3 text-sm shadow-lg">
           <div className="text-gray-700">{children}</div>
           <div className="mt-3 text-right">
             <button
@@ -49,165 +183,5 @@ function HelpTip({ title, children }: { title: string; children: React.ReactNode
         </div>
       )}
     </span>
-  );
-}
-
-export default function DiscoveryPage() {
-  const router = useRouter();
-  const params = useSearchParams();
-
-  const [data, setData] = useState<Discovery>(EMPTY);
-  const [showDebug, setShowDebug] = useState(false);
-
-  // Only show debug when explicitly enabled
-  const canDebug =
-    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_SHOW_DEBUG === '1') ||
-    params.get('debug') === '1';
-
-  // Load any saved discovery on mount
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('mx_discovery');
-      if (raw) setData({ ...EMPTY, ...JSON.parse(raw) });
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  function save() {
-    try {
-      localStorage.setItem('mx_discovery', JSON.stringify(data));
-    } catch {
-      // ignore storage issues
-    }
-  }
-
-  function onContinue() {
-    save();
-    router.push('/planner#profile'); // jump to the next step
-  }
-
-  return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-semibold mb-6">Discovery</h1>
-
-      <div className="space-y-8">
-        <section>
-          <h2 className="text-lg font-medium mb-2 flex items-center">
-            <span>Your top goals in ~5 years</span>
-            <HelpTip title="5-year goals">
-              List up to three things you’d like to accomplish within about five years
-              (e.g., buy a home, start a business, pay off loans, travel sabbatical).
-            </HelpTip>
-          </h2>
-          {[0, 1, 2].map(i => (
-            <input
-              key={i}
-              type="text"
-              value={data.goals5y[i]}
-              onChange={e => {
-                const copy = [...data.goals5y];
-                copy[i] = e.target.value;
-                setData(d => ({ ...d, goals5y: copy }));
-              }}
-              placeholder={`5-year goal #${i + 1}`}
-              className="mb-3 w-full border rounded px-3 py-2"
-            />
-          ))}
-        </section>
-
-        <section>
-          <h2 className="text-lg font-medium mb-2 flex items-center">
-            <span>Your top goals in ~20 years</span>
-            <HelpTip title="20-year goals">
-              Longer-horizon aspirations (e.g., financial independence, second home,
-              major philanthropy, career transition).
-            </HelpTip>
-          </h2>
-          {[0, 1, 2].map(i => (
-            <input
-              key={i}
-              type="text"
-              value={data.goals20y[i]}
-              onChange={e => {
-                const copy = [...data.goals20y];
-                copy[i] = e.target.value;
-                setData(d => ({ ...d, goals20y: copy }));
-              }}
-              placeholder={`20-year goal #${i + 1}`}
-              className="mb-3 w-full border rounded px-3 py-2"
-            />
-          ))}
-        </section>
-
-        <section>
-          <h2 className="text-lg font-medium mb-2 flex items-center">
-            <span>What does “financial freedom” look like to you?</span>
-            <HelpTip title="Financial freedom">
-              Describe how life looks when money isn’t a constraint — activities,
-              work, family, place, impact.
-            </HelpTip>
-          </h2>
-          <textarea
-            value={data.freedom}
-            onChange={e => setData(d => ({ ...d, freedom: e.target.value }))}
-            placeholder="Write a sentence or two..."
-            className="w-full h-40 border rounded px-3 py-2"
-          />
-        </section>
-
-        <section>
-          <h2 className="text-lg font-medium mb-2 flex items-center">
-            <span>How confident are you in your current financial path? (1–10)</span>
-            <HelpTip title="Confidence">
-              A 1 means “not confident at all”; 10 means “extremely confident.”
-              This helps us calibrate urgency and focus.
-            </HelpTip>
-          </h2>
-          <select
-            className="w-24 border rounded px-3 py-2"
-            value={data.confidence}
-            onChange={e =>
-              setData(d => ({ ...d, confidence: parseInt(e.target.value, 10) || 1 }))
-            }
-          >
-            {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </section>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t">
-          <button
-            type="button"
-            onClick={onContinue}
-            className="inline-flex items-center px-4 py-2 rounded bg-black text-white hover:opacity-90"
-          >
-            Save & Continue to Profile
-          </button>
-
-          {canDebug && (
-            <label className="inline-flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={showDebug}
-                onChange={e => setShowDebug(e.target.checked)}
-              />
-              <span>Show raw data (debug)</span>
-            </label>
-          )}
-        </div>
-
-        {canDebug && showDebug && (
-          <textarea
-            className="mt-3 w-full h-48 border rounded p-3 font-mono text-sm"
-            value={JSON.stringify(data, null, 2)}
-            readOnly
-          />
-        )}
-      </div>
-    </div>
   );
 }
