@@ -420,7 +420,6 @@ export default function PlannerClient() {
               </HelpTip>
             </label>
           </div>
-        </div>
         <div className="mt-4 flex justify-end">
           <button
             type="button"
@@ -494,7 +493,6 @@ export default function PlannerClient() {
               factor that in if this is checked.
             </HelpTip>
           </label>
-        </div>
         <div className="mt-4 flex justify-end">
           <button
             type="button"
@@ -579,7 +577,6 @@ export default function PlannerClient() {
               help="Education savings. Federal tax-free growth; some states offer tax deductions/credits."
             />
           </div>
-        </div>
         <div className="mt-4 flex justify-end">
           <button
             type="button"
@@ -652,7 +649,6 @@ export default function PlannerClient() {
               help="Out-of-pocket medical expenses; only the amount above an AGI % floor is deductible."
             />
           </div>
-        </div>
         <div className="mt-4 flex justify-end">
           <button
             type="button"
