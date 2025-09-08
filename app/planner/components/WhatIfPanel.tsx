@@ -1,4 +1,3 @@
-// app/planner/components/WhatIfPanel.tsx
 'use client';
 
 import * as React from 'react';
@@ -7,140 +6,87 @@ import { recommend } from '../../../lib/recommend';
 
 type Props = {
   value: PlanInput;
-  /** Optional: if provided, we’ll push the edited plan up to the parent */
-  onChange?: (next: PlanInput) => void;
+  onChange?: (next: PlanInput) => void; // <- optional now
 };
 
-/**
- * Lightweight what-if editor:
- * - Lets user tweak a few high-leverage fields
- * - Previews recommendations live (no network)
- * - If parent provides onChange, we sync edits upward too
- */
-export default function WhatIfPanel({ value, onChange }: Props) {
-  // Local overrides live only in this panel unless onChange is provided
-  const [over, setOver] = React.useState<Partial<PlanInput>>({});
+const n = (v: unknown) => (typeof v === 'number' && isFinite(v) ? v : 0);
 
-  const set = <K extends keyof PlanInput>(k: K, v: PlanInput[K]) => {
-    setOver((o) => ({ ...o, [k]: v }));
-    if (onChange) {
-      onChange({ ...value, ...over, [k]: v } as PlanInput);
-    }
+export default function WhatIfPanel({ value, onChange }: Props) {
+  // Local overrides (don’t mutate parent unless onChange is provided)
+  const [over, setOver] = React.useState<Partial<PlanInput>>({});
+  const v = { ...value, ...over } as PlanInput;
+
+  const set = <K extends keyof PlanInput>(k: K, val: PlanInput[K]) => {
+    setOver((o) => ({ ...o, [k]: val }));
+    if (onChange) onChange({ ...value, [k]: val });
   };
 
-  const current = React.useMemo(() => ({ ...value, ...over }) as PlanInput, [value, over]);
-  const preview = React.useMemo(() => recommend(current), [current]);
+  const preview = React.useMemo(() => recommend(v), [v]);
 
   return (
     <div className="rounded-lg border p-4">
-      <h3 className="font-semibold">What-If Panel</h3>
-      <p className="text-sm text-gray-600 mb-3">
-        Tweak a few inputs and see the plan update instantly.
-      </p>
+      <h3 className="font-semibold mb-2">What-If (quick tweaks)</h3>
+      <div className="text-sm text-gray-600 mb-4">
+        Adjust a few levers and see the plan reshape instantly. These don’t overwrite your saved inputs unless you’re on the main steps.
+      </div>
 
-      <div className="space-y-3">
-        <NumberField
-          label="Monthly Savings"
-          hint="Dollars you set aside each month"
-          value={current.savingsMonthly}
-          step={100}
-          onChange={(n) => set('savingsMonthly', n)}
-        />
-        <NumberField
-          label="Fixed Monthly Spend"
-          value={current.fixedMonthlySpend}
-          step={100}
-          onChange={(n) => set('fixedMonthlySpend', n)}
-        />
-        <NumberField
-          label="Lifestyle Monthly Spend"
-          value={current.lifestyleMonthlySpend}
-          step={100}
-          onChange={(n) => set('lifestyleMonthlySpend', n)}
-        />
-        <NumberField
-          label="Target Retirement Age"
-          value={current.targetRetireAge}
-          step={1}
-          onChange={(n) => set('targetRetireAge', n)}
-        />
-        <NumberField
-          label="Target Retirement Income (monthly)"
-          value={current.targetRetireIncomeMonthly}
-          step={500}
-          onChange={(n) => set('targetRetireIncomeMonthly', n)}
-        />
-        <Toggle
-          label="Using Backdoor Roth"
-          checked={current.usingRothBackdoor}
-          onChange={(b) => set('usingRothBackdoor', b)}
-        />
-        <Toggle
-          label="Using Mega-Backdoor Roth"
-          checked={current.usingMegaBackdoor}
-          onChange={(b) => set('usingMegaBackdoor', b)}
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Salary">
+          <Num value={v.salary} onChange={(x) => set('salary', x)} />
+        </Field>
+        <Field label="Bonus">
+          <Num value={v.bonus} onChange={(x) => set('bonus', x)} />
+        </Field>
+        <Field label="RSU vesting">
+          <Num value={v.rsuVesting} onChange={(x) => set('rsuVesting', x)} />
+        </Field>
+        <Field label="Rent NOI">
+          <Num value={v.rentNOI} onChange={(x) => set('rentNOI', x)} />
+        </Field>
+        <Field label="Fixed spend / mo">
+          <Num value={v.fixedMonthlySpend} onChange={(x) => set('fixedMonthlySpend', x)} />
+        </Field>
+        <Field label="Lifestyle / mo">
+          <Num value={v.lifestyleMonthlySpend} onChange={(x) => set('lifestyleMonthlySpend', x)} />
+        </Field>
+        <Field label="Cash (HYSA)">
+          <Num value={v.cash} onChange={(x) => set('cash', x)} />
+        </Field>
+        <Field label="Retirement (401k/IRA)">
+          <Num value={v.retirement} onChange={(x) => set('retirement', x)} />
+        </Field>
       </div>
 
       <div className="mt-4">
-        <h4 className="font-medium mb-2">Preview</h4>
-        {preview.length === 0 ? (
-          <p className="text-sm text-gray-600">No specific recommendations yet.</p>
-        ) : (
-          <ul className="list-disc ml-5 space-y-1 text-sm">
-            {preview.slice(0, 8).map((r, i) => (
+        <details>
+          <summary className="cursor-pointer text-sm underline">Previewed recommendations</summary>
+          <ul className="list-disc ml-5 mt-2 space-y-1 text-sm">
+            {preview.map((r, i) => (
               <li key={i}>{r}</li>
             ))}
           </ul>
-        )}
+        </details>
       </div>
     </div>
   );
 }
 
-/** --- tiny UI helpers --- */
-function NumberField({
-  label,
-  value,
-  onChange,
-  step = 1,
-  hint,
-}: {
-  label: string;
-  value: number;
-  onChange: (n: number) => void;
-  step?: number;
-  hint?: string;
-}) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="block">
-      <span className="block text-sm font-medium">{label}</span>
-      {hint && <span className="block text-xs text-gray-600 mb-1">{hint}</span>}
-      <input
-        type="number"
-        inputMode="decimal"
-        step={step}
-        value={Number.isFinite(value) ? value : 0}
-        onChange={(e) => onChange(parseFloat(e.target.value || '0'))}
-        className="w-full border rounded px-3 py-2"
-      />
+    <label className="block text-sm">
+      <span className="block text-[12px] text-gray-600 mb-1">{label}</span>
+      {children}
     </label>
   );
 }
 
-function Toggle({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (b: boolean) => void;
-}) {
+function Num({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   return (
-    <label className="flex items-center gap-2">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-      <span className="text-sm">{label}</span>
-    </label>
+    <input
+      type="number"
+      className="w-full border rounded px-2 py-1"
+      value={Number.isFinite(value) ? value : 0}
+      onChange={(e) => onChange(parseFloat(e.target.value || '0'))}
+    />
   );
 }
