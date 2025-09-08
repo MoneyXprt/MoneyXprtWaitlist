@@ -178,3 +178,20 @@ export function buildRecommendations(input: PlanInput): string[] {
   return R;
 } // At the bottom of lib/recommend.ts
 export { buildRecommendations as recommend };
+// --- Keep the named export everyone should use going forward ---
+export function buildRecommendations(input: PlanInput): string[] {
+  const R: string[] = [];
+  // ... your existing rules populate R ...
+  return R;
+}
+
+// --- Compatibility + what-if wrapper ---
+// Accepts an optional second arg of overrides, merges, and returns recs.
+export function recommend(input: PlanInput, overrides?: Partial<PlanInput>): string[] {
+  const merged = overrides ? { ...input, ...overrides } : input;
+  return buildRecommendations(merged);
+}
+
+// (If you already had this line, keep it. If not, this also
+// ensures any remaining old imports stay working.)
+export { buildRecommendations as default };
