@@ -7,9 +7,16 @@ import { recommend } from '../../../lib/recommend';
 import WhatIfPanel from '../components/WhatIfPanel';
 
 /** ---------- Helpers (no external deps) ---------- */
+// --- helpers ---
 const n = (v: unknown) => (typeof v === 'number' && isFinite(v) ? v : 0);
+
+// BEFORE
+// const sum = (...vals: unknown[]) => vals.reduce((a, b) => a + n(b), 0);
+
+// AFTER
 const sum = (...vals: unknown[]) =>
   vals.reduce<number>((a, b) => a + n(b), 0);
+
 const fmt = (x: number) =>
   x.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
