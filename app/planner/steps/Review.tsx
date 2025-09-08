@@ -4,6 +4,21 @@ import * as React from 'react';
 import type { PlanInput } from '../../../lib/types';
 import { recommend } from '../../../lib/recommend';
 import WhatIfPanel from '../components/WhatIfPanel';
+import ActionChecklist from '../components/ActionChecklist';
+
+// inside the LEFT column, after the Top 3 Priorities card:
+<div className="rounded-lg border p-4 mb-6">
+  <ActionChecklist
+    items={[
+      // map some of your most actionable recs into a short plan:
+      ...top3,
+      // and pad with a couple of evergreen tasks
+      'Automate transfers on payday (pay-yourself-first).',
+      'Quarterly: check RSU withholding set-aside vs. vests.',
+      'Annual: rebalance portfolio and review beneficiaries.',
+    ]}
+  />
+</div>
 
 /** ---------- Helpers ---------- */
 const n = (v: unknown) => (typeof v === 'number' && isFinite(v) ? v : 0);
