@@ -2,6 +2,9 @@
 export type FilingStatus = 'single' | 'married_joint' | 'married_separate' | 'head';
 
 export type PlanInput = {
+  /** Profile */
+  firstName: string; // 👈 NEW — personalize recommendations
+
   /** Step 1 — Discovery */
   goals5y: string[];
   goals20y: string[];
@@ -65,6 +68,9 @@ export type PlanInput = {
 };
 
 export const EMPTY_PLAN: PlanInput = {
+  // Profile
+  firstName: '',
+
   // 1
   goals5y: ['', '', ''],
   goals20y: ['', '', ''],

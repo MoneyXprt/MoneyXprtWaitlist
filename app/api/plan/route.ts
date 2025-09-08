@@ -1,16 +1,14 @@
+// app/api/plan/route.ts
 import { NextResponse } from 'next/server';
-import type { PlanInput } from '@/lib/types';
 import { buildRecommendations } from '@/lib/recommend';
+import type { PlanInput } from '@/lib/types';
 
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as PlanInput;
-    const recommendations = buildRecommendations(body);
-    return NextResponse.json({ recommendations }, { status: 200 });
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err?.message ?? 'Failed to build plan' },
-      { status: 400 }
-    );
+    const out = buildRecommendations(body);
+    return NextResponse.json(out);
+  } catch (e: any) {
+    return new NextResponse(e?.message ?? 'Bad request', { status: 400 });
   }
 }
