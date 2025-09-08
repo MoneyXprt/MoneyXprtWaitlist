@@ -8,7 +8,8 @@ import WhatIfPanel from '../components/WhatIfPanel';
 
 /** ---------- Helpers (no external deps) ---------- */
 const n = (v: unknown) => (typeof v === 'number' && isFinite(v) ? v : 0);
-const sum = (...vals: unknown[]) => vals.reduce((a, b) => a + n(b), 0);
+const sum = (...vals: unknown[]) =>
+  vals.reduce<number>((a, b) => a + n(b), 0);
 const fmt = (x: number) =>
   x.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
