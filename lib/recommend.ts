@@ -1,196 +1,142 @@
 // lib/recommend.ts
-import type { PlanInput, FilingStatus } from './types';
+import type { PlanInput } from './types';
 
+/** Output shown on Review step */
 export type PlanOutput = {
-  name?: string;
-  recommendations: string[];
+  greeting: string;
+  snapshot: {
+    grossIncome: number;
+    annualSpend: number;
+    impliedSavingsRate: number; // 0..1
+    efTarget: number;           // target emergency dollars
+    efGap: number;              // + need, - surplus
+    assets: number;
+    debts: number;
+    netWorth: number;
+  };
+  recs: string[];
 };
 
-function sum(...vals: Array<number | undefined | null>): number {
-  return vals.reduce((a, b) => a + (Number(b) || 0), 0);
-}
-function pct(n: number): string {
-  return `${Math.round(n * 100)}%`;
-}
-function dollars(n: number): string {
-  if (!Number.isFinite(n)) return '$0';
-  const abs = Math.abs(n);
-  const opts: Intl.NumberFormatOptions = abs >= 1_000_000
-    ? { notation: 'compact', maximumFractionDigits: 1 }
-    : { maximumFractionDigits: 0 };
-  return new Intl.NumberFormat('en-US', opts).format(n).replace(/^/, '$');
-}
-function isMarried(fs: FilingStatus) {
-  return fs === 'married_joint' || fs === 'married_separate';
+function n(v: any) { return Number.isFinite(v) ? v : 0; }
+function sum(...vals: Array<number | undefined>) { return vals.reduce((a, b) => a + n(b), 0); }
+function pct(v: number) { return Math.round(v * 100); }
+function money(v: number) {
+  const sign = v < 0 ? '-' : '';
+  const abs = Math.abs(v);
+  if (abs >= 1_000_000) return `${sign}$${(abs/1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `${sign}$${(abs/1_000).toFixed(1)}k`;
+  return `${sign}$${Math.round(abs)}`;
 }
 
-export function buildRecommendations(input: PlanInput): PlanOutput {
-  const name = (input.firstName || '').trim() || undefined;
+function clamp(v: number, lo: number, hi: number) { return Math.min(hi, Math.max(lo, v)); }
 
-  // --- Aggregates -------------------------------------------------------------
-  const grossIncome = sum(
-    input.salary,
-    input.bonus,
-    input.selfEmployment,
-    input.rsuVesting,
-    input.k1Active,
-    input.k1Passive,
-    input.otherIncome,
-    input.rentNOI
-  );
+/** Core calculator (pure) */
+export function recommend(input: PlanInput, overrides: Partial<PlanInput> = {}): PlanOutput {
+  const x = { ...input, ...overrides };
 
-  const annualFixed = 12 * (input.fixedMonthlySpend || 0);
-  const annualLife = 12 * (input.lifestyleMonthlySpend || 0);
-  const annualSpend = annualFixed + annualLife;
+  // Income (simple, non-sensitive)
+  const grossIncome =
+    sum(x.salary, x.bonus, x.selfEmployment, x.rsuVesting, x.k1Active, x.k1Passive, x.otherIncome) +
+    Math.max(0, n(x.rentNOI));
 
-  // “Implied” savings before taxes; directional.
-  const impliedSavings = Math.max(0, grossIncome - annualSpend);
-  const impliedSavingsRate = grossIncome > 0 ? impliedSavings / grossIncome : 0;
+  // Spend and savings
+  const annualSpend = 12 * (n(x.fixedMonthlySpend) + n(x.lifestyleMonthlySpend));
+  const impliedSavingsRate = grossIncome > 0 ? clamp((grossIncome - annualSpend) / grossIncome, 0, 1) : 0;
+
+  // Balance sheet
+  const assets = sum(x.cash, x.brokerage, x.retirement, x.hsa, x.realEstateEquity, x.privateEquityVC, x.crypto);
+  const debts  = sum(x.mortgageDebt, x.studentLoans, x.autoLoans, x.creditCards, x.otherDebt);
+  const netWorth = assets - debts;
 
   // Emergency fund target
-  const monthlyBurn = (annualSpend - (12 * (input.savingsMonthly || 0)) / 12) / 12 || 0;
-  const efMonths = Math.max(0, input.emergencyFundMonths || 0);
-  const efTargetMonths = efMonths < 3 ? 3 : efMonths < 6 ? 6 : efMonths; // nudge to 3–6+ months
-  const efTarget = Math.max(0, monthlyBurn * efTargetMonths);
+  const monthlyCore = n(x.fixedMonthlySpend) + Math.max(0, n(x.lifestyleMonthlySpend) * 0.5);
+  const efTarget = monthlyCore * clamp(n(x.emergencyFundMonths), 0, 24); // allow >12 if user sets it
+  const efGap = efTarget - n(x.cash);
 
-  // Balance sheet snapshot
-  const totalAssets = sum(
-    input.cash,
-    input.brokerage,
-    input.retirement,
-    input.hsa,
-    input.realEstateEquity,
-    input.privateEquityVC,
-    input.crypto
-  );
-  const totalDebt = sum(
-    input.mortgageDebt,
-    input.studentLoans,
-    input.autoLoans,
-    input.creditCards,
-    input.otherDebt
-  );
-  const netWorth = totalAssets - totalDebt;
+  // Personalization knobs
+  const wantsAggressive = n(x.confidence) >= 7;
+  const doesItemize = !!x.itemizeLikely;
+  const doesCharity = !!x.charitableInclination;
 
-  const R: string[] = [];
+  const recs: string[] = [];
+  const name = (x.firstName || '').trim();
+  const greeting = name ? `Hi ${name} — here’s your snapshot and the next best moves:` :
+                          `Here’s your snapshot and the next best moves:`;
 
-  // --- Personalized intro -----------------------------------------------------
-  if (name) {
-    R.push(`Hi ${name} — here’s your snapshot and suggested next moves:`);
+  // Snapshot-aware, conditional recs
+  // Savings rate
+  if (impliedSavingsRate < 0.20) {
+    recs.push(
+      `Increase savings: implied rate is ~${pct(impliedSavingsRate)}%. Aim for at least 20%` +
+      (wantsAggressive ? '–30% to accelerate your goals.' : '.')
+    );
+  } else if (impliedSavingsRate < 0.30 && wantsAggressive) {
+    recs.push(`Great start: ~${pct(impliedSavingsRate)}% savings. Stretch toward ~30% while major goals are near.`);
   } else {
-    R.push('Add your first name in Step 1 to personalize your plan.');
+    recs.push(`Excellent savings discipline (~${pct(impliedSavingsRate)}%). Maintain and automate increases annually.`);
   }
 
-  // --- Numeric snapshot (feels personalized immediately) ----------------------
-  R.push(
-    `Snapshot: gross income ~${dollars(grossIncome)}/yr; spend ~${dollars(annualSpend)}/yr ⇒ implied savings ~${dollars(impliedSavings)} (${pct(impliedSavingsRate)}).`
-  );
-  R.push(
-    `Emergency fund target ~${efTargetMonths} months ≈ ${dollars(efTarget)}. Net worth ≈ ${dollars(netWorth)} (${dollars(totalAssets)} assets – ${dollars(totalDebt)} debt).`
-  );
-
-  // --- Savings rate guidance --------------------------------------------------
-  if (impliedSavingsRate >= 0.35) {
-    R.push(`Excellent savings discipline (≈ ${pct(impliedSavingsRate)}). Keep lifestyle in check and automate increases annually.`);
-  } else if (impliedSavingsRate >= 0.2) {
-    R.push(`Solid savings rate (≈ ${pct(impliedSavingsRate)}). Push toward 30% if early financial freedom is a goal.`);
-  } else if (impliedSavingsRate > 0.1) {
-    R.push(`Savings is okay (≈ ${pct(impliedSavingsRate)}). Trim lifestyle spend or increase income to reach 20–30%+.`);
-  } else {
-    R.push(`Savings is light (≈ ${pct(impliedSavingsRate)}). Tighten expenses or boost income to raise savings toward 20–30%+.`);
-  }
-
-  // --- Emergency fund ---------------------------------------------------------
-  if (efMonths < 3) {
-    R.push(`Build your emergency fund to at least 3–6 months (~${dollars(efTarget)}). Park in high-yield savings or short T-Bills.`);
-  } else if (efMonths < 6) {
-    R.push(`Increase emergency fund toward 6 months (~${dollars(efTarget)} total) for stronger resilience.`);
-  } else {
-    R.push('Emergency fund looks strong (≥ 6 months). Keep it liquid and separate from investment accounts.');
-  }
-
-  // --- Tax-advantaged accounts ------------------------------------------------
-  R.push('Max all tax-advantaged space that applies: 401(k)/403(b), IRA/backdoor Roth, HSA if eligible.');
-  if (input.usingRothBackdoor) {
-    R.push('Backdoor Roth: confirm no pro-rata issues (clean up pre-tax IRA balances).');
-  } else {
-    R.push('Above Roth limits? Consider a backdoor Roth (watch the pro-rata rule).');
-  }
-  if (input.usingMegaBackdoor) {
-    R.push('Mega-backdoor Roth: ensure your plan supports after-tax contributions + in-plan conversions.');
-  } else {
-    R.push('If your 401(k) allows, explore mega-backdoor Roth for extra tax-advantaged savings.');
-  }
-  if (input.hsa > 0) {
-    R.push('Invest HSA dollars (beyond a small cash buffer) for long-term, triple-tax-advantaged growth.');
-  }
-
-  // --- Equity comp / RSUs -----------------------------------------------------
-  if (input.rsuVesting > 0) {
-    R.push('RSUs vesting: check tax withholding (many plans under-withhold); consider a 10b5-1 plan and diversify concentrated stock.');
-  }
-
-  // --- Charitable / itemizing -------------------------------------------------
-  if (input.charitableInclination) {
-    R.push('Charitable intent: consider bunching or a Donor-Advised Fund in higher-income years.');
-  }
-  if (input.itemizeLikely) {
-    R.push('Likely to itemize: compare standard vs. itemized (SALT cap, mortgage interest, charitable).');
-  }
-
-  // --- Side business / entity -------------------------------------------------
-  if (input.entityOrSideBiz || input.selfEmployment > 0) {
-    R.push('Side business: review entity structure (LLC/S-Corp) and retirement options (Solo-401k/SEP).');
-  }
-
-  // --- Debt strategy ----------------------------------------------------------
-  if (input.creditCards > 0) {
-    R.push('Pay off high-interest credit cards first (avalanche), then student/auto, while making required mortgage payments.');
-  } else if (sum(input.studentLoans, input.autoLoans) > 0) {
-    R.push('After any high-interest debt, prioritize student/auto payoff while sustaining retirement contributions.');
-  }
-  if (input.mortgageDebt > 0 && impliedSavingsRate >= 0.25) {
-    R.push('With strong savings, consider modest extra principal on your mortgage if the rate exceeds your safe after-tax yield.');
-  }
-
-  // --- Concentration & portfolio ---------------------------------------------
-  if (input.concentrationRisk || input.crypto > 0 || input.privateEquityVC > 0) {
-    R.push('Reduce concentration risk: set target weights and auto-sell excess above thresholds on a schedule.');
-  }
-  R.push('Use a diversified, low-cost portfolio; automate contributions and set an annual rebalance rule.');
-
-  // --- Protection --------------------------------------------------------------
-  if (!input.hasDisability) {
-    R.push('Add long-term disability insurance — the most important income-protection coverage.');
-  }
-  if (isMarried(input.filingStatus) && !input.hasTermLife) {
-    R.push('If married, add term life sized to income, debt payoff, and dependents — simple and inexpensive.');
-  }
-  if (!input.hasUmbrella) {
-    R.push('Add umbrella liability coverage (e.g., $1–2M) above home/auto limits for lawsuit protection.');
-  }
-
-  // --- Retirement framing -----------------------------------------------------
-  if (input.targetRetireIncomeMonthly > 0) {
-    const annualTarget = input.targetRetireIncomeMonthly * 12;
-    const roughNestEgg = annualTarget / 0.04; // 4% rule proxy
-    R.push(
-      `Retirement target ~${dollars(annualTarget)}/yr ⇒ nest-egg ~${dollars(roughNestEgg)} (4% rule proxy). Adjust for pensions, real-estate income, or deferred comp.`
+  // Emergency fund
+  if (efGap > 0) {
+    recs.push(
+      `Build emergency fund to ~${money(efTarget)} (${n(x.emergencyFundMonths)} months). Need about ${money(efGap)} more — use HYSA or T-Bills.`
     );
   } else {
-    R.push('Set a target retirement income (monthly) so we can translate it into a nest-egg range and savings path.');
+    recs.push(`Emergency fund at target (~${money(efTarget)}). Keep excess cash invested if time horizon > 3 years.`);
   }
 
-  // --- Estate & legacy --------------------------------------------------------
-  if (!input.hasWillOrTrust) {
-    R.push('Create a will and (if appropriate) a revocable living trust; add POA and healthcare directives.');
+  // Tax-advantaged space
+  recs.push(`Max tax-advantaged space: 401(k)/403(b), IRA/backdoor Roth, and HSA (if HDHP eligible).`);
+
+  // Backdoor/Mega-backdoor Roth if relevant
+  if (x.usingRothBackdoor || impliedSavingsRate >= 0.2) {
+    recs.push(`If income exceeds Roth limits, consider backdoor Roth (watch pro-rata).`);
   }
-  if (input.givingIntent) {
-    R.push('Formalize a giving policy; consider appreciated-asset gifting or a DAF for tax efficiency.');
+  if (x.usingMegaBackdoor) {
+    recs.push(`Your plan supports mega-backdoor Roth — use it for extra tax-advantaged savings.`);
   }
 
-  // --- Roadmap ----------------------------------------------------------------
-  R.push('12-month roadmap: automate savings, schedule quarterly reviews, and rebalance annually.');
+  // RSUs & concentration
+  if (n(x.rsuVesting) > 0 || x.concentrationRisk) {
+    recs.push(
+      `RSUs / concentration: set trading rules (83b/10b5-1 when applicable), verify withholding, and diversify concentrated positions.`
+    );
+  }
 
-  return { name, recommendations: R };
+  // Itemize vs. standard; charity
+  if (doesItemize) {
+    recs.push(`Likely to itemize: run standard vs. itemized comparison (SALT cap, mortgage interest, charity).`);
+  } else {
+    recs.push(`Likely to take standard deduction: consider “bunching” deductions in alternating years if close to the threshold.`);
+  }
+  if (doesCharity) {
+    recs.push(`Charitable intent: consider a Donor-Advised Fund to group gifts into high-income years and donate appreciated assets.`);
+  }
+
+  // Debt ordering
+  if (n(x.creditCards) > 0) recs.push(`Prioritize credit-card payoff first; then student/auto; keep mortgage if rate is attractive.`);
+  else if (n(x.studentLoans) + n(x.autoLoans) > 0) recs.push(`After any high-interest debt, sustain retirement contributions while paying student/auto loans.`);
+
+  // Portfolio
+  recs.push(`Use a diversified, low-cost portfolio; set an annual rebalance rule and automate contributions.`);
+
+  // Insurance & estate
+  if (!x.hasDisability) recs.push(`Add long-term disability insurance — it’s the most important income-protection coverage.`);
+  if (!x.hasUmbrella)   recs.push(`Consider umbrella liability coverage to protect against lawsuits.`);
+  if (!x.hasWillOrTrust) recs.push(`Create a will and (if appropriate) a revocable living trust; add POA and healthcare directives.`);
+
+  // Long-run retirement target (rough 4% rule proxy)
+  const retireMo = Math.max(0, n(x.targetRetireIncomeMonthly));
+  if (retireMo > 0) {
+    const need = retireMo * 12 / 0.04;
+    recs.push(
+      `Retirement income goal ~${money(retireMo)}/mo ⇒ long-run nest egg ~${money(need)} (4% rule proxy). Adjust for pensions/real estate income.`
+    );
+  }
+
+  return {
+    greeting,
+    snapshot: { grossIncome, annualSpend, impliedSavingsRate, efTarget, efGap, assets, debts, netWorth },
+    recs,
+  };
 }

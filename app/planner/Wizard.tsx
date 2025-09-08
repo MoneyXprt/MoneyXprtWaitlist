@@ -10,7 +10,8 @@ import BalanceSheet from './steps/BalanceSheet';
 import Taxes from './steps/Taxes';
 import Retirement from './steps/Retirement';
 import Risk from './steps/Risk';
-import Estate from './steps/Estate';
+// 🔁 Step 7 becomes Review (this will show WhatIfPanel and the Submit button)
+import Review from './steps/Review';
 
 export default function Wizard() {
   const [data, setData] = useState<PlanInput>(EMPTY_PLAN);
@@ -19,15 +20,19 @@ export default function Wizard() {
   const [recs, setRecs] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const next = () => setStep(s => Math.min(7, s + 1));
-  const back = () => setStep(s => Math.max(1, s - 1));
+  const next = () => setStep((s) => Math.min(7, s + 1));
+  const back = () => setStep((s) => Math.max(1, s - 1));
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (step < 7) return; // submit only at the end
+
+    // Only submit at the final Review step
+    if (step < 7) return;
 
     setLoading(true);
-    setError(null); setRecs(null);
+    setError(null);
+    setRecs(null);
+
     try {
       const res = await fetch('/api/plan', {
         method: 'POST',
@@ -36,10 +41,13 @@ export default function Wizard() {
       });
       if (!res.ok) throw new Error(await res.text());
       const json = await res.json();
-      setRecs(json?.recommendations ?? []);
-      // Scroll to results
-      setTimeout(()=>document.getElementById('results')?.scrollIntoView({behavior:'smooth'}), 50);
-    } catch (err:any) {
+      setRecs(Array.isArray(json?.recommendations) ? json.recommendations : []);
+
+      // Smooth scroll to results after the DOM paints
+      requestAnimationFrame(() => {
+        document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    } catch (err: any) {
       setError(err?.message || 'Failed to generate plan.');
     } finally {
       setLoading(false);
@@ -56,39 +64,60 @@ export default function Wizard() {
         </p>
       </header>
 
+      {/* The form wraps all steps so the final Review can submit */}
       <form onSubmit={onSubmit} className="space-y-6">
         {step === 1 && (
           <Discovery value={data} onChange={setData} onNext={next} />
         )}
+
         {step === 2 && (
           <CashFlow value={data} onChange={setData} onNext={next} onBack={back} />
         )}
+
         {step === 3 && (
           <BalanceSheet value={data} onChange={setData} onNext={next} onBack={back} />
         )}
+
         {step === 4 && (
           <Taxes value={data} onChange={setData} onNext={next} onBack={back} />
         )}
+
         {step === 5 && (
           <Retirement value={data} onChange={setData} onNext={next} onBack={back} />
         )}
+
         {step === 6 && (
           <Risk value={data} onChange={setData} onNext={next} onBack={back} />
         )}
+
+        {/* 🔁 New Step 7: Review (mount WhatIfPanel here) */}
         {step === 7 && (
-          <Estate value={data} onChange={setData} onNext={next} onBack={back} />
+          <Review
+            value={data}
+            onChange={setData}
+            onBack={back}
+            // no onNext; this step submits via the form (type="submit" button inside Review)
+          />
         )}
       </form>
 
       {loading && <p className="mt-6">Generating plan…</p>}
-      {error && <div className="mt-6 rounded border border-red-300 bg-red-50 p-3 text-red-800">{error}</div>}
+      {error && (
+        <div className="mt-6 rounded border border-red-300 bg-red-50 p-3 text-red-800">
+          {error}
+        </div>
+      )}
 
       {recs && (
         <section id="results" className="mt-8 rounded border p-4">
           <h3 className="font-semibold mb-2">Personalized Recommendations</h3>
-          {recs.length === 0 ? <p>No recommendations returned.</p> : (
+          {recs.length === 0 ? (
+            <p>No recommendations returned.</p>
+          ) : (
             <ul className="list-disc pl-5 space-y-2">
-              {recs.map((r, i) => <li key={i}>{r}</li>)}
+              {recs.map((r, i) => (
+                <li key={i}>{r}</li>
+              ))}
             </ul>
           )}
         </section>
