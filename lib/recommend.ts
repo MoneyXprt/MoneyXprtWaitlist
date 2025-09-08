@@ -176,4 +176,5 @@ export function buildRecommendations(input: PlanInput): string[] {
   R.push(`Set a 12-month roadmap: automate savings, schedule quarterly reviews, and rebalance annually.`);
 
   return R;
-}
+} // At the bottom of lib/recommend.ts
+export { buildRecommendations as recommend };
