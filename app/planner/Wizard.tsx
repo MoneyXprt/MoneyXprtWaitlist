@@ -92,13 +92,11 @@ export default function Wizard() {
 
         {/* 🔁 New Step 7: Review (mount WhatIfPanel here) */}
         {step === 7 && (
-          <Review
-            value={data}
-            onChange={setData}
-            onBack={back}
-            // no onNext; this step submits via the form (type="submit" button inside Review)
-          />
-        )}
+  <Review
+    value={data}
+    onBack={back}
+  />
+)}
       </form>
 
       {loading && <p className="mt-6">Generating plan…</p>}
