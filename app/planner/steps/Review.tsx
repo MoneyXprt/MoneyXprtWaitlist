@@ -1,28 +1,14 @@
+// app/planner/steps/Review.tsx
 'use client';
 
 import * as React from 'react';
 import type { PlanInput } from '../../../lib/types';
 import { recommend } from '../../../lib/recommend';
 import WhatIfPanel from '../components/WhatIfPanel';
-import ActionChecklist from '../components/ActionChecklist';
 
-// inside the LEFT column, after the Top 3 Priorities card:
-<div className="rounded-lg border p-4 mb-6">
-  <ActionChecklist
-    items={[
-      // map some of your most actionable recs into a short plan:
-      ...top3,
-      // and pad with a couple of evergreen tasks
-      'Automate transfers on payday (pay-yourself-first).',
-      'Quarterly: check RSU withholding set-aside vs. vests.',
-      'Annual: rebalance portfolio and review beneficiaries.',
-    ]}
-  />
-</div>
-
-/** ---------- Helpers ---------- */
+/** ---------- Helpers (no external deps) ---------- */
 const n = (v: unknown) => (typeof v === 'number' && isFinite(v) ? v : 0);
-const sum = (...vals: unknown[]) => vals.reduce<number>((a, b) => a + n(b), 0);
+const sum = (...vals: unknown[]) => vals.reduce((a, b) => a + n(b), 0);
 const fmt = (x: number) =>
   x.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
@@ -32,6 +18,7 @@ type Props = {
 };
 
 export default function Review({ value, onBack }: Props) {
+  // ---------- snapshot metrics ----------
   const grossIncome = sum(
     value.salary,
     value.bonus,
@@ -70,12 +57,19 @@ export default function Review({ value, onBack }: Props) {
   const efCoverageMonths = monthlyBurn > 0 ? n(value.cash) / monthlyBurn : 0;
   const efPct = efTarget > 0 ? Math.min(100, (n(value.cash) / efTarget) * 100) : 0;
 
+  // ---------- recs & grouping ----------
   const recs = React.useMemo(() => recommend(value), [value]);
 
-  const buckets: Record<
-    'cash' | 'invest' | 'debt' | 'risk' | 'tax' | 'estate' | 'goals' | 'other',
-    string[]
-  > = { cash: [], invest: [], debt: [], risk: [], tax: [], estate: [], goals: [], other: [] };
+  const buckets: Record<'cash' | 'invest' | 'debt' | 'risk' | 'tax' | 'estate' | 'goals' | 'other', string[]> = {
+    cash: [],
+    invest: [],
+    debt: [],
+    risk: [],
+    tax: [],
+    estate: [],
+    goals: [],
+    other: [],
+  };
 
   recs.forEach((line) => {
     const l = line.toLowerCase();
@@ -89,28 +83,33 @@ export default function Review({ value, onBack }: Props) {
     else buckets.other.push(line);
   });
 
-  const scored = recs.map((r) => {
-    const l = r.toLowerCase();
-    let score = 0;
-    if (/increase emergency fund|credit card|under-?withhold|umbrella|disability/.test(l)) score += 3;
-    if (/max|backdoor|roth|mega/.test(l)) score += 2;
-    if (/snapshot|implied savings/.test(l)) score += 1;
-    if (/consider/.test(l)) score -= 0.5;
-    return { r, score };
-  });
-  const top3 = scored.sort((a, b) => b.score - a.score).slice(0, 3).map((x) => x.r);
+  // ---------- Top 3 priorities (computed BEFORE JSX) ----------
+  const top3 = React.useMemo(() => {
+    const scored = recs.map((r) => {
+      const l = r.toLowerCase();
+      let score = 0;
+      if (/increase emergency fund|credit card|under-?withhold|umbrella|disability/.test(l)) score += 3;
+      if (/max|backdoor|roth|mega/.test(l)) score += 2;
+      if (/snapshot|implied savings/.test(l)) score += 1;
+      if (/consider/.test(l)) score -= 0.5;
+      return { r, score };
+    });
+    return scored.sort((a, b) => b.score - a.score).slice(0, 3).map((x) => x.r);
+  }, [recs]);
 
+  // ---------- UI ----------
   return (
-    <div className="grid lg:grid-cols-2 gap-6">
-      {/* LEFT */}
-      <div>
+    <div className="grid lg:grid-cols-3 gap-6">
+      {/* LEFT 2/3: Summary & details */}
+      <div className="lg:col-span-2">
+        {/* Summary header card */}
         <div className="rounded-lg border p-4 mb-6">
           <h2 className="text-lg font-semibold">Review & Finalize</h2>
           <p className="text-sm text-gray-600 mt-1">
-            Here’s a first pass of your plan. Tweak inputs on the right and re-run the preview to
-            tailor it further.
+            Here’s a first pass of your plan. Tweak inputs on the right and re-run the preview to tailor it further.
           </p>
 
+          {/* Snapshot chips */}
           <div className="mt-4 flex flex-wrap gap-2 text-sm">
             <Badge>Income {fmt(grossIncome)}/yr</Badge>
             <Badge>Spend {fmt(spendAnnual)}/yr</Badge>
@@ -118,6 +117,7 @@ export default function Review({ value, onBack }: Props) {
             <Badge>Net worth {fmt(netWorth)}</Badge>
           </div>
 
+          {/* Progress bars */}
           <div className="mt-4 grid sm:grid-cols-2 gap-4">
             <Progress
               label="Emergency Fund Coverage"
@@ -132,6 +132,7 @@ export default function Review({ value, onBack }: Props) {
           </div>
         </div>
 
+        {/* Top 3 quick wins */}
         <div className="rounded-lg border p-4 mb-6">
           <h3 className="font-semibold mb-2">🚀 Your Top 3 Priorities</h3>
           <ol className="list-decimal ml-5 space-y-2">
@@ -141,6 +142,17 @@ export default function Review({ value, onBack }: Props) {
           </ol>
         </div>
 
+        {/* Optional mini roadmap using top3 */}
+        <RoadmapCard
+          title="Next 90 Days"
+          items={[
+            ...top3,
+            'Automate transfers on payday (pay-yourself-first).',
+            'Quarterly: check RSU withholding set-aside vs. vests.',
+          ]}
+        />
+
+        {/* Accordions */}
         <Accordion title="💰 Cash & Savings" items={buckets.cash} defaultOpen />
         <Accordion title="📈 Investing & Retirement" items={buckets.invest} />
         <Accordion title="🏡 Debt & Real Estate" items={buckets.debt} />
@@ -150,6 +162,7 @@ export default function Review({ value, onBack }: Props) {
         <Accordion title="🎯 Your Goals" items={buckets.goals} />
         {buckets.other.length > 0 && <Accordion title="🧩 Other" items={buckets.other} />}
 
+        {/* Actions */}
         <div className="mt-6 flex items-center gap-3">
           <button type="button" onClick={onBack} className="rounded border px-4 py-2 hover:bg-gray-50">
             Back
@@ -160,16 +173,16 @@ export default function Review({ value, onBack }: Props) {
         </div>
       </div>
 
-      {/* RIGHT */}
+      {/* RIGHT: What-If panel */}
       <div>
-        {/* onChange is optional now; no prop error */}
         <WhatIfPanel value={value} />
       </div>
     </div>
   );
 }
 
-/** ---------- UI bits ---------- */
+/** ---------- Small UI primitives ---------- */
+
 function Badge({ children }: { children: React.ReactNode }) {
   return <span className="inline-flex items-center rounded-full border px-2.5 py-1 text-xs bg-white">{children}</span>;
 }
@@ -188,15 +201,7 @@ function Progress({ label, hint, percent }: { label: string; hint?: string; perc
   );
 }
 
-function Accordion({
-  title,
-  items,
-  defaultOpen = false,
-}: {
-  title: string;
-  items: string[];
-  defaultOpen?: boolean;
-}) {
+function Accordion({ title, items, defaultOpen = false }: { title: string; items: string[]; defaultOpen?: boolean }) {
   if (!items || items.length === 0) return null;
   const [open, setOpen] = React.useState(defaultOpen);
   return (
@@ -214,6 +219,21 @@ function Accordion({
           </ul>
         </div>
       )}
+    </div>
+  );
+}
+
+// Simple roadmap card used above
+function RoadmapCard({ title, items }: { title: string; items: string[] }) {
+  if (!items || items.length === 0) return null;
+  return (
+    <div className="rounded-lg border p-4 mb-6">
+      <h3 className="font-semibold mb-2">{title}</h3>
+      <ul className="list-disc ml-5 space-y-2">
+        {items.map((t, i) => (
+          <li key={i}>{t}</li>
+        ))}
+      </ul>
     </div>
   );
 }
