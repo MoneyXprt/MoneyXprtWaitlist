@@ -22,7 +22,7 @@ export type PlanOutput = {
 };
 
 export function buildRecommendations(input: PlanInput): PlanOutput {
-  const name = (input.profile?.firstName || '').trim();
+  const name = (input.firstName || '').trim();
 
   // Gross-ish income (very approximate—no sensitive breakdown)
   const grossIncome = sum(
