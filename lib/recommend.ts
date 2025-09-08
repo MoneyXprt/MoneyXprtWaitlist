@@ -1,8 +1,15 @@
 // lib/recommend.ts
-import type { PlanInput } from './types';
+import type { PlanInput } from '@/lib/types';
 
-const n = (v: unknown) => (typeof v === 'number' && isFinite(v) ? v : 0);
-const sum = (...vals: unknown[]) => vals.reduce((a, b) => a + n(b), 0);
+// Coerce any maybe-number into a safe number
+const n = (v: unknown): number =>
+  typeof v === 'number' && Number.isFinite(v) ? v : 0;
+
+// Sum a bunch of maybe-numbers safely
+const sum = (...vals: Array<number | null | undefined>): number =>
+  vals.reduce((acc, cur) => acc + n(cur), 0);
+
+// USD formatter
 const fmt = (x: number) =>
   x.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
