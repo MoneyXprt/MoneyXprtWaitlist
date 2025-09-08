@@ -6,52 +6,52 @@ import type { PlanInput } from '../../../lib/types';
 type Props = {
   value: PlanInput;
   onChange: (next: PlanInput) => void;
-  /** optional: parent can pass a handler to move to the next step */
   onNext?: () => void;
 };
 
-/**
- * This component reads/writes `value.discovery`.
- * To be resilient to type shape changes, it falls back to sane defaults
- * if `value.discovery` is missing.
- */
 export default function Discovery({ value, onChange, onNext }: Props) {
-  // Pull discovery safely with fallbacks
-  const discovery = React.useMemo(() => {
-    const d: any = (value as any).discovery ?? {};
-    return {
-      goals5: Array.isArray(d.goals5) ? [...d.goals5, '', '', ''].slice(0, 3) : ['', '', ''],
-      goals20: Array.isArray(d.goals20) ? [...d.goals20, '', '', ''].slice(0, 3) : ['', '', ''],
-      freedom: typeof d.freedom === 'string' ? d.freedom : '',
-      confidence: Number.isFinite(d.confidence) ? d.confidence : 5,
-    };
-  }, [value]);
+  const set = <K extends keyof PlanInput>(k: K, v: PlanInput[K]) =>
+    onChange({ ...value, [k]: v });
 
-  function updateDiscovery(nextPartial: Partial<typeof discovery>) {
-    const next = {
-      ...(value as any),
-      discovery: {
-        ...discovery,
-        ...nextPartial,
-      },
-    } as PlanInput;
-    onChange(next);
-  }
+  // Safe, length-3 helpers for the goals arrays
+  const goals5y = React.useMemo(
+    () => (Array.isArray(value.goals5y) ? [...value.goals5y, '', '', ''].slice(0, 3) : ['', '', '']),
+    [value.goals5y]
+  );
+  const goals20y = React.useMemo(
+    () => (Array.isArray(value.goals20y) ? [...value.goals20y, '', '', ''].slice(0, 3) : ['', '', '']),
+    [value.goals20y]
+  );
 
   const setGoal5 = (i: number, v: string) => {
-    const arr = [...discovery.goals5];
-    arr[i] = v;
-    updateDiscovery({ goals5: arr });
+    const next = [...goals5y];
+    next[i] = v;
+    set('goals5y', next);
   };
 
   const setGoal20 = (i: number, v: string) => {
-    const arr = [...discovery.goals20];
-    arr[i] = v;
-    updateDiscovery({ goals20: arr });
+    const next = [...goals20y];
+    next[i] = v;
+    set('goals20y', next);
   };
 
   return (
     <section>
+      {/* First name (NEW) */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium mb-1">
+          First name
+          <HelpTip>Totally optional — we’ll use it to personalize your plan.</HelpTip>
+        </label>
+        <input
+          className="w-full border rounded px-3 py-2"
+          type="text"
+          value={value.firstName || ''}
+          onChange={(e) => set('firstName', e.target.value)}
+          placeholder="e.g., Alex"
+        />
+      </div>
+
       {/* 5-year goals */}
       <div className="mb-6">
         <label className="block text-sm font-medium mb-1">
@@ -62,19 +62,19 @@ export default function Discovery({ value, onChange, onNext }: Props) {
           <input
             className="w-full border rounded px-3 py-2"
             placeholder="5-year goal #1"
-            value={discovery.goals5[0]}
+            value={goals5y[0]}
             onChange={(e) => setGoal5(0, e.target.value)}
           />
           <input
             className="w-full border rounded px-3 py-2"
             placeholder="5-year goal #2"
-            value={discovery.goals5[1]}
+            value={goals5y[1]}
             onChange={(e) => setGoal5(1, e.target.value)}
           />
           <input
             className="w-full border rounded px-3 py-2"
             placeholder="5-year goal #3"
-            value={discovery.goals5[2]}
+            value={goals5y[2]}
             onChange={(e) => setGoal5(2, e.target.value)}
           />
         </div>
@@ -90,19 +90,19 @@ export default function Discovery({ value, onChange, onNext }: Props) {
           <input
             className="w-full border rounded px-3 py-2"
             placeholder="20-year goal #1"
-            value={discovery.goals20[0]}
+            value={goals20y[0]}
             onChange={(e) => setGoal20(0, e.target.value)}
           />
           <input
             className="w-full border rounded px-3 py-2"
             placeholder="20-year goal #2"
-            value={discovery.goals20[1]}
+            value={goals20y[1]}
             onChange={(e) => setGoal20(1, e.target.value)}
           />
           <input
             className="w-full border rounded px-3 py-2"
             placeholder="20-year goal #3"
-            value={discovery.goals20[2]}
+            value={goals20y[2]}
             onChange={(e) => setGoal20(2, e.target.value)}
           />
         </div>
@@ -112,26 +112,26 @@ export default function Discovery({ value, onChange, onNext }: Props) {
       <div className="mb-6">
         <label className="block text-sm font-medium mb-1">
           What does “financial freedom” look like to you?
-          <HelpTip>Write a sentence or two. This frames how we prioritize trade-offs (risk, liquidity, timeline).</HelpTip>
+          <HelpTip>Write a sentence or two. This frames trade-offs (risk, liquidity, timeline).</HelpTip>
         </label>
         <textarea
           className="w-full min-h-[140px] border rounded px-3 py-2"
           placeholder="Write a sentence or two…"
-          value={discovery.freedom}
-          onChange={(e) => updateDiscovery({ freedom: e.target.value })}
+          value={value.freedomDef || ''}
+          onChange={(e) => set('freedomDef', e.target.value)}
         />
       </div>
 
-      {/* Confidence slider/select */}
+      {/* Confidence */}
       <div className="mb-6">
         <label className="block text-sm font-medium mb-1">
           How confident are you in your current financial path? (1–10)
-          <HelpTip>Gut check. We’ll use this to tune the plan’s aggressiveness vs. safety.</HelpTip>
+          <HelpTip>Gut check. We’ll use this to tune aggressiveness vs. safety.</HelpTip>
         </label>
         <select
           className="border rounded px-3 py-2"
-          value={discovery.confidence}
-          onChange={(e) => updateDiscovery({ confidence: Number(e.target.value) })}
+          value={value.confidence ?? 5}
+          onChange={(e) => set('confidence', Number(e.target.value))}
         >
           {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
             <option key={n} value={n}>
@@ -155,7 +155,7 @@ export default function Discovery({ value, onChange, onNext }: Props) {
   );
 }
 
-/** Minimal tooltip to match your planner’s style */
+/** Minimal tooltip (same style you’ve been using) */
 function HelpTip({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = React.useState(false);
   return (
