@@ -3,27 +3,76 @@ import type { PlanInput } from './types';
 
 // --- helpers ---
 const n = (v: unknown) => (typeof v === 'number' && isFinite(v) ? v : 0);
-const sum = (...vals: unknown[]) => vals.reduce((a, b) => a + n(b), 0);
+
+// NOTE: explicitly type reduce to avoid TS inferring `unknown`
+const sum = (...vals: unknown[]) =>
+  vals.reduce<number>((a, b) => a + n(b), 0);
+
 const fmt = (x: number) =>
   x.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
 const clamp = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, x));
 
-// 2024-ish standard deduction rough values (good enough for guidance)
+// 2024-ish standard deduction rough values (guidance only)
 const STD_DED = {
   single: 14600,
   married_joint: 29200,
   married_separate: 14600,
   head: 21900,
-};
+} as const;
 
 // assume employee 401k limit (under 50) for quick guidance
-const EMP_401K_LIMIT = 23000;
+const EMP_401K_LIMIT = 23_000;
 
-// quick RSU default federal withholding often ~22% for supplemental wages (not precise)
-// high earners commonly owe more (e.g., 32–37%). We'll use 35% as "likely true rate" for a gap estimate.
+// RSU withholding heuristics (guidance only)
 const RSU_DEFAULT_WH = 0.22;
 const RSU_PLAUSIBLE_RATE = 0.35;
+
+/** Small snapshot object you can show in UIs or use in /api. */
+export function getPlanSnapshot(input: PlanInput) {
+  const grossIncome = sum(
+    input.salary,
+    input.bonus,
+    input.selfEmployment,
+    input.rsuVesting,
+    input.k1Active,
+    input.k1Passive,
+    input.otherIncome,
+    input.rentNOI
+  );
+
+  const spendAnnual = n(input.fixedMonthlySpend) * 12 + n(input.lifestyleMonthlySpend) * 12;
+  const impliedSavings = Math.max(0, grossIncome - spendAnnual);
+  const savingsRate = grossIncome > 0 ? (impliedSavings / grossIncome) * 100 : 0;
+
+  const totalAssets = sum(
+    input.cash,
+    input.brokerage,
+    input.retirement,
+    input.hsa,
+    input.realEstateEquity,
+    input.privateEquityVC,
+    input.crypto
+  );
+  const totalDebts = sum(
+    input.mortgageDebt,
+    input.studentLoans,
+    input.autoLoans,
+    input.creditCards,
+    input.otherDebt
+  );
+  const netWorth = totalAssets - totalDebts;
+
+  return {
+    grossIncome,
+    spendAnnual,
+    impliedSavings,
+    savingsRate,
+    totalAssets,
+    totalDebts,
+    netWorth,
+  };
+}
 
 export function buildRecommendations(input: PlanInput): string[] {
   // Discovery fallbacks
@@ -83,7 +132,7 @@ export function buildRecommendations(input: PlanInput): string[] {
 
   // Itemize heuristic
   const likelyToItemize = !!input.itemizeLikely;
-  const stdDed = STD_DED[input.filingStatus] ?? STD_DED.single;
+  const stdDed = STD_DED[input.filingStatus as keyof typeof STD_DED] ?? STD_DED.single;
 
   // Roth / Backdoor heuristic
   const aboveRothLimitsLikely =
@@ -229,81 +278,3 @@ export function buildRecommendations(input: PlanInput): string[] {
 
 // keep the old name available to existing imports
 export { buildRecommendations as recommend };
-
-// ---------- Snapshot for APIs / UI cards ----------
-export function getPlanSnapshot(input: PlanInput) {
-  // Income (annual)
-  const grossIncome = sum(
-    input.salary,
-    input.bonus,
-    input.selfEmployment,
-    input.rsuVesting,
-    input.k1Active,
-    input.k1Passive,
-    input.otherIncome,
-    input.rentNOI
-  );
-
-  // Spend (annual)
-  const fixedAnnual = n(input.fixedMonthlySpend) * 12;
-  const lifestyleAnnual = n(input.lifestyleMonthlySpend) * 12;
-  const totalAnnualSpend = fixedAnnual + lifestyleAnnual;
-
-  // Savings (implied from cash flow)
-  const impliedSavingsFromCashflow = Math.max(0, grossIncome - totalAnnualSpend);
-  const impliedSavingsRate = grossIncome > 0 ? (impliedSavingsFromCashflow / grossIncome) * 100 : 0;
-
-  // Balance sheet
-  const totalAssets = sum(
-    input.cash,
-    input.brokerage,
-    input.retirement,
-    input.hsa,
-    input.realEstateEquity,
-    input.privateEquityVC,
-    input.crypto
-  );
-  const totalDebts = sum(
-    input.mortgageDebt,
-    input.studentLoans,
-    input.autoLoans,
-    input.creditCards,
-    input.otherDebt
-  );
-  const netWorth = totalAssets - totalDebts;
-
-  // Emergency fund
-  const targetEFMonths = Math.max(3, n(input.emergencyFundMonths));
-  const monthlyBurn = Math.max(1000, n(input.fixedMonthlySpend) + n(input.lifestyleMonthlySpend));
-  const efTarget = monthlyBurn * targetEFMonths;
-  const efGap = Math.max(0, efTarget - n(input.cash));
-  const efGapPerMonth = Math.ceil(efGap / 12);
-
-  // Simple 401k employee-limit gap (guidance only)
-  const employee401kGap = Math.max(0, EMP_401K_LIMIT - Math.min(EMP_401K_LIMIT, n(input.retirement)));
-  const employee401kGapPerMonth = Math.ceil(employee401kGap / 12);
-
-  // RSU withholding gap rough-in
-  const rsuTaxGap = Math.max(0, RSU_PLAUSIBLE_RATE - RSU_DEFAULT_WH) * n(input.rsuVesting);
-
-  return {
-    grossIncome,
-    totalAnnualSpend,
-    impliedSavingsFromCashflow,
-    impliedSavingsRate,          // %
-    totalAssets,
-    totalDebts,
-    netWorth,
-
-    targetEFMonths,
-    monthlyBurn,
-    efTarget,
-    efGap,
-    efGapPerMonth,
-
-    employee401kGap,
-    employee401kGapPerMonth,
-
-    rsuTaxGap,
-  };
-}
