@@ -10,7 +10,6 @@ import BalanceSheet from './steps/BalanceSheet';
 import Taxes from './steps/Taxes';
 import Retirement from './steps/Retirement';
 import Risk from './steps/Risk';
-// 🔁 Step 7 becomes Review (this will show WhatIfPanel and the Submit button)
 import Review from './steps/Review';
 
 export default function Wizard() {
@@ -43,9 +42,11 @@ export default function Wizard() {
       const json = await res.json();
       setRecs(Array.isArray(json?.recommendations) ? json.recommendations : []);
 
-      // Smooth scroll to results after the DOM paints
+      // Smooth scroll to results after render
       requestAnimationFrame(() => {
-        document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document
+          .getElementById('results')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     } catch (err: any) {
       setError(err?.message || 'Failed to generate plan.');
@@ -64,39 +65,27 @@ export default function Wizard() {
         </p>
       </header>
 
-      {/* The form wraps all steps so the final Review can submit */}
+      {/* Form wraps all steps so Review can submit */}
       <form onSubmit={onSubmit} className="space-y-6">
         {step === 1 && (
           <Discovery value={data} onChange={setData} onNext={next} />
         )}
-
         {step === 2 && (
           <CashFlow value={data} onChange={setData} onNext={next} onBack={back} />
         )}
-
         {step === 3 && (
           <BalanceSheet value={data} onChange={setData} onNext={next} onBack={back} />
         )}
-
         {step === 4 && (
           <Taxes value={data} onChange={setData} onNext={next} onBack={back} />
         )}
-
         {step === 5 && (
           <Retirement value={data} onChange={setData} onNext={next} onBack={back} />
         )}
-
         {step === 6 && (
           <Risk value={data} onChange={setData} onNext={next} onBack={back} />
         )}
-
-        {/* 🔁 New Step 7: Review (mount WhatIfPanel here) */}
-        {step === 7 && (
-  <Review
-    value={data}
-    onBack={back}
-  />
-)}
+        {step === 7 && <Review value={data} onBack={back} />}
       </form>
 
       {loading && <p className="mt-6">Generating plan…</p>}
