@@ -1,3 +1,4 @@
+// app/planner/components/WhatIfPanel.tsx
 'use client';
 
 import * as React from 'react';
@@ -6,10 +7,10 @@ import { recommend } from '../../../lib/recommend';
 
 type Props = {
   value: PlanInput;
-  onChange?: (next: PlanInput) => void; // <- optional now
+  onChange?: (next: PlanInput) => void; // optional live sync to parent
 };
 
-const n = (v: unknown) => (typeof v === 'number' && isFinite(v) ? v : 0);
+const n = (v: unknown) => (typeof v === 'number' && isFinite(v as number) ? (v as number) : 0);
 
 export default function WhatIfPanel({ value, onChange }: Props) {
   // Local overrides (don’t mutate parent unless onChange is provided)
@@ -21,38 +22,59 @@ export default function WhatIfPanel({ value, onChange }: Props) {
     if (onChange) onChange({ ...value, [k]: val });
   };
 
-  const preview = React.useMemo(() => recommend(v), [v]);
+  const reset = () => setOver({});
+
+  const preview = React.useMemo<string[]>(() => {
+    const r = recommend(v) as unknown;
+    return Array.isArray(r) ? r.filter(Boolean) : [];
+  }, [v]);
 
   return (
     <div className="rounded-lg border p-4">
-      <h3 className="font-semibold mb-2">What-If (quick tweaks)</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold">What-If (quick tweaks)</h3>
+        {Object.keys(over).length > 0 && (
+          <button
+            type="button"
+            onClick={reset}
+            className="text-xs underline text-gray-600 hover:text-gray-800"
+          >
+            Reset
+          </button>
+        )}
+      </div>
+
       <div className="text-sm text-gray-600 mb-4">
-        Adjust a few levers and see the plan reshape instantly. These don’t overwrite your saved inputs unless you’re on the main steps.
+        Adjust a few levers and see the plan update instantly. These don’t overwrite your saved inputs
+        unless you’re on the main steps.
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Salary">
+        <Field label="Salary ($/yr)">
           <Num value={v.salary} onChange={(x) => set('salary', x)} />
         </Field>
-        <Field label="Bonus">
+        <Field label="Bonus ($/yr)">
           <Num value={v.bonus} onChange={(x) => set('bonus', x)} />
         </Field>
-        <Field label="RSU vesting">
+
+        <Field label="RSU vesting ($/yr)">
           <Num value={v.rsuVesting} onChange={(x) => set('rsuVesting', x)} />
         </Field>
-        <Field label="Rent NOI">
+        <Field label="Rent NOI ($/yr)">
           <Num value={v.rentNOI} onChange={(x) => set('rentNOI', x)} />
         </Field>
-        <Field label="Fixed spend / mo">
+
+        <Field label="Fixed spend ($/mo)">
           <Num value={v.fixedMonthlySpend} onChange={(x) => set('fixedMonthlySpend', x)} />
         </Field>
-        <Field label="Lifestyle / mo">
+        <Field label="Lifestyle spend ($/mo)">
           <Num value={v.lifestyleMonthlySpend} onChange={(x) => set('lifestyleMonthlySpend', x)} />
         </Field>
-        <Field label="Cash (HYSA)">
+
+        <Field label="Cash / HYSA ($)">
           <Num value={v.cash} onChange={(x) => set('cash', x)} />
         </Field>
-        <Field label="Retirement (401k/IRA)">
+        <Field label="Retirement (401k/IRA) ($)">
           <Num value={v.retirement} onChange={(x) => set('retirement', x)} />
         </Field>
       </div>
@@ -60,11 +82,15 @@ export default function WhatIfPanel({ value, onChange }: Props) {
       <div className="mt-4">
         <details>
           <summary className="cursor-pointer text-sm underline">Previewed recommendations</summary>
-          <ul className="list-disc ml-5 mt-2 space-y-1 text-sm">
-            {preview.map((r, i) => (
-              <li key={i}>{r}</li>
-            ))}
-          </ul>
+          {preview.length === 0 ? (
+            <p className="text-sm text-gray-600 mt-2">No changes reflected yet.</p>
+          ) : (
+            <ul className="list-disc ml-5 mt-2 space-y-1 text-sm">
+              {preview.map((r, i) => (
+                <li key={i}>{r}</li>
+              ))}
+            </ul>
+          )}
         </details>
       </div>
     </div>
@@ -80,13 +106,28 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Num({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+function Num({
+  value,
+  onChange,
+  step = 100,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+  step?: number;
+}) {
   return (
     <input
       type="number"
+      inputMode="decimal"
       className="w-full border rounded px-2 py-1"
+      min={0}
+      step={step}
       value={Number.isFinite(value) ? value : 0}
-      onChange={(e) => onChange(parseFloat(e.target.value || '0'))}
+      onChange={(e) => {
+        const raw = e.target.value;
+        const parsed = Number(raw);
+        onChange(Number.isFinite(parsed) ? parsed : 0);
+      }}
     />
   );
 }
