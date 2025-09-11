@@ -11,8 +11,21 @@ type Props = {
   onBack?: () => void;
 };
 
-const months: Month[] = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
+// Numeric Month values with human labels
+const MONTHS: { label: string; value: Month }[] = [
+  { label: 'Jan', value: 1 },
+  { label: 'Feb', value: 2 },
+  { label: 'Mar', value: 3 },
+  { label: 'Apr', value: 4 },
+  { label: 'May', value: 5 },
+  { label: 'Jun', value: 6 },
+  { label: 'Jul', value: 7 },
+  { label: 'Aug', value: 8 },
+  { label: 'Sep', value: 9 },
+  { label: 'Oct', value: 10 },
+  { label: 'Nov', value: 11 },
+  { label: 'Dec', value: 12 },
+];
 export default function Compensation({ value, onChange, onNext, onBack }: Props) {
   const v = value;
   const update = (patch: Partial<PlanInput>) => onChange({ ...v, ...patch });
