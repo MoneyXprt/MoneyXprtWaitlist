@@ -3,6 +3,14 @@ export type FilingStatus = 'single' | 'married_joint' | 'married_separate' | 'he
 
 export type PropertyUse = 'primary_home' | 'second_home' | 'rental' | 'land';
 
+// Month of year (1 = Jan … 12 = Dec)
+export type Month = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+
+// A single scheduled payout from a deferred comp plan
+export type DeferredDistribution = {
+  month: Month;
+  amount: number; // USD
+};
 export interface Property {
   id: string;               // uuid or timestamp ID
   nickname?: string;        // "SF Condo", "Lake House"
