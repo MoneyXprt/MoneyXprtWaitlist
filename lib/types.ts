@@ -1,26 +1,21 @@
 // lib/types.ts
 export type FilingStatus = 'single' | 'married_joint' | 'married_separate' | 'head';
 
+/** Numeric month used in schedules (1 = Jan ... 12 = Dec) */
+export type Month = 1|2|3|4|5|6|7|8|9|10|11|12;
+
 export type PropertyUse = 'primary_home' | 'second_home' | 'rental' | 'land';
 
-// Month of year (1 = Jan … 12 = Dec)
-export type Month = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
-
-// A single scheduled payout from a deferred comp plan
-export type DeferredDistribution = {
-  month: Month;
-  amount: number; // USD
-};
 export interface Property {
   id: string;               // uuid or timestamp ID
   nickname?: string;        // "SF Condo", "Lake House"
   use: PropertyUse;
   estimatedValue: number;   // FMV today
-  mortgageBalance: number;  // total outstanding principal
+  mortgageBalance: number;  // outstanding principal
   interestRate?: number;    // % APR
   monthlyRent?: number;     // for rentals (gross)
   monthlyCosts?: number;    // PITI/HOA/maintenance estimate
-  state?: string;           // for future 50-state engines
+  state?: string;           // for 50-state engines
 }
 
 export interface AltAssets {
@@ -29,12 +24,30 @@ export interface AltAssets {
   other?: number;
 }
 
+/** Structured RSU inputs (optional), while keeping legacy rsuVesting mirror */
+export interface RSUVest {
+  month: Month;
+  amount: number;           // gross amount vesting that month
+}
+export interface RSUPlan {
+  yearVestingTotal: number; // total expected vest this year (gross)
+  schedule?: RSUVest[];     // optional granular schedule
+}
+
+/** Deferred comp distributions (optional) */
+export interface DeferredDistribution {
+  year: number;             // payment year (e.g., 2026)
+  month: Month;             // payment month (1..12)
+  gross: number;            // gross payout
+  taxWithheld?: number;     // optional withholding amount
+}
+
 export interface PlanInput {
-  // --- Income ---
-  salary: number;
-  bonus: number;
+  // --- Income (legacy flat mirrors kept for compatibility) ---
+  salary: number;           // W-2 base (mirror of w2BaseAnnual if provided)
+  bonus: number;            // annual cash bonus (mirror of bonusPlanAnnual)
   selfEmployment: number;
-  rsuVesting: number;
+  rsuVesting: number;       // annual RSU vest expected (mirror of rsu.yearVestingTotal)
   k1Active: number;
   k1Passive: number;
   otherIncome: number;
@@ -52,12 +65,12 @@ export interface PlanInput {
   hsa: number;
   crypto: number;
 
-  // ✅ New structured real estate & “other” assets
+  // Structured real estate & “other” assets
   properties: Property[];
   alts?: AltAssets;
 
-  // --- Debts ---
-  mortgageDebt: number;   // non-property debts (legacy; can phase out later)
+  // --- Debts (non-property legacy totals; keep while properties evolve) ---
+  mortgageDebt: number;
   studentLoans: number;
   autoLoans: number;
   creditCards: number;
@@ -92,9 +105,23 @@ export interface PlanInput {
   goals20y?: string[];
   freedomDef?: string;
   confidence?: number;
+
+  /** ---------- New structured compensation (optional) ---------- */
+  /** W-2 base salary (kept separate so we can evolve comp UX) */
+  w2BaseAnnual?: number;
+
+  /** Annual target/expected cash bonus */
+  bonusPlanAnnual?: number;
+
+  /** Structured RSU details; we mirror -> rsuVesting */
+  rsu?: RSUPlan;
+
+  /** Non-qualified deferred comp payout schedule */
+  deferred?: DeferredDistribution[];
 }
 
 export const EMPTY_PLAN: PlanInput = {
+  // Income mirrors
   salary: 0,
   bonus: 0,
   selfEmployment: 0,
@@ -104,10 +131,12 @@ export const EMPTY_PLAN: PlanInput = {
   otherIncome: 0,
   rentNOI: 0,
 
+  // Spend / save
   fixedMonthlySpend: 0,
   lifestyleMonthlySpend: 0,
   savingsMonthly: 0,
 
+  // Assets
   cash: 0,
   brokerage: 0,
   retirement: 0,
@@ -117,30 +146,41 @@ export const EMPTY_PLAN: PlanInput = {
   properties: [],
   alts: { privateEquityVC: 0, collectibles: 0, other: 0 },
 
+  // Debts
   mortgageDebt: 0,
   studentLoans: 0,
   autoLoans: 0,
   creditCards: 0,
   otherDebt: 0,
 
+  // Taxes / filing
   filingStatus: 'single',
   itemizeLikely: false,
   charitableInclination: false,
 
+  // Risk / estate
   hasDisability: false,
   hasTermLife: false,
   hasUmbrella: false,
   hasWillOrTrust: false,
 
+  // Goals / prefs
   emergencyFundMonths: 3,
   targetRetireIncomeMonthly: 0,
   usingRothBackdoor: false,
   usingMegaBackdoor: false,
   concentrationRisk: false,
 
+  // Discovery mirrors
   discovery: undefined,
   goals5y: [],
   goals20y: [],
   freedomDef: '',
   confidence: 5,
+
+  // New structured comp defaults (optional)
+  w2BaseAnnual: 0,
+  bonusPlanAnnual: 0,
+  rsu: { yearVestingTotal: 0, schedule: [] },
+  deferred: [],
 };
