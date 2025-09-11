@@ -12,14 +12,9 @@ const EMP_401K_LIMIT = 23000;
 const RSU_DEFAULT_WH = 0.22;
 const RSU_PLAUSIBLE_RATE = 0.35;
 
-export function buildRecommendations(input: PlanInput): string[] {
-  const d: any = (input as any).discovery || {};
-  const goals5 = (Array.isArray((input as any).goals5y) ? (input as any).goals5y : d.goals5) || [];
-  const goals20 = (Array.isArray((input as any).goals20y) ? (input as any).goals20y : d.goals20) || [];
-  const freedom = (input as any).freedomDef ?? d.freedom ?? '';
-  const confidence = Number.isFinite((input as any).confidence) ? (input as any).confidence : d.confidence ?? 5;
-
-  // Income (annual)
+/** ---------- Snapshot used by APIs / UI ---------- */
+export function getPlanSnapshot(input: PlanInput) {
+  // Income & spend
   const grossIncome = sum(
     input.salary,
     input.bonus,
@@ -30,40 +25,83 @@ export function buildRecommendations(input: PlanInput): string[] {
     input.otherIncome,
     input.rentNOI
   );
-
-  // Spend (annual)
   const spendAnnual = n(input.fixedMonthlySpend) * 12 + n(input.lifestyleMonthlySpend) * 12;
-
-  // Savings
   const impliedSavings = Math.max(0, grossIncome - spendAnnual);
-  const impliedSavingsRate = grossIncome > 0 ? (impliedSavings / grossIncome) * 100 : 0;
+  const savingsRate = grossIncome > 0 ? (impliedSavings / grossIncome) * 100 : 0;
 
-  // Balance sheet
+  // Balance sheet from properties[] + alts
   const propertyEquity = (input.properties || []).reduce(
     (acc, p) => acc + (n(p.estimatedValue) - n(p.mortgageBalance)),
     0
   );
   const altAssets = n(input.alts?.privateEquityVC) + n(input.alts?.collectibles) + n(input.alts?.other);
 
-  const totalAssets = sum(input.cash, input.brokerage, input.retirement, input.hsa, input.crypto, propertyEquity, altAssets);
-  const totalDebts = sum(input.mortgageDebt, input.studentLoans, input.autoLoans, input.creditCards, input.otherDebt);
+  const totalAssets = sum(
+    input.cash,
+    input.brokerage,
+    input.retirement,
+    input.hsa,
+    input.crypto,
+    propertyEquity,
+    altAssets
+  );
+  const totalDebts = sum(
+    input.mortgageDebt,
+    input.studentLoans,
+    input.autoLoans,
+    input.creditCards,
+    input.otherDebt
+  );
   const netWorth = totalAssets - totalDebts;
 
-  // Emergency fund
+  // EF
   const targetEFMonths = Math.max(3, n(input.emergencyFundMonths));
   const monthlyBurn = Math.max(1000, n(input.fixedMonthlySpend) + n(input.lifestyleMonthlySpend));
-  const targetEmergencyFund = monthlyBurn * targetEFMonths;
+  const efTarget = monthlyBurn * targetEFMonths;
+  const efCoverageMonths = monthlyBurn > 0 ? n(input.cash) / monthlyBurn : 0;
+  const efPct = efTarget > 0 ? Math.min(100, (n(input.cash) / efTarget) * 100) : 0;
 
-  // Itemize heuristic
+  return {
+    grossIncome,
+    spendAnnual,
+    impliedSavings,
+    savingsRate,
+    totalAssets,
+    totalDebts,
+    netWorth,
+    ef: {
+      targetEFMonths,
+      monthlyBurn,
+      efTarget,
+      efCoverageMonths,
+      efPct,
+    },
+  };
+}
+
+/** ---------- Recommendation engine ---------- */
+export function buildRecommendations(input: PlanInput): string[] {
+  const d: any = (input as any).discovery || {};
+  const goals5 = (Array.isArray((input as any).goals5y) ? (input as any).goals5y : d.goals5) || [];
+  const goals20 = (Array.isArray((input as any).goals20y) ? (input as any).goals20y : d.goals20) || [];
+  const freedom = (input as any).freedomDef ?? d.freedom ?? '';
+  const confidence = Number.isFinite((input as any).confidence) ? (input as any).confidence : d.confidence ?? 5;
+
+  const {
+    grossIncome,
+    spendAnnual,
+    impliedSavings,
+    savingsRate: impliedSavingsRate,
+    netWorth,
+  } = getPlanSnapshot(input);
+
   const stdDed = STD_DED[input.filingStatus] ?? STD_DED.single;
   const likelyToItemize = !!input.itemizeLikely;
 
-  // Roth heuristic
   const aboveRothLimitsLikely =
     (grossIncome > 230_000 && input.filingStatus === 'married_joint') ||
     (grossIncome > 146_000 && input.filingStatus !== 'married_joint');
 
-  // Tone
   const tone =
     confidence >= 8
       ? 'You’re confident—lean into compounding, while covering tail risks.'
@@ -76,11 +114,12 @@ export function buildRecommendations(input: PlanInput): string[] {
   const R: string[] = [tone, snapshot];
 
   // EF
-  const efGap = Math.max(0, targetEmergencyFund - n(input.cash));
+  const { ef } = getPlanSnapshot(input);
+  const efGap = Math.max(0, ef.efTarget - n(input.cash));
   if (efGap > 0) {
-    R.push(`Raise emergency fund to ~${targetEFMonths} months (${fmt(targetEmergencyFund)}). Autotransfer ~${fmt(Math.ceil(efGap / 12))}/mo to HYSA/T-bills.`);
+    R.push(`Raise emergency fund to ~${ef.targetEFMonths} months (${fmt(ef.efTarget)}). Autotransfer ~${fmt(Math.ceil(efGap / 12))}/mo to HYSA/T-bills.`);
   } else {
-    R.push(`Emergency fund ok (~${targetEFMonths} months). Keep it in HYSA/T-bill ladder for yield without losing liquidity.`);
+    R.push(`Emergency fund ok (~${ef.targetEFMonths} months). Keep it in HYSA/T-bill ladder for yield without losing liquidity.`);
   }
 
   // Savings rate
@@ -160,4 +199,5 @@ export function buildRecommendations(input: PlanInput): string[] {
   return R;
 }
 
+// keep legacy default import pattern if used elsewhere
 export { buildRecommendations as recommend };
