@@ -134,6 +134,8 @@ export interface PlanInput {
   // --- Goals / Preferences ---
   emergencyFundMonths: number;
   targetRetireIncomeMonthly: number;
+  /** Optional — used by Retirement.tsx UI */
+  targetRetireAge?: number;
   usingRothBackdoor?: boolean;
   usingMegaBackdoor?: boolean;
   concentrationRisk?: boolean;
@@ -231,6 +233,7 @@ export const EMPTY_PLAN: PlanInput = {
   // Goals / prefs
   emergencyFundMonths: 3,
   targetRetireIncomeMonthly: 0,
+  targetRetireAge: 65,
   usingRothBackdoor: false,
   usingMegaBackdoor: false,
   concentrationRisk: false,
