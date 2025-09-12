@@ -211,6 +211,8 @@ export const EMPTY_PLAN: PlanInput = {
   hasTermLife: false,
   hasUmbrella: false,
   hasWillOrTrust: false,
+  expectsInheritance: false,
+  givingIntent: false,
 
   // Goals / prefs
   emergencyFundMonths: 3,
