@@ -122,6 +122,7 @@ export interface PlanInput {
   filingStatus: FilingStatus;
   itemizeLikely?: boolean;
   charitableInclination?: boolean;
+  entityOrSideBiz?: boolean;
 
   // --- Risk / Estate ---
   hasDisability?: boolean;
@@ -220,6 +221,7 @@ export const EMPTY_PLAN: PlanInput = {
   filingStatus: 'single',
   itemizeLikely: false,
   charitableInclination: false,
+  entityOrSideBiz: false,
 
   // Risk / estate
   hasDisability: false,
