@@ -4,6 +4,9 @@ export type FilingStatus = 'single' | 'married_joint' | 'married_separate' | 'he
 /** Numeric month used in schedules (1 = Jan ... 12 = Dec) */
 export type Month = 1|2|3|4|5|6|7|8|9|10|11|12;
 
+/** Simple yes/no distribution style for deferred comp */
+export type DistributionStyle = 'lump' | 'schedule';
+
 export type PropertyUse = 'primary_home' | 'second_home' | 'rental' | 'land';
 
 export interface Property {
@@ -30,11 +33,34 @@ export interface RSUVest {
   amount: number;           // gross amount vesting that month
 }
 export interface RSUPlan {
+  /** New fields used by Compensation + Review */
+  eligible?: boolean;
+  ticker?: string;
+  ytdVestedValue?: number;
+
+  /** Existing fields */
   yearVestingTotal: number; // total expected vest this year (gross)
   schedule?: RSUVest[];     // optional granular schedule
 }
 
-/** Deferred comp distributions (optional) */
+/** ESPP inputs */
+export interface ESPP {
+  eligible: boolean;
+  discountPercent?: number;      // 0..100
+  contributionPercent?: number;  // 0..100
+  purchaseMonths?: Month[];
+}
+
+/** Deferred comp elections (inputs), separate from actual payouts */
+export interface DeferredComp {
+  eligible: boolean;
+  electedPercent?: number;        // % of eligible pay deferred
+  companyMatchPercent?: number;   // if any
+  distribution?: DistributionStyle;
+  firstPayoutYear?: number;       // if known
+}
+
+/** Deferred comp payouts (for future use if needed) */
 export interface DeferredDistribution {
   year: number;             // payment year (e.g., 2026)
   month: Month;             // payment month (1..12)
@@ -43,6 +69,13 @@ export interface DeferredDistribution {
 }
 
 export interface PlanInput {
+  // --- Profile (optional, light PII) ---
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  /** Domicile/current state for 50-state engines */
+  state?: string;
+
   // --- Income (legacy flat mirrors kept for compatibility) ---
   salary: number;           // W-2 base (mirror of w2BaseAnnual if provided)
   bonus: number;            // annual cash bonus (mirror of bonusPlanAnnual)
@@ -113,14 +146,29 @@ export interface PlanInput {
   /** Annual target/expected cash bonus */
   bonusPlanAnnual?: number;
 
+  /** Cash bonuses already received this year */
+  bonusYTD?: number;
+
   /** Structured RSU details; we mirror -> rsuVesting */
   rsu?: RSUPlan;
 
-  /** Non-qualified deferred comp payout schedule */
+  /** ESPP */
+  espp: ESPP;
+
+  /** Non-qualified deferred comp (election inputs) */
+  deferredComp: DeferredComp;
+
+  /** Optional: explicit payout rows if user has a known schedule (not used by Compensation.tsx yet) */
   deferred?: DeferredDistribution[];
 }
 
 export const EMPTY_PLAN: PlanInput = {
+  // Profile
+  firstName: '',
+  lastName: '',
+  email: '',
+  state: '',
+
   // Income mirrors
   salary: 0,
   bonus: 0,
@@ -178,9 +226,12 @@ export const EMPTY_PLAN: PlanInput = {
   freedomDef: '',
   confidence: 5,
 
-  // New structured comp defaults (optional)
+  // New structured comp defaults
   w2BaseAnnual: 0,
   bonusPlanAnnual: 0,
-  rsu: { yearVestingTotal: 0, schedule: [] },
+  bonusYTD: 0,
+  rsu: { eligible: false, ticker: '', ytdVestedValue: 0, yearVestingTotal: 0, schedule: [] },
+  espp: { eligible: false, discountPercent: 0, contributionPercent: 0, purchaseMonths: [] },
+  deferredComp: { eligible: false },
   deferred: [],
 };
