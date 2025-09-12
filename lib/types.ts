@@ -1,3 +1,10 @@
+// Residency information for user profile (e.g., for state residency history)
+export interface ResidencyItem {
+  state: string;
+  startDate: string;
+  endDate?: string;
+  primary?: boolean;
+}
 // lib/types.ts
 export type FilingStatus = 'single' | 'married_joint' | 'married_separate' | 'head';
 
@@ -75,6 +82,8 @@ export interface PlanInput {
   email?: string;
   /** Domicile/current state for 50-state engines */
   state?: string;
+  /** Optional residency history */
+  residency?: ResidencyItem[];
 
   // --- Income (legacy flat mirrors kept for compatibility) ---
   salary: number;           // W-2 base (mirror of w2BaseAnnual if provided)
@@ -170,6 +179,7 @@ export const EMPTY_PLAN: PlanInput = {
   lastName: '',
   email: '',
   state: '',
+  residency: [],
 
   // Income mirrors
   salary: 0,
