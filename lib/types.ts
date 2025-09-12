@@ -130,6 +130,7 @@ export interface PlanInput {
   hasWillOrTrust?: boolean;
   expectsInheritance?: boolean;   // user expects to receive an inheritance
   givingIntent?: boolean;         // general charitable / giving intent
+  hasPensionOrDeferredComp?: boolean;
 
   // --- Goals / Preferences ---
   emergencyFundMonths: number;
@@ -225,6 +226,7 @@ export const EMPTY_PLAN: PlanInput = {
   hasTermLife: false,
   hasUmbrella: false,
   hasWillOrTrust: false,
+  hasPensionOrDeferredComp: false,
 
   // Estate.tsx fields
   expectsInheritance: false,
