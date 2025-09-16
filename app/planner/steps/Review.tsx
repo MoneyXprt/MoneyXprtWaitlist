@@ -5,6 +5,7 @@ import * as React from 'react';
 import type { PlanInput } from '../../../lib/types';
 import { recommend } from '../../../lib/recommend';
 import WhatIfPanel from '../components/WhatIfPanel';
+import NarrativeButton from '../components/NarrativeButton';
 
 /** ---------- Helpers ---------- */
 const n = (v: unknown) => (typeof v === 'number' && isFinite(v) ? v : 0);
@@ -73,6 +74,50 @@ export default function Review({ value, onBack }: Props) {
     return scored.sort((a, b) => b.score - a.score).slice(0, 3).map((x) => x.r);
   }, [recs]);
 
+  // ---------- Action slices: This week / 30d / 90d ----------
+  const { weekActions, monthActions, quarterActions } = React.useMemo(() => {
+    const wk: string[] = [];
+    const mo: string[] = [];
+    const qr: string[] = [];
+
+    if (buckets.cash.length) {
+      wk.push('Open/confirm HYSA or T-bill account');
+      wk.push('Set up auto-transfer on payday for emergency fund');
+      mo.push('Validate emergency fund target and adjust transfer amount');
+    }
+    if (buckets.tax.length) {
+      wk.push('Turn on paycheck “additional withholding” or RSU tax set-aside');
+      mo.push('Run itemized vs standard deduction check for this year');
+      qr.push('Quarterly: review RSU withholding set-aside vs vests');
+    }
+    if (buckets.invest.length) {
+      wk.push('Set target allocation and auto-invest schedule');
+      mo.push('Enroll 1% annual auto-increase on 401(k) deferral');
+      qr.push('Rebalance and harvest losses/gains as appropriate');
+    }
+    if (buckets.debt.length) {
+      wk.push('List all debts with APR and minimums');
+      mo.push('Start avalanche payments on highest-APR debt');
+      qr.push('If mortgage & cash allow, add small extra principal monthly');
+    }
+    if (buckets.risk.length) {
+      wk.push('Get quotes: disability, term life, umbrella');
+      mo.push('Bind umbrella policy ($1–2M)');
+    }
+    if (buckets.estate.length) {
+      wk.push('List beneficiaries on 401k/IRA/HSA and life insurance');
+      mo.push('Schedule will/trust consult; add POA/health directives');
+    }
+
+    // ensure uniqueness and cap lengths to avoid overwhelm
+    const uniq = (arr: string[], cap: number) => Array.from(new Set(arr)).slice(0, cap);
+    return {
+      weekActions: uniq(wk, 5),
+      monthActions: uniq(mo, 6),
+      quarterActions: uniq(qr, 6),
+    };
+  }, [buckets]);
+
   return (
     <div className="grid lg:grid-cols-3 gap-6">
       {/* LEFT 2/3 */}
@@ -80,7 +125,7 @@ export default function Review({ value, onBack }: Props) {
         <div className="rounded-lg border p-4 mb-6">
           <h2 className="text-lg font-semibold">Review & Finalize</h2>
           <p className="text-sm text-gray-600 mt-1">
-            Here’s a first pass of your plan. Tweak inputs on the right and re-run the preview to tailor it further.
+            Here’s a first pass of your plan. Tweak inputs on the right—numbers and recommendations update live. You can generate a written narrative any time.
           </p>
           <div className="mt-4 flex flex-wrap gap-2 text-sm">
             <Badge>Income {fmt(grossIncome)}/yr</Badge>
@@ -101,7 +146,9 @@ export default function Review({ value, onBack }: Props) {
           </ol>
         </div>
 
-        <RoadmapCard title="Next 90 Days" items={[...top3, 'Automate transfers on payday (pay-yourself-first).', 'Quarterly: check RSU set-aside vs. vests.']} />
+        <RoadmapCard title="This Week" items={weekActions.length ? weekActions : ['Set up HYSA auto-transfer', 'List debts with APRs', 'Pick a 401(k) target allocation']} />
+        <RoadmapCard title="Next 30 Days" items={monthActions.length ? monthActions : top3} />
+        <RoadmapCard title="Next 90 Days" items={quarterActions.length ? quarterActions : ['Rebalance portfolio', 'Quarterly: check RSU set-aside vs. vests.']} />
 
         <Accordion title="💰 Cash & Savings" items={buckets.cash} defaultOpen />
         <Accordion title="📈 Investing & Retirement" items={buckets.invest} />
@@ -112,11 +159,12 @@ export default function Review({ value, onBack }: Props) {
         <Accordion title="🎯 Your Goals" items={buckets.goals} />
         {buckets.other.length > 0 && <Accordion title="🧩 Other" items={buckets.other} />}
 
-        <div className="mt-6 flex items-center gap-3">
+        <div className="mt-6 flex flex-wrap items-center gap-3">
           <button type="button" onClick={onBack} className="rounded border px-4 py-2 hover:bg-gray-50">Back</button>
           <button type="submit" className="inline-flex items-center px-4 py-2 rounded bg-black text-white hover:opacity-90">
             Generate Final Plan
           </button>
+          <NarrativeButton input={value} className="inline-flex items-center px-4 py-2 rounded border hover:bg-gray-50" />
         </div>
       </div>
 
