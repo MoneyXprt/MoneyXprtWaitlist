@@ -6,19 +6,27 @@ import type { PlanInput } from '../../../lib/types';
 import { recommend } from '../../../lib/recommend';
 import WhatIfPanel from '../components/WhatIfPanel';
 import NarrativeButton from '../components/NarrativeButton';
+import { buildActionPlan } from '@/lib/plan/engine';
 
 /** ---------- Helpers ---------- */
 const n = (v: unknown) => (typeof v === 'number' && isFinite(v) ? v : 0);
 const sum = (...vals: unknown[]) => vals.reduce<number>((a, b) => a + n(b), 0);
-const fmt = (x: number) => x.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+const fmt = (x: number) =>
+  x.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
 type Props = { value: PlanInput; onBack: () => void };
 
 export default function Review({ value, onBack }: Props) {
   // Income & spend
   const grossIncome = sum(
-    value.salary, value.bonus, value.selfEmployment, value.rsuVesting,
-    value.k1Active, value.k1Passive, value.otherIncome, value.rentNOI
+    value.salary,
+    value.bonus,
+    value.selfEmployment,
+    value.rsuVesting,
+    value.k1Active,
+    value.k1Passive,
+    value.otherIncome,
+    value.rentNOI
   );
   const spendAnnual = n(value.fixedMonthlySpend) * 12 + n(value.lifestyleMonthlySpend) * 12;
   const impliedSavings = Math.max(0, grossIncome - spendAnnual);
@@ -46,7 +54,14 @@ export default function Review({ value, onBack }: Props) {
   const recs = React.useMemo(() => recommend(value), [value]);
 
   const buckets: Record<'cash' | 'invest' | 'debt' | 'risk' | 'tax' | 'estate' | 'goals' | 'other', string[]> = {
-    cash: [], invest: [], debt: [], risk: [], tax: [], estate: [], goals: [], other: [],
+    cash: [],
+    invest: [],
+    debt: [],
+    risk: [],
+    tax: [],
+    estate: [],
+    goals: [],
+    other: [],
   };
 
   recs.forEach((line) => {
@@ -71,10 +86,16 @@ export default function Review({ value, onBack }: Props) {
       if (/consider/.test(l)) score -= 0.5;
       return { r, score };
     });
-    return scored.sort((a, b) => b.score - a.score).slice(0, 3).map((x) => x.r);
+    return scored
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map((x) => x.r);
   }, [recs]);
 
-  // ---------- Action slices: This week / 30d / 90d ----------
+  // 🔧 NEW: Build action plan INSIDE the component (hooks rule)
+  const actionPlan = React.useMemo(() => buildActionPlan(value), [value]);
+
+  // ---------- Action slices for simple roadmap (fallback) ----------
   const { weekActions, monthActions, quarterActions } = React.useMemo(() => {
     const wk: string[] = [];
     const mo: string[] = [];
@@ -109,7 +130,6 @@ export default function Review({ value, onBack }: Props) {
       mo.push('Schedule will/trust consult; add POA/health directives');
     }
 
-    // ensure uniqueness and cap lengths to avoid overwhelm
     const uniq = (arr: string[], cap: number) => Array.from(new Set(arr)).slice(0, cap);
     return {
       weekActions: uniq(wk, 5),
@@ -130,25 +150,128 @@ export default function Review({ value, onBack }: Props) {
           <div className="mt-4 flex flex-wrap gap-2 text-sm">
             <Badge>Income {fmt(grossIncome)}/yr</Badge>
             <Badge>Spend {fmt(spendAnnual)}/yr</Badge>
-            <Badge>Savings {fmt(impliedSavings)} ({Math.round(savingsRate)}%)</Badge>
+            <Badge>
+              Savings {fmt(impliedSavings)} ({Math.round(savingsRate)}%)
+            </Badge>
             <Badge>Net worth {fmt(netWorth)}</Badge>
           </div>
           <div className="mt-4 grid sm:grid-cols-2 gap-4">
-            <Progress label="Emergency Fund Coverage" hint={`${Math.max(0, Math.floor(efCoverageMonths))} / ${targetEFMonths} months`} percent={efPct} />
-                <Progress label="Savings Rate" hint={`${Math.round(savingsRate)}% (target 20–30%)`} percent={Math.max(0, Math.min(100, savingsRate))} />
+            <Progress
+              label="Emergency Fund Coverage"
+              hint={`${Math.max(0, Math.floor(efCoverageMonths))} / ${targetEFMonths} months`}
+              percent={efPct}
+            />
+            <Progress
+              label="Savings Rate"
+              hint={`${Math.round(savingsRate)}% (target 20–30%)`}
+              percent={Math.max(0, Math.min(100, savingsRate))}
+            />
           </div>
         </div>
 
+        {/* ✅ ACTION PLAN BLOCK — now inside the component */}
+        <div className="rounded-lg border p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold">Your Action Plan</h3>
+            <NarrativeButton
+              input={value}
+              className="text-sm underline px-2 py-1 rounded hover:bg-gray-50"
+            />
+          </div>
+
+          {actionPlan?.flags?.length ? (
+            <div className="mt-2 text-sm text-amber-700">
+              {actionPlan.flags.map((f: string, i: number) => (
+                <div key={i}>• {f}</div>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="mt-4 grid md:grid-cols-2 gap-4">
+            {actionPlan?.checklists?.map((list: any) => (
+              <div key={list.title} className="rounded border p-3">
+                <div className="font-medium mb-2">{list.title}</div>
+                <ul className="space-y-2">
+                  {list.actions.map((aid: string) => {
+                    const a = actionPlan.actions[aid];
+                    if (!a) return null;
+                    return (
+                      <li key={aid} className="text-sm">
+                        <div className="font-medium">{a.title}</div>
+                        <div className="text-gray-600">
+                          <span className="mr-2">Impact: {a.impact}</span>
+                          <span className="mr-2">Effort: {a.effort}</span>
+                          <span>Bucket: {a.bucket}</span>
+                        </div>
+                        {a.estDollars && (
+                          <div className="text-gray-600">
+                            {a.estDollars.annualTaxSavings
+                              ? `Est. tax save: $${a.estDollars.annualTaxSavings.toLocaleString()} `
+                              : ''}
+                            {a.estDollars.annualCashFlowChange
+                              ? `Cash flow: $${a.estDollars.annualCashFlowChange.toLocaleString()}/yr `
+                              : ''}
+                            {a.estDollars.oneTimeCostOrFunding
+                              ? `Funding: $${a.estDollars.oneTimeCostOrFunding.toLocaleString()} `
+                              : ''}
+                          </div>
+                        )}
+                        <div className="text-gray-700 mt-1">{a.rationale}</div>
+
+                        {/* Why this? */}
+                        {a.calcRefs?.length ? (
+                          <details className="mt-1">
+                            <summary className="cursor-pointer text-xs underline">Why this?</summary>
+                            <div className="mt-1 text-xs text-gray-700 space-y-1">
+                              {a.calcRefs.map((cid: string) => {
+                                const t = actionPlan.traces?.[cid];
+                                if (!t) return null;
+                                return (
+                                  <div key={cid}>
+                                    <div className="font-medium">{t.label}</div>
+                                    {t.note && <div>{t.note}</div>}
+                                    {'result' in t && t.result !== undefined && (
+                                      <div>
+                                        Result:{' '}
+                                        {typeof t.result === 'number'
+                                          ? `$${(t.result as number).toLocaleString()}`
+                                          : String(t.result)}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </details>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Priorities & Roadmap */}
         <div className="rounded-lg border p-4 mb-6">
           <h3 className="font-semibold mb-2">🚀 Your Top 3 Priorities</h3>
           <ol className="list-decimal ml-5 space-y-2">
-            {top3.map((t, i) => <li key={i}>{t}</li>)}
+            {top3.map((t, i) => (
+              <li key={i}>{t}</li>
+            ))}
           </ol>
         </div>
 
-        <RoadmapCard title="This Week" items={weekActions.length ? weekActions : ['Set up HYSA auto-transfer', 'List debts with APRs', 'Pick a 401(k) target allocation']} />
+        <RoadmapCard
+          title="This Week"
+          items={weekActions.length ? weekActions : ['Set up HYSA auto-transfer', 'List debts with APRs', 'Pick a 401(k) target allocation']}
+        />
         <RoadmapCard title="Next 30 Days" items={monthActions.length ? monthActions : top3} />
-        <RoadmapCard title="Next 90 Days" items={quarterActions.length ? quarterActions : ['Rebalance portfolio', 'Quarterly: check RSU set-aside vs. vests.']} />
+        <RoadmapCard
+          title="Next 90 Days"
+          items={quarterActions.length ? quarterActions : ['Rebalance portfolio', 'Quarterly: check RSU set-aside vs. vests.']}
+        />
 
         <Accordion title="💰 Cash & Savings" items={buckets.cash} defaultOpen />
         <Accordion title="📈 Investing & Retirement" items={buckets.invest} />
@@ -160,11 +283,14 @@ export default function Review({ value, onBack }: Props) {
         {buckets.other.length > 0 && <Accordion title="🧩 Other" items={buckets.other} />}
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          <button type="button" onClick={onBack} className="rounded border px-4 py-2 hover:bg-gray-50">Back</button>
+          <button type="button" onClick={onBack} className="rounded border px-4 py-2 hover:bg-gray-50">
+            Back
+          </button>
           <button type="submit" className="inline-flex items-center px-4 py-2 rounded bg-black text-white hover:opacity-90">
             Generate Final Plan
           </button>
-          <NarrativeButton input={value} className="inline-flex items-center px-4 py-2 rounded border hover:bg-gray-50" />
+          {/* Narrative button already present above in Action Plan header; keep this if you want it here too */}
+          {/* <NarrativeButton input={value} className="inline-flex items-center px-4 py-2 rounded border hover:bg-gray-50" /> */}
         </div>
       </div>
 
@@ -200,14 +326,20 @@ function Accordion({ title, items, defaultOpen = false }: { title: string; items
   const [open, setOpen] = React.useState(defaultOpen);
   return (
     <div className="rounded-lg border mb-3">
-      <button type="button" onClick={() => setOpen(o => !o)} className="w-full px-4 py-3 text-left flex justify-between items-center">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full px-4 py-3 text-left flex justify-between items-center"
+      >
         <span className="font-medium">{title}</span>
         <span className="text-gray-500">{open ? '−' : '+'}</span>
       </button>
       {open && (
         <div className="px-5 pb-4">
           <ul className="list-disc ml-5 space-y-2">
-            {items.map((r, i) => <li key={i}>{r}</li>)}
+            {items.map((r, i) => (
+              <li key={i}>{r}</li>
+            ))}
           </ul>
         </div>
       )}
@@ -221,7 +353,9 @@ function RoadmapCard({ title, items }: { title: string; items: string[] }) {
     <div className="rounded-lg border p-4 mb-6">
       <h3 className="font-semibold mb-2">{title}</h3>
       <ul className="list-disc ml-5 space-y-2">
-        {items.map((t, i) => <li key={i}>{t}</li>)}
+        {items.map((t, i) => (
+          <li key={i}>{t}</li>
+        ))}
       </ul>
     </div>
   );
