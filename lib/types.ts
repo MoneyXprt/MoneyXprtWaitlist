@@ -75,7 +75,18 @@ export interface DeferredDistribution {
   taxWithheld?: number;     // optional withholding amount
 }
 
-export interface PlanInput {
+export type PlanInput = {
+  salary?: number;
+  bonus?: number;
+  bonusYTD?: number;
+  deferredComp?: DeferredComp;
+  rsu?: RSU;
+  espp?: ESPP;
+  selfEmployment?: number;
+  k1Active?: number;
+  k1Passive?: number;
+  otherIncome?: number;
+  rentNOI?: number;
   // --- Profile (optional, light PII) ---
   firstName?: string;
   lastName?: string;
@@ -84,16 +95,6 @@ export interface PlanInput {
   state?: string;
   /** Optional residency history */
   residency?: ResidencyItem[];
-
-  // --- Income (legacy flat mirrors kept for compatibility) ---
-  salary: number;           // W-2 base (mirror of w2BaseAnnual if provided)
-  bonus: number;            // annual cash bonus (mirror of bonusPlanAnnual)
-  selfEmployment: number;
-  rsuVesting: number;       // annual RSU vest expected (mirror of rsu.yearVestingTotal)
-  k1Active: number;
-  k1Passive: number;
-  otherIncome: number;
-  rentNOI: number;
 
   // --- Spending / Savings ---
   fixedMonthlySpend: number;

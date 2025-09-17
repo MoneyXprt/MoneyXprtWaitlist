@@ -5,17 +5,37 @@ import * as React from 'react';
 import type { PlanInput } from '@/lib/types';
 
 // Local fallbacks so this file compiles even if lib/types doesn't yet export these.
-// You can later lift them into lib/types.
 type Month = 1|2|3|4|5|6|7|8|9|10|11|12;
 type DeferredDistribution = 'lump' | 'schedule';
 
-// Numeric month values with human labels
 const MONTHS: { label: string; value: Month }[] = [
   { label: 'Jan', value: 1 }, { label: 'Feb', value: 2 }, { label: 'Mar', value: 3 },
   { label: 'Apr', value: 4 }, { label: 'May', value: 5 }, { label: 'Jun', value: 6 },
   { label: 'Jul', value: 7 }, { label: 'Aug', value: 8 }, { label: 'Sep', value: 9 },
   { label: 'Oct', value: 10 }, { label: 'Nov', value: 11 }, { label: 'Dec', value: 12 },
 ];
+
+type DeferredComp = {
+  eligible?: boolean;
+  electedPercent?: number;
+  companyMatchPercent?: number;
+  distribution?: DeferredDistribution;
+  firstPayoutYear?: number;
+};
+
+type RSU = {
+  eligible?: boolean;
+  ticker?: string;
+  ytdVestedValue?: number;
+  yearVestingTotal?: number;
+};
+
+type ESPP = {
+  eligible?: boolean;
+  discountPercent?: number;
+  contributionPercent?: number;
+  purchaseMonths?: Month[];
+};
 
 type Props = {
   value: PlanInput;
@@ -29,19 +49,23 @@ export default function Compensation({ value, onChange, onNext, onBack }: Props)
   const update = (patch: Partial<PlanInput>) => onChange({ ...v, ...patch });
 
   // Safe accessors for nested optional objects with defaults.
-  const dc   = (v as any).deferredComp ?? {};
-  const rsu  = (v as any).rsu ?? {};
-  const espp = (v as any).espp ?? {};
+  const dc: DeferredComp = (v.deferredComp ?? {});
+  const rsu: RSU = (v.rsu ?? {});
+  const espp: ESPP = (v.espp ?? {});
 
   // Legacy mirrors to keep review/recommend logic happy.
-  const setW2          = (n: number) => update({ salary: n });
+  const setW2 = (n: number) => update({ salary: n });
   const setBonusAnnual = (n: number) => update({ bonus: n });
-  const setRSUYear     = (n: number) => update({ rsuVesting: n, ...( { rsu: { ...rsu, yearVestingTotal: n } } as any ) });
+  const setRSUYear = (n: number) =>
+    update({
+      rsuVesting: n,
+      rsu: { ...rsu, yearVestingTotal: n },
+    });
 
   // Derived hints (purely UI)
   const bonusPlanAnnual = Number(v.bonus) || 0;
-  const bonusYTD        = Number((v as any).bonusYTD) || 0;
-  const bonusRemaining  = Math.max(0, bonusPlanAnnual - bonusYTD);
+  const bonusYTD = Number((v as any).bonusYTD) || 0;
+  const bonusRemaining = Math.max(0, bonusPlanAnnual - bonusYTD);
 
   return (
     <section className="space-y-6">
@@ -61,7 +85,7 @@ export default function Compensation({ value, onChange, onNext, onBack }: Props)
           <Num value={bonusPlanAnnual} onChange={setBonusAnnual} />
         </Row>
         <Row label="Cash bonuses (YTD received)" tip="Cash bonuses already received this year.">
-          <Num value={bonusYTD} onChange={(n) => update({ ...( { bonusYTD: n } as any ) })} />
+          <Num value={bonusYTD} onChange={(n) => update({ bonusYTD: n })} />
         </Row>
         <Hint>
           Planned: ${bonusPlanAnnual.toLocaleString()} · YTD: ${bonusYTD.toLocaleString()} · Remaining: ${bonusRemaining.toLocaleString()}
@@ -77,7 +101,7 @@ export default function Compensation({ value, onChange, onNext, onBack }: Props)
         >
           <YesNo
             value={!!dc.eligible}
-            onChange={(b) => update({ ...( { deferredComp: { ...dc, eligible: b } } as any ) })}
+            onChange={(b) => update({ deferredComp: { ...dc, eligible: b } })}
           />
         </Row>
 
@@ -86,13 +110,13 @@ export default function Compensation({ value, onChange, onNext, onBack }: Props)
             <Row label="Elected % of eligible pay">
               <Num
                 value={Number(dc.electedPercent) || 0}
-                onChange={(n) => update({ ...( { deferredComp: { ...dc, electedPercent: n } } as any ) })}
+                onChange={(n) => update({ deferredComp: { ...dc, electedPercent: n } })}
               />
             </Row>
             <Row label="Company match % (if any)">
               <Num
                 value={Number(dc.companyMatchPercent) || 0}
-                onChange={(n) => update({ ...( { deferredComp: { ...dc, companyMatchPercent: n } } as any ) })}
+                onChange={(n) => update({ deferredComp: { ...dc, companyMatchPercent: n } })}
               />
             </Row>
             <Row label="Distribution style">
@@ -100,7 +124,7 @@ export default function Compensation({ value, onChange, onNext, onBack }: Props)
                 className="w-full border rounded px-3 py-2"
                 value={dc.distribution ?? ''}
                 onChange={(e) =>
-                  update({ ...( { deferredComp: { ...dc, distribution: (e.target.value || undefined) as DeferredDistribution } } as any ) })
+                  update({ deferredComp: { ...dc, distribution: (e.target.value || undefined) as DeferredDistribution } })
                 }
               >
                 <option value="">Select…</option>
@@ -111,7 +135,7 @@ export default function Compensation({ value, onChange, onNext, onBack }: Props)
             <Row label="First payout year (if known)">
               <Num
                 value={Number(dc.firstPayoutYear) || 0}
-                onChange={(n) => update({ ...( { deferredComp: { ...dc, firstPayoutYear: n || undefined } } as any ) })}
+                onChange={(n) => update({ deferredComp: { ...dc, firstPayoutYear: n || undefined } })}
               />
             </Row>
           </>
@@ -126,7 +150,7 @@ export default function Compensation({ value, onChange, onNext, onBack }: Props)
         <Row label="RSU eligible?" tip="RSU = Restricted Stock Units (taxed as they vest).">
           <YesNo
             value={!!rsu.eligible}
-            onChange={(b) => update({ ...( { rsu: { ...rsu, eligible: b } } as any ) })}
+            onChange={(b) => update({ rsu: { ...rsu, eligible: b } })}
           />
         </Row>
         {!!rsu.eligible && (
@@ -137,14 +161,14 @@ export default function Compensation({ value, onChange, onNext, onBack }: Props)
                 placeholder="e.g., AAPL"
                 value={rsu.ticker ?? ''}
                 onChange={(e) =>
-                  update({ ...( { rsu: { ...rsu, ticker: e.target.value.toUpperCase() } } as any ) })
+                  update({ rsu: { ...rsu, ticker: e.target.value.toUpperCase() } })
                 }
               />
             </Row>
             <Row label="RSU vesting (YTD $)">
               <Num
                 value={Number(rsu.ytdVestedValue) || 0}
-                onChange={(n) => update({ ...( { rsu: { ...rsu, ytdVestedValue: n } } as any ) })}
+                onChange={(n) => update({ rsu: { ...rsu, ytdVestedValue: n } })}
               />
             </Row>
             <Row label="RSU vesting (expected total this year $)">
@@ -157,7 +181,7 @@ export default function Compensation({ value, onChange, onNext, onBack }: Props)
         <Row label="ESPP eligible?" tip="ESPP = Employee Stock Purchase Plan; buy company stock via payroll at a discount.">
           <YesNo
             value={!!espp.eligible}
-            onChange={(b) => update({ ...( { espp: { ...espp, eligible: b } } as any ) })}
+            onChange={(b) => update({ espp: { ...espp, eligible: b } })}
           />
         </Row>
         {!!espp.eligible && (
@@ -165,20 +189,20 @@ export default function Compensation({ value, onChange, onNext, onBack }: Props)
             <Row label="Discount %">
               <Num
                 value={Number(espp.discountPercent) || 0}
-                onChange={(n) => update({ ...( { espp: { ...espp, discountPercent: n } } as any ) })}
+                onChange={(n) => update({ espp: { ...espp, discountPercent: n } })}
               />
             </Row>
             <Row label="Contribution % (payroll)">
               <Num
                 value={Number(espp.contributionPercent) || 0}
-                onChange={(n) => update({ ...( { espp: { ...espp, contributionPercent: n } } as any ) })}
+                onChange={(n) => update({ espp: { ...espp, contributionPercent: n } })}
               />
             </Row>
             <Row label="Purchase months">
               <div className="flex flex-wrap gap-2">
                 {MONTHS.map(({ label, value }) => {
                   const selected = Array.isArray(espp.purchaseMonths)
-                    ? (espp.purchaseMonths as Month[]).includes(value)
+                    ? espp.purchaseMonths.includes(value)
                     : false;
                   return (
                     <button
@@ -188,7 +212,7 @@ export default function Compensation({ value, onChange, onNext, onBack }: Props)
                       onClick={() => {
                         const curr = new Set<Month>(Array.isArray(espp.purchaseMonths) ? espp.purchaseMonths : []);
                         if (curr.has(value)) curr.delete(value); else curr.add(value);
-                        update({ ...( { espp: { ...espp, purchaseMonths: Array.from(curr) as Month[] } } as any ) });
+                        update({ espp: { ...espp, purchaseMonths: Array.from(curr) } });
                       }}
                     >
                       {label}
@@ -254,8 +278,11 @@ function Num({ value, onChange }: { value: number; onChange: (n: number) => void
     <input
       type="number"
       className="w-full border rounded px-3 py-2"
-      value={Number.isFinite(value) ? value : 0}
-      onChange={(e) => onChange(parseFloat(e.target.value || '0'))}
+      value={Number.isFinite(value) ? value : ''}
+      onChange={(e) => {
+        const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+        onChange(Number.isNaN(val) ? 0 : val);
+      }}
     />
   );
 }
