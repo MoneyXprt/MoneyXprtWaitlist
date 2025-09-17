@@ -89,10 +89,6 @@ export type PlanInput = {
   k1Passive?: number;
   otherIncome?: number;
   rentNOI?: number;
-  // --- Profile (optional, light PII) ---
-  firstName?: string;
-  lastName?: string;
-  email?: string;
   /** Domicile/current state for 50-state engines */
   state?: string;
   /** Optional residency history */
