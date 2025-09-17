@@ -1,3 +1,5 @@
+import type { PlanInput } from '../../../lib/types'; // or correct relative path
+
 // Residency information for user profile (e.g., for state residency history)
 export interface ResidencyItem {
   state: string;
