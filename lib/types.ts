@@ -1,32 +1,29 @@
-import type { PlanInput } from '../../../lib/types'; // or correct relative path
+// lib/types.ts
 
-// Residency information for user profile (e.g., for state residency history)
+// ---------- Shared enums / simple types ----------
+export type FilingStatus = 'single' | 'married_joint' | 'married_separate' | 'head';
+export type Month = 1|2|3|4|5|6|7|8|9|10|11|12;
+export type DistributionStyle = 'lump' | 'schedule';
+export type PropertyUse = 'primary_home' | 'second_home' | 'rental' | 'land';
+
+// ---------- Profile / residency ----------
 export interface ResidencyItem {
   state: string;
   startDate: string;
   endDate?: string;
   primary?: boolean;
 }
-// lib/types.ts
-export type FilingStatus = 'single' | 'married_joint' | 'married_separate' | 'head';
 
-/** Numeric month used in schedules (1 = Jan ... 12 = Dec) */
-export type Month = 1|2|3|4|5|6|7|8|9|10|11|12;
-
-/** Simple yes/no distribution style for deferred comp */
-export type DistributionStyle = 'lump' | 'schedule';
-
-export type PropertyUse = 'primary_home' | 'second_home' | 'rental' | 'land';
-
+// ---------- Assets ----------
 export interface Property {
-  id: string;               // uuid or timestamp ID
-  nickname?: string;        // "SF Condo", "Lake House"
+  id: string;               // uuid or timestamp
+  nickname?: string;
   use: PropertyUse;
-  estimatedValue: number;   // FMV today
-  mortgageBalance: number;  // outstanding principal
-  interestRate?: number;    // % APR
-  monthlyRent?: number;     // for rentals (gross)
-  monthlyCosts?: number;    // PITI/HOA/maintenance estimate
+  estimatedValue: number;
+  mortgageBalance: number;
+  interestRate?: number;
+  monthlyRent?: number;
+  monthlyCosts?: number;    // PITI/HOA/maintenance
   state?: string;           // for 50-state engines
 }
 
@@ -36,23 +33,25 @@ export interface AltAssets {
   other?: number;
 }
 
-/** Structured RSU inputs (optional), while keeping legacy rsuVesting mirror */
+// ---------- RSU / ESPP / Deferred Comp ----------
 export interface RSUVest {
   month: Month;
   amount: number;           // gross amount vesting that month
 }
+
 export interface RSUPlan {
-  /** New fields used by Compensation + Review */
+  // Newer structured fields
   eligible?: boolean;
   ticker?: string;
   ytdVestedValue?: number;
 
-  /** Existing fields */
-  yearVestingTotal: number; // total expected vest this year (gross)
-  schedule?: RSUVest[];     // optional granular schedule
+  // Canonical annual total (this year)
+  yearVestingTotal: number;
+
+  // Optional granular schedule
+  schedule?: RSUVest[];
 }
 
-/** ESPP inputs */
 export interface ESPP {
   eligible: boolean;
   discountPercent?: number;      // 0..100
@@ -60,7 +59,6 @@ export interface ESPP {
   purchaseMonths?: Month[];
 }
 
-/** Deferred comp elections (inputs), separate from actual payouts */
 export interface DeferredComp {
   eligible: boolean;
   electedPercent?: number;        // % of eligible pay deferred
@@ -69,30 +67,37 @@ export interface DeferredComp {
   firstPayoutYear?: number;       // if known
 }
 
-/** Deferred comp payouts (for future use if needed) */
 export interface DeferredDistribution {
-  year: number;             // payment year (e.g., 2026)
-  month: Month;             // payment month (1..12)
-  gross: number;            // gross payout
-  taxWithheld?: number;     // optional withholding amount
+  year: number;
+  month: Month;
+  gross: number;
+  taxWithheld?: number;
 }
 
+// ---------- Plan Input ----------
 export type PlanInput = {
-  salary?: number;
-  bonus?: number;
-  bonusYTD?: number;
-  deferredComp?: DeferredComp;
-  rsu?: RSU;
-  espp?: ESPP;
-  selfEmployment?: number;
-  k1Active?: number;
-  k1Passive?: number;
-  otherIncome?: number;
-  rentNOI?: number;
+  // Profile (present in EMPTY_PLAN – include them here)
+  firstName: string;
+  lastName: string;
+  email: string;
+
   /** Domicile/current state for 50-state engines */
-  state?: string;
+  state: string;
   /** Optional residency history */
   residency?: ResidencyItem[];
+
+  // --- Income (legacy mirrors) ---
+  salary: number;
+  bonus: number;
+  selfEmployment: number;
+  k1Active: number;
+  k1Passive: number;
+  otherIncome: number;
+  rentNOI: number;
+
+  // LEGACY MIRROR: annual RSU vest value ($/yr).
+  // Keep for UI compatibility; canonical is rsu.yearVestingTotal.
+  rsuVesting?: number;
 
   // --- Spending / Savings ---
   fixedMonthlySpend: number;
@@ -110,7 +115,7 @@ export type PlanInput = {
   properties: Property[];
   alts?: AltAssets;
 
-  // --- Debts (non-property legacy totals; keep while properties evolve) ---
+  // --- Debts (non-property totals; while properties evolve) ---
   mortgageDebt: number;
   studentLoans: number;
   autoLoans: number;
@@ -119,27 +124,29 @@ export type PlanInput = {
 
   // --- Taxes / Filing ---
   filingStatus: FilingStatus;
-  itemizeLikely?: boolean;
-  charitableInclination?: boolean;
-  entityOrSideBiz?: boolean;
+  itemizeLikely: boolean;
+  charitableInclination: boolean;
+  entityOrSideBiz: boolean;
 
   // --- Risk / Estate ---
-  hasDisability?: boolean;
-  hasTermLife?: boolean;
-  hasUmbrella?: boolean;
-  hasWillOrTrust?: boolean;
-  expectsInheritance?: boolean;   // user expects to receive an inheritance
-  givingIntent?: boolean;         // general charitable / giving intent
-  hasPensionOrDeferredComp?: boolean;
+  hasDisability: boolean;
+  hasTermLife: boolean;
+  hasUmbrella: boolean;
+  hasWillOrTrust: boolean;
+  hasPensionOrDeferredComp: boolean;
+
+  // Estate.tsx fields
+  expectsInheritance: boolean;
+  givingIntent: boolean;
 
   // --- Goals / Preferences ---
   emergencyFundMonths: number;
   targetRetireIncomeMonthly: number;
   /** Optional — used by Retirement.tsx UI */
   targetRetireAge?: number;
-  usingRothBackdoor?: boolean;
-  usingMegaBackdoor?: boolean;
-  concentrationRisk?: boolean;
+  usingRothBackdoor: boolean;
+  usingMegaBackdoor: boolean;
+  concentrationRisk: boolean;
 
   // --- Discovery mirrors (optional) ---
   discovery?: {
@@ -148,34 +155,35 @@ export type PlanInput = {
     freedom?: string;
     confidence?: number;
   };
-  goals5y?: string[];
-  goals20y?: string[];
-  freedomDef?: string;
-  confidence?: number;
+  goals5y: string[];
+  goals20y: string[];
+  freedomDef: string;
+  confidence: number;
 
-  /** ---------- New structured compensation (optional) ---------- */
+  /** ---------- Structured compensation ---------- */
   /** W-2 base salary (kept separate so we can evolve comp UX) */
-  w2BaseAnnual?: number;
+  w2BaseAnnual: number;
 
   /** Annual target/expected cash bonus */
-  bonusPlanAnnual?: number;
+  bonusPlanAnnual: number;
 
   /** Cash bonuses already received this year */
-  bonusYTD?: number;
+  bonusYTD: number;
 
-  /** Structured RSU details; we mirror -> rsuVesting */
-  rsu?: RSUPlan;
+  /** Structured RSU details; canonical source for RSU */
+  rsu: RSUPlan;
 
-  /** ESPP */
+  /** ESPP (structured) */
   espp: ESPP;
 
   /** Non-qualified deferred comp (election inputs) */
   deferredComp: DeferredComp;
 
-  /** Optional: explicit payout rows if user has a known schedule (not used by Compensation.tsx yet) */
-  deferred?: DeferredDistribution[];
-}
+  /** Optional: explicit deferred payouts (future) */
+  deferred: DeferredDistribution[];
+};
 
+// ---------- Default EMPTY_PLAN aligned 1:1 with PlanInput ----------
 export const EMPTY_PLAN: PlanInput = {
   // Profile
   firstName: '',
@@ -188,7 +196,7 @@ export const EMPTY_PLAN: PlanInput = {
   salary: 0,
   bonus: 0,
   selfEmployment: 0,
-  rsuVesting: 0,
+  rsuVesting: 0,        // legacy mirror of rsu.yearVestingTotal
   k1Active: 0,
   k1Passive: 0,
   otherIncome: 0,
@@ -229,7 +237,7 @@ export const EMPTY_PLAN: PlanInput = {
   hasWillOrTrust: false,
   hasPensionOrDeferredComp: false,
 
-  // Estate.tsx fields
+  // Estate.tsx mirrors
   expectsInheritance: false,
   givingIntent: false,
 
@@ -248,7 +256,7 @@ export const EMPTY_PLAN: PlanInput = {
   freedomDef: '',
   confidence: 5,
 
-  // New structured comp defaults
+  // Structured comp defaults
   w2BaseAnnual: 0,
   bonusPlanAnnual: 0,
   bonusYTD: 0,
@@ -257,3 +265,13 @@ export const EMPTY_PLAN: PlanInput = {
   deferredComp: { eligible: false },
   deferred: [],
 };
+
+// ---------- Helper to keep mirror in sync (optional) ----------
+export function normalizePlanInput(p: PlanInput): PlanInput {
+  const yearTotal = p.rsu?.yearVestingTotal ?? 0;
+  return {
+    ...p,
+    rsuVesting: p.rsuVesting ?? yearTotal,
+    rsu: { ...p.rsu, yearVestingTotal: p.rsu?.yearVestingTotal ?? (p.rsuVesting ?? 0) },
+  };
+}
