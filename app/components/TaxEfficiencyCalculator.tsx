@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   calculateFederalTax, 
   calculateCATax, 
@@ -9,18 +9,46 @@ import {
 } from './tax/TaxBrackets';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tooltip, Slider } from './tax/TaxComponents';
+
+type FilingStatus = 'single' | 'married_joint' | 'married_separate' | 'head';
+type StateCode = 'CA' | 'WY' | 'TX' | 'FL' | 'NY';
+
+const STATE_TAX_RATES: Record<StateCode, number> = {
+  CA: 0.133,
+  NY: 0.109,
+  TX: 0,
+  FL: 0,
+  WY: 0
+};
 
 interface FormInputs {
+  filingStatus: FilingStatus;
+  stateResidence: StateCode;
   annualIncome: number;
-  deductibleExpenses: number;
   assetTypes: ('real_estate' | 'stocks' | 'business')[];
-  currentEntity: 'none' | 'llc' | 'trust' | 'flp';
-  plannedGifts: number;
-  investmentStrategy: 'long_term' | 'qsbs' | 'other';
-  borrowingAmount: number;
-  numHeirs: number;
-  borrowingRate: number;
+  
+  // Business/LLC
+  startLLC: boolean;
+  expectedExpenses: number;
+  
+  // Trust/FLP
+  addTrust: boolean;
+  transferAmount: number;
+  heirCount: number;
+  
+  // Buy-Borrow-Die
+  adoptBBD: boolean;
+  borrowAmount: number;
+  interestRate: number;
+  
+  // QSBS
+  isQSBS: boolean;
+  qsbsAmount: number;
+  
+  // Base amounts
   estateValue: number;
+  existingExpenses: number;
 }
 
 interface TaxScenario {
@@ -36,16 +64,32 @@ interface TaxScenario {
 export default function TaxEfficiencyCalculator() {
   const [activeSection, setActiveSection] = useState<string>('income');
   const [formInputs, setFormInputs] = useState<FormInputs>({
+    filingStatus: 'married_joint',
+    stateResidence: 'CA',
     annualIncome: 500000,
-    deductibleExpenses: 50000,
     assetTypes: [],
-    currentEntity: 'none',
-    plannedGifts: 0,
-    investmentStrategy: 'long_term',
-    borrowingAmount: 0,
-    numHeirs: 2,
-    borrowingRate: 5,
-    estateValue: 0
+    
+    // Business/LLC
+    startLLC: false,
+    expectedExpenses: 50000,
+    
+    // Trust/FLP
+    addTrust: false,
+    transferAmount: 1000000,
+    heirCount: 2,
+    
+    // Buy-Borrow-Die
+    adoptBBD: false,
+    borrowAmount: 1000000,
+    interestRate: 5,
+    
+    // QSBS
+    isQSBS: false,
+    qsbsAmount: 0,
+    
+    // Base amounts
+    estateValue: 5000000,
+    existingExpenses: 50000
   });
 
   const [scenarios, setScenarios] = useState<TaxScenario[]>([]);
@@ -65,6 +109,10 @@ export default function TaxEfficiencyCalculator() {
         : [...prev.assetTypes, type]
     }));
   };
+
+  useEffect(() => {
+    calculateScenarios();
+  }, [formInputs]);
 
   const calculateScenarios = () => {
     // Base taxable income calculation
@@ -88,8 +136,9 @@ export default function TaxEfficiencyCalculator() {
     };
 
     // LLC Scenario
-    const llcTaxableIncome = baseTaxableIncome - formInputs.deductibleExpenses;
-    const llcStateTaxableIncome = baseStateTaxableIncome - formInputs.deductibleExpenses;
+    const totalExpenses = formInputs.existingExpenses + (formInputs.startLLC ? formInputs.expectedExpenses : 0);
+    const llcTaxableIncome = baseTaxableIncome - totalExpenses;
+    const llcStateTaxableIncome = baseStateTaxableIncome - totalExpenses;
     const llcFederalTax = calculateFederalTax(llcTaxableIncome);
     const llcStateTax = calculateCATax(llcStateTaxableIncome);
     const llcEstateTax = baselineEstateTax; // Same as baseline
@@ -122,8 +171,8 @@ export default function TaxEfficiencyCalculator() {
     };
 
     // Buy-Borrow-Die Scenario
-    const borrowingCost = formInputs.borrowingAmount * (formInputs.borrowingRate / 100);
-    const deferredGains = formInputs.borrowingAmount * TAX_CONSTANTS.CAPITAL_GAINS_RATE;
+    const borrowingCost = formInputs.borrowAmount * (formInputs.interestRate / 100);
+    const deferredGains = formInputs.borrowAmount * TAX_CONSTANTS.CAPITAL_GAINS_RATE;
     
     const bbdFederalTax = llcFederalTax - deferredGains;
     const bbdStateTax = llcStateTax;
@@ -159,23 +208,69 @@ export default function TaxEfficiencyCalculator() {
           >
             Income & Expenses
           </h3>
-          {activeSection === 'income' && (
+          {activeSection === 'basics' && (
             <div className="grid gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Annual Income ($)</label>
-                <Input
-                  type="number"
+                <label className="block text-sm font-medium mb-1">
+                  <Tooltip content="Your filing status affects tax brackets and standard deduction amounts">
+                    Filing Status
+                  </Tooltip>
+                </label>
+                <select
+                  value={formInputs.filingStatus}
+                  onChange={(e) => handleInputChange('filingStatus', e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2"
+                >
+                  <option value="single">Single</option>
+                  <option value="married_joint">Married Filing Jointly</option>
+                  <option value="married_separate">Married Filing Separately</option>
+                  <option value="head">Head of Household</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  <Tooltip content="Your state of residence determines state tax rates and treatment of various items">
+                    State of Residence
+                  </Tooltip>
+                </label>
+                <select
+                  value={formInputs.stateResidence}
+                  onChange={(e) => handleInputChange('stateResidence', e.target.value as StateCode)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2"
+                >
+                  {Object.entries(STATE_TAX_RATES).map(([state, rate]) => (
+                    <option key={state} value={state}>
+                      {state} ({(rate * 100).toFixed(1)}% max rate)
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  <Tooltip content="Your total annual income from all sources">
+                    Annual Income ($)
+                  </Tooltip>
+                </label>
+                <Slider
+                  label="Annual Income"
                   value={formInputs.annualIncome}
-                  onChange={(e) => handleInputChange('annualIncome', Number(e.target.value))}
-                  className="w-full"
+                  onChange={(value) => handleInputChange('annualIncome', value)}
+                  min={0}
+                  max={2000000}
+                  step={10000}
+                  tooltip="Your total annual income from all sources"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Annual Deductible Expenses ($)</label>
+                <label className="block text-sm font-medium mb-1">
+                  <Tooltip content="Current annual deductible expenses, not including potential new business expenses">
+                    Existing Deductible Expenses ($)
+                  </Tooltip>
+                </label>
                 <Input
                   type="number"
-                  value={formInputs.deductibleExpenses}
-                  onChange={(e) => handleInputChange('deductibleExpenses', Number(e.target.value))}
+                  value={formInputs.existingExpenses}
+                  onChange={(e) => handleInputChange('existingExpenses', Number(e.target.value))}
                   className="w-full"
                 />
               </div>
@@ -210,17 +305,40 @@ export default function TaxEfficiencyCalculator() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Current Entity Structure</label>
-                <select
-                  value={formInputs.currentEntity}
-                  onChange={(e) => handleInputChange('currentEntity', e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2"
-                >
-                  <option value="none">None</option>
-                  <option value="llc">LLC</option>
-                  <option value="trust">Trust</option>
-                  <option value="flp">Family Limited Partnership</option>
-                </select>
+                <div className="space-y-4">
+                  {/* LLC Option */}
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={formInputs.startLLC}
+                      onChange={(e) => handleInputChange('startLLC', e.target.checked)}
+                      className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span className="text-sm">Start LLC this year</span>
+                  </label>
+                  
+                  {/* Trust/FLP Option */}
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={formInputs.addTrust}
+                      onChange={(e) => handleInputChange('addTrust', e.target.checked)}
+                      className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span className="text-sm">Add Trust/FLP this year</span>
+                  </label>
+                  
+                  {/* Buy-Borrow-Die Option */}
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={formInputs.adoptBBD}
+                      onChange={(e) => handleInputChange('adoptBBD', e.target.checked)}
+                      className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span className="text-sm">Adopt Buy-Borrow-Die strategy</span>
+                  </label>
+                </div>
               </div>
             </div>
           )}
@@ -246,20 +364,28 @@ export default function TaxEfficiencyCalculator() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Planned Gifts/Transfers ($)</label>
+                <label className="block text-sm font-medium mb-1">
+                  <Tooltip content="Amount planned to transfer to trust or family limited partnership">
+                    Planned Transfers ($)
+                  </Tooltip>
+                </label>
                 <Input
                   type="number"
-                  value={formInputs.plannedGifts}
-                  onChange={(e) => handleInputChange('plannedGifts', Number(e.target.value))}
+                  value={formInputs.transferAmount}
+                  onChange={(e) => handleInputChange('transferAmount', Number(e.target.value))}
                   className="w-full"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Number of Heirs</label>
+                <label className="block text-sm font-medium mb-1">
+                  <Tooltip content="Number of heirs for trust/FLP planning">
+                    Number of Heirs
+                  </Tooltip>
+                </label>
                 <Input
                   type="number"
-                  value={formInputs.numHeirs}
-                  onChange={(e) => handleInputChange('numHeirs', Number(e.target.value))}
+                  value={formInputs.heirCount}
+                  onChange={(e) => handleInputChange('heirCount', Number(e.target.value))}
                   className="w-full"
                 />
               </div>
@@ -277,46 +403,78 @@ export default function TaxEfficiencyCalculator() {
           </h3>
           {activeSection === 'strategy' && (
             <div className="grid gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Investment Approach</label>
-                <select
-                  value={formInputs.investmentStrategy}
-                  onChange={(e) => handleInputChange('investmentStrategy', e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2"
-                >
-                  <option value="long_term">Long-term Holdings</option>
-                  <option value="qsbs">QSBS Eligible</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Borrowing Amount ($)</label>
-                <Input
-                  type="number"
-                  value={formInputs.borrowingAmount}
-                  onChange={(e) => handleInputChange('borrowingAmount', Number(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Borrowing Rate (%)</label>
-                <Input
-                  type="number"
-                  value={formInputs.borrowingRate}
-                  onChange={(e) => handleInputChange('borrowingRate', Number(e.target.value))}
-                  className="w-full"
-                />
+              <div className="space-y-4">
+                {/* QSBS Option */}
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={formInputs.isQSBS}
+                    onChange={(e) => handleInputChange('isQSBS', e.target.checked)}
+                    className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span className="text-sm">QSBS Eligible Investment</span>
+                </label>
+                
+                {formInputs.isQSBS && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      <Tooltip content="Amount of QSBS eligible gains (max $10M per issuer)">
+                        QSBS Amount ($)
+                      </Tooltip>
+                    </label>
+                    <Input
+                      type="number"
+                      value={formInputs.qsbsAmount}
+                      onChange={(e) => handleInputChange('qsbsAmount', Number(e.target.value))}
+                      className="w-full"
+                    />
+                  </div>
+                )}
+                
+                {formInputs.adoptBBD && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        <Tooltip content="Amount to borrow against assets">
+                          Borrowing Amount ($)
+                        </Tooltip>
+                      </label>
+                      <Input
+                        type="number"
+                        value={formInputs.borrowAmount}
+                        onChange={(e) => handleInputChange('borrowAmount', Number(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        <Tooltip content="Annual interest rate on borrowed amount">
+                          Interest Rate (%)
+                        </Tooltip>
+                      </label>
+                      <Input
+                        type="number"
+                        value={formInputs.interestRate}
+                        onChange={(e) => handleInputChange('interestRate', Number(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
         </section>
 
         <Button 
-          onClick={calculateScenarios}
-          className="mt-6 w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+          onClick={() => calculateScenarios()}
+          className="mt-6 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3"
         >
-          Calculate Tax Scenarios
+          Analyze Tax Strategies
         </Button>
+        <p className="text-sm text-center text-gray-500 mt-2">
+          Results will update automatically as you make changes
+        </p>
       </div>
 
       {/* Results Section */}
