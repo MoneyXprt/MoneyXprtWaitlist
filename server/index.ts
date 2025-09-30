@@ -16,9 +16,9 @@ app.use((req, res, next) => {
   let capturedJsonResponse: Record<string, any> | undefined;
 
   const originalResJson = res.json.bind(res);
-  res.json = (bodyJson: any, ...args: any[]) => {
+  res.json = function (this: Response, bodyJson: any): ReturnType<Response['json']> {
     capturedJsonResponse = bodyJson;
-    return originalResJson(bodyJson, ...args);
+    return originalResJson.call(this, bodyJson);
   };
 
   res.on("finish", () => {
