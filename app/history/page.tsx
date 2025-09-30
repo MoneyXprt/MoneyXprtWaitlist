@@ -3,7 +3,19 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useSession } from '@/lib/useSession'
-import type { Conversation } from '@/shared/schema'
+type ConversationMeta = {
+  context?: string;
+  [key: string]: any;
+};
+
+type Conversation = {
+  id: string;
+  userId: string;
+  prompt: string;
+  response: string;
+  createdAt: string;
+  meta?: ConversationMeta;
+};
 
 export default function HistoryPage() {
   const { user, loading } = useSession()
@@ -203,7 +215,7 @@ export default function HistoryPage() {
                   </div>
                 </div>
 
-                {selectedConversation.meta && (
+                {selectedConversation?.meta && Object.keys(selectedConversation.meta).length > 0 && (
                   <div className="pt-4 border-t border-gray-200">
                     <span className="text-sm text-gray-500">
                       Additional context was provided for this conversation

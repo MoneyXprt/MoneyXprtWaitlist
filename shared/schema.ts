@@ -9,13 +9,18 @@ export const waitlist = pgTable("waitlist", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+export type ConversationMeta = {
+  context?: string;
+  [key: string]: any;
+};
+
 export const conversations = pgTable("conversations", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: uuid("user_id"),
   prompt: text("prompt").notNull(),
   response: text("response").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  meta: jsonb("meta"),
+  meta: jsonb("meta").$type<ConversationMeta>(),
 });
 
 export const profiles = pgTable("profiles", {
