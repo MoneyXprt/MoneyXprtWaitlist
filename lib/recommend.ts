@@ -149,7 +149,7 @@ export function buildRecommendations(input: PlanInput): string[] {
   }
 
   // RSUs
-  if (input.rsuVesting > 0) {
+  if (n(input.rsuVesting) > 0) {
     const estGap = Math.max(0, RSU_PLAUSIBLE_RATE - RSU_DEFAULT_WH) * n(input.rsuVesting);
     R.push(
       estGap > 0
