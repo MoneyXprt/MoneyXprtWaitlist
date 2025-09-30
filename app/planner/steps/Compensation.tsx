@@ -31,7 +31,7 @@ type RSU = {
 };
 
 type ESPP = {
-  eligible?: boolean;
+  eligible: boolean;  // Required
   discountPercent?: number;
   contributionPercent?: number;
   purchaseMonths?: Month[];
@@ -51,7 +51,7 @@ export default function Compensation({ value, onChange, onNext, onBack }: Props)
   // Safe accessors for nested optional objects with defaults.
   const dc: DeferredComp = (v.deferredComp ?? { eligible: false, electedPercent: 0 });
     const rsu: RSU = (v.rsu ?? { yearVestingTotal: 0 });
-  const espp: ESPP = (v.espp ?? {});
+  const espp: ESPP = (v.espp ?? { eligible: false });
 
   // Legacy mirrors to keep review/recommend logic happy.
   const setW2 = (n: number) => update({ salary: n });
@@ -189,13 +189,13 @@ export default function Compensation({ value, onChange, onNext, onBack }: Props)
             <Row label="Discount %">
               <Num
                 value={Number(espp.discountPercent) || 0}
-                onChange={(n) => update({ espp: { ...espp, discountPercent: n } })}
+                onChange={(n) => update({ espp: { ...espp, discountPercent: n, eligible: espp.eligible } })}
               />
             </Row>
             <Row label="Contribution % (payroll)">
               <Num
                 value={Number(espp.contributionPercent) || 0}
-                onChange={(n) => update({ espp: { ...espp, contributionPercent: n } })}
+                onChange={(n) => update({ espp: { ...espp, contributionPercent: n, eligible: espp.eligible } })}
               />
             </Row>
             <Row label="Purchase months">
