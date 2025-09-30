@@ -5,6 +5,13 @@ import { supabase } from '@/lib/supabaseClient'
 import { useSession } from '@/lib/useSession'
 import type { UsageDaily } from '@/shared/schema'
 
+// Helper function to safely parse numbers
+const safeParseInt = (value: string | null | undefined): number => {
+  if (!value) return 0;
+  const parsed = parseInt(value);
+  return isNaN(parsed) ? 0 : parsed;
+};
+
 export default function UsagePage() {
   const { user, loading } = useSession()
   const router = useRouter()
@@ -63,7 +70,7 @@ export default function UsagePage() {
 
   if (!user) return null
 
-  const todayPrompts = parseInt(todayUsage?.prompts || '0')
+  const todayPrompts = todayUsage?.prompts ? safeParseInt(todayUsage.prompts) : 0
   const usagePercent = Math.min((todayPrompts / 50) * 100, 100)
 
   return (
@@ -101,13 +108,13 @@ export default function UsagePage() {
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-blue-600">
-                {parseInt(todayUsage?.tokensIn || '0').toLocaleString()}
+                {(todayUsage?.tokensIn ? safeParseInt(todayUsage.tokensIn) : 0).toLocaleString()}
               </div>
               <div className="text-sm text-gray-600">Input Tokens</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-purple-600">
-                {parseInt(todayUsage?.tokensOut || '0').toLocaleString()}
+                {(todayUsage?.tokensOut ? safeParseInt(todayUsage.tokensOut) : 0).toLocaleString()}
               </div>
               <div className="text-sm text-gray-600">Output Tokens</div>
             </div>
@@ -161,8 +168,8 @@ export default function UsagePage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {usage.map((record) => {
-                    const tokensIn = parseInt(record.tokensIn)
-                    const tokensOut = parseInt(record.tokensOut)
+                    const tokensIn = safeParseInt(record.tokensIn)
+                    const tokensOut = safeParseInt(record.tokensOut)
                     const totalTokens = tokensIn + tokensOut
                     
                     return (
