@@ -7,6 +7,7 @@ import {
   type InsertConversation,
   type Profile,
   type InsertProfile,
+  type ConversationMeta,
   waitlist,
   conversations,
   profiles,
@@ -152,10 +153,7 @@ export class MemStorage implements IStorage {
       );
     }
 
-    const meta =
-      (conversation as { meta?: unknown }).meta !== undefined
-        ? (conversation as { meta?: unknown }).meta
-        : {};
+    const meta: ConversationMeta = conversation.meta ?? {};
 
     const newConversation: Conversation = {
       id,
