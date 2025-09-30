@@ -58,7 +58,7 @@ export interface ActionPlan {
 
 /** ---------- tiny utils ---------- */
 const n = (v: unknown) => (typeof v === 'number' && isFinite(v) ? v : 0);
-const sum = (...vals: unknown[]) => vals.reduce((a, b) => a + n(b), 0);
+const sum = (...vals: unknown[]) => vals.reduce<number>((a, b) => a + n(b), 0);
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 const EMP_401K_LIMIT = 23_000;      // 2024 employee limit (under 50)
