@@ -3,7 +3,12 @@
 import * as React from 'react';
 import type { PlanInput } from '@/lib/types';
 
-export default function NarrativeButton({ input }: { input: PlanInput }) {
+interface NarrativeButtonProps {
+  input: PlanInput;
+  className?: string;
+}
+
+export default function NarrativeButton({ input, className = '' }: NarrativeButtonProps) {
   const [open, setOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [narrative, setNarrative] = React.useState<string>('');
@@ -28,8 +33,8 @@ export default function NarrativeButton({ input }: { input: PlanInput }) {
     <>
       <button
         type="button"
+        className={`inline-flex items-center px-3 py-2 rounded border hover:bg-gray-50 ${className}`}
         onClick={fetchNarrative}
-        className="inline-flex items-center px-3 py-2 rounded border hover:bg-gray-50"
         disabled={loading}
       >
         {loading ? 'Generating…' : 'View Narrative Summary'}
