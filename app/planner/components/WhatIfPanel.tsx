@@ -51,21 +51,21 @@ export default function WhatIfPanel({ value, onChange }: Props) {
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Salary ($/yr)">
-          <Num value={v.salary} onChange={(x) => set('salary', x)} />
+          <Num value={n(v.salary)} onChange={(x) => set('salary', x)} />
         </Field>
         <Field label="Bonus ($/yr)">
-          <Num value={v.bonus} onChange={(x) => set('bonus', x)} />
+          <Num value={n(v.bonus)} onChange={(x) => set('bonus', x)} />
         </Field>
 
         <Field label="RSU vesting ($/yr)">
-          <Num value={v.rsuVesting} onChange={(x) => set('rsuVesting', x)} />
+          <Num value={n(v.rsuVesting)} onChange={(x) => set('rsuVesting', x)} />
         </Field>
         <Field label="Rent NOI ($/yr)">
-          <Num value={v.rentNOI} onChange={(x) => set('rentNOI', x)} />
+          <Num value={n(v.rentNOI)} onChange={(x) => set('rentNOI', x)} />
         </Field>
 
         <Field label="Fixed spend ($/mo)">
-          <Num value={v.fixedMonthlySpend} onChange={(x) => set('fixedMonthlySpend', x)} />
+          <Num value={n(v.fixedMonthlySpend)} onChange={(x) => set('fixedMonthlySpend', x)} />
         </Field>
         <Field label="Lifestyle spend ($/mo)">
           <Num value={v.lifestyleMonthlySpend} onChange={(x) => set('lifestyleMonthlySpend', x)} />
@@ -106,15 +106,17 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+interface NumProps {
+  value?: number;
+  onChange: (n: number) => void;
+  step?: number;
+}
+
 function Num({
   value,
   onChange,
   step = 100,
-}: {
-  value: number;
-  onChange: (n: number) => void;
-  step?: number;
-}) {
+}: NumProps) {
   return (
     <input
       type="number"
@@ -122,7 +124,7 @@ function Num({
       className="w-full border rounded px-2 py-1"
       min={0}
       step={step}
-      value={Number.isFinite(value) ? value : 0}
+      value={n(value)}
       onChange={(e) => {
         const raw = e.target.value;
         const parsed = Number(raw);
