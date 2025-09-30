@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { sbBrowser } from '../lib/supabase';
+import { AuthChangeEvent } from '@supabase/supabase-js';
 
 export default function AuthWidget() {
   const [supabase, setSupabase] = useState<any>(null);
@@ -34,7 +35,7 @@ export default function AuthWidget() {
     
     getSession();
     
-    const { data: sub } = supabase.auth.onAuthStateChange((evt) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((evt: AuthChangeEvent) => {
       if (evt === 'SIGNED_IN') window.location.assign('/app');
       getSession();
     });
