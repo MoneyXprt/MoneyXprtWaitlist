@@ -16,7 +16,7 @@ const MONTHS: { label: string; value: Month }[] = [
 ];
 
 type DeferredComp = {
-  eligible?: boolean;
+  eligible: boolean;  // Required
   electedPercent?: number;
   companyMatchPercent?: number;
   distribution?: DeferredDistribution;
@@ -27,7 +27,7 @@ type RSU = {
   eligible?: boolean;
   ticker?: string;
   ytdVestedValue?: number;
-  yearVestingTotal?: number;
+  yearVestingTotal: number;  // Required field
 };
 
 type ESPP = {
@@ -49,8 +49,8 @@ export default function Compensation({ value, onChange, onNext, onBack }: Props)
   const update = (patch: Partial<PlanInput>) => onChange({ ...v, ...patch });
 
   // Safe accessors for nested optional objects with defaults.
-  const dc: DeferredComp = (v.deferredComp ?? {});
-  const rsu: RSU = (v.rsu ?? {});
+  const dc: DeferredComp = (v.deferredComp ?? { eligible: false, electedPercent: 0 });
+    const rsu: RSU = (v.rsu ?? { yearVestingTotal: 0 });
   const espp: ESPP = (v.espp ?? {});
 
   // Legacy mirrors to keep review/recommend logic happy.
@@ -110,7 +110,7 @@ export default function Compensation({ value, onChange, onNext, onBack }: Props)
             <Row label="Elected % of eligible pay">
               <Num
                 value={Number(dc.electedPercent) || 0}
-                onChange={(n) => update({ deferredComp: { ...dc, electedPercent: n } })}
+                onChange={(n) => update({ deferredComp: { ...dc, electedPercent: n, eligible: true } })}
               />
             </Row>
             <Row label="Company match % (if any)">
@@ -150,7 +150,7 @@ export default function Compensation({ value, onChange, onNext, onBack }: Props)
         <Row label="RSU eligible?" tip="RSU = Restricted Stock Units (taxed as they vest).">
           <YesNo
             value={!!rsu.eligible}
-            onChange={(b) => update({ rsu: { ...rsu, eligible: b } })}
+            onChange={(b) => update({ rsu: { ...rsu, eligible: b, yearVestingTotal: rsu.yearVestingTotal } })}
           />
         </Row>
         {!!rsu.eligible && (
@@ -161,14 +161,14 @@ export default function Compensation({ value, onChange, onNext, onBack }: Props)
                 placeholder="e.g., AAPL"
                 value={rsu.ticker ?? ''}
                 onChange={(e) =>
-                  update({ rsu: { ...rsu, ticker: e.target.value.toUpperCase() } })
+                  update({ rsu: { ...rsu, ticker: e.target.value.toUpperCase(), yearVestingTotal: rsu.yearVestingTotal } })
                 }
               />
             </Row>
             <Row label="RSU vesting (YTD $)">
               <Num
                 value={Number(rsu.ytdVestedValue) || 0}
-                onChange={(n) => update({ rsu: { ...rsu, ytdVestedValue: n } })}
+                onChange={(n) => update({ rsu: { ...rsu, ytdVestedValue: n, yearVestingTotal: rsu.yearVestingTotal } })}
               />
             </Row>
             <Row label="RSU vesting (expected total this year $)">
@@ -258,7 +258,13 @@ export default function Compensation({ value, onChange, onNext, onBack }: Props)
 }
 
 /* ---------- Small primitives ---------- */
-function Row({ label, tip, children }: { label: string; tip?: string; children: React.ReactNode }) {
+interface RowProps {
+  label: string;
+  tip?: string;
+  children: React.ReactNode;
+}
+
+function Row({ label, tip, children }: RowProps) {
   return (
     <label className="block text-sm">
       <span className="block font-medium mb-1">
