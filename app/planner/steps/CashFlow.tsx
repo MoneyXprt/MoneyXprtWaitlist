@@ -2,6 +2,9 @@
 import { useId } from 'react';
 import type { PlanInput } from '@/lib/types';
 
+// Helper function to safely handle numeric values
+const n = (v: unknown): number => (typeof v === 'number' && isFinite(v as number) ? (v as number) : 0);
+
 export default function CashFlow({
   value, onChange, onNext, onBack,
 }: {
@@ -22,21 +25,21 @@ export default function CashFlow({
       </p>
 
       <div className="grid md:grid-cols-3 gap-4">
-        <Number label="Salary (W-2) – yearly" val={value.salary} set={(n)=>set('salary',n)} />
-        <Number label="Bonus – yearly" val={value.bonus} set={(n)=>set('bonus',n)} />
-        <Number label="Self-employment net – yearly" val={value.selfEmployment} set={(n)=>set('selfEmployment',n)} />
-        <Number label="RSU vesting – yearly" val={value.rsuVesting} set={(n)=>set('rsuVesting',n)} />
-        <Number label="K-1 ordinary (active) – yearly" val={value.k1Active} set={(n)=>set('k1Active',n)} />
-        <Number label="K-1 ordinary (passive) – yearly" val={value.k1Passive} set={(n)=>set('k1Passive',n)} />
-        <Number label="Rental NOI – yearly" val={value.rentNOI} set={(n)=>set('rentNOI',n)} />
-        <Number label="Other income – yearly" val={value.otherIncome} set={(n)=>set('otherIncome',n)} />
+        <Number label="Salary (W-2) – yearly" val={n(value.salary)} set={(n)=>set('salary',n)} />
+        <Number label="Bonus – yearly" val={n(value.bonus)} set={(n)=>set('bonus',n)} />
+        <Number label="Self-employment net – yearly" val={n(value.selfEmployment)} set={(n)=>set('selfEmployment',n)} />
+        <Number label="RSU vesting – yearly" val={n(value.rsuVesting)} set={(n)=>set('rsuVesting',n)} />
+        <Number label="K-1 ordinary (active) – yearly" val={n(value.k1Active)} set={(n)=>set('k1Active',n)} />
+        <Number label="K-1 ordinary (passive) – yearly" val={n(value.k1Passive)} set={(n)=>set('k1Passive',n)} />
+        <Number label="Rental NOI – yearly" val={n(value.rentNOI)} set={(n)=>set('rentNOI',n)} />
+        <Number label="Other income – yearly" val={n(value.otherIncome)} set={(n)=>set('otherIncome',n)} />
       </div>
 
       <h3 className="font-medium mt-6 mb-2">Monthly spending & savings</h3>
       <div className="grid md:grid-cols-3 gap-4">
-        <Number label="Fixed expenses / mo" val={value.fixedMonthlySpend} set={(n)=>set('fixedMonthlySpend',n)} />
-        <Number label="Lifestyle extras / mo" val={value.lifestyleMonthlySpend} set={(n)=>set('lifestyleMonthlySpend',n)} />
-        <Number label="Savings already / mo" val={value.savingsMonthly} set={(n)=>set('savingsMonthly',n)} />
+        <Number label="Fixed expenses / mo" val={n(value.fixedMonthlySpend)} set={(n)=>set('fixedMonthlySpend',n)} />
+        <Number label="Lifestyle extras / mo" val={n(value.lifestyleMonthlySpend)} set={(n)=>set('lifestyleMonthlySpend',n)} />
+        <Number label="Savings already / mo" val={n(value.savingsMonthly)} set={(n)=>set('savingsMonthly',n)} />
       </div>
 
       <Nav onBack={onBack} onNext={onNext} />
@@ -44,12 +47,26 @@ export default function CashFlow({
   );
 }
 
-function Number({ label, val, set }: { label:string; val:number; set:(n:number)=>void }) {
+interface NumberProps {
+  label: string;
+  val?: number;
+  set: (n: number) => void;
+}
+
+function Number({ label, val, set }: NumberProps) {
   return (
     <label className="block">
       <span className="block text-sm mb-1">{label}</span>
-      <input type="number" inputMode="decimal" className="w-full border rounded px-3 py-2"
-        value={val || 0} onChange={e=>set(parseFloat(e.target.value||'0'))}/>
+      <input 
+        type="number" 
+        inputMode="decimal" 
+        className="w-full border rounded px-3 py-2"
+        value={n(val)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+          const parsed = parseFloat(e.target.value || '0');
+          set(isFinite(parsed) ? parsed : 0);
+        }}
+      />
     </label>
   );
 }
