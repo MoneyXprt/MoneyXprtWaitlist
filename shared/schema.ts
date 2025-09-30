@@ -3,6 +3,27 @@ import { pgTable, text, uuid, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export type Database = {
+  public: {
+    Tables: {
+      waitlist: typeof waitlist;
+      conversations: typeof conversations;
+      profiles: typeof profiles;
+      usage_daily: typeof usageDaily;
+      billing: typeof billing;
+    };
+    Views: {
+      [key: string]: never;
+    };
+    Functions: {
+      [key: string]: never;
+    };
+    Enums: {
+      [key: string]: never;
+    };
+  };
+};
+
 export const waitlist = pgTable("waitlist", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   address: text("address").notNull().unique(),
