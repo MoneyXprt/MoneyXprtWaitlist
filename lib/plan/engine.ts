@@ -1,7 +1,7 @@
 // lib/plan/engine.ts
 import type { PlanInput } from '@/lib/types';
 
-// ----- Local types for the Action Plan (scoped to this file for safety) -----
+// ----- Local types for the Action Plan -----
 export type ActionBucket =
   | 'Cash' | 'Taxes' | 'Investing' | 'Debt' | 'Protection' | 'Estate' | 'RealEstate' | 'Admin';
 
@@ -33,7 +33,8 @@ export interface Checklist {
 }
 
 export interface CalcTrace {
-  id: string; label: string;
+  id: string;
+  label: string;
   inputs: Record<string, number | string | boolean>;
   result?: number | string | boolean;
   note?: string;
@@ -63,7 +64,7 @@ function scorePriority(base: number, impact: 'Low'|'Medium'|'High', effort: 'Low
   return Math.max(1, Math.min(5, Math.round(p)));
 }
 
-// ----- small calc traces we can “Why this?” -----
+// ----- small calc traces we can "Why this?" -----
 function calcEmergencyFund(input: PlanInput): CalcTrace {
   const monthlyBurn = Math.max(1000, n(input.fixedMonthlySpend) + n(input.lifestyleMonthlySpend));
   const monthsTarget = Math.max(3, n(input.emergencyFundMonths));
@@ -121,14 +122,15 @@ function actionsFromCash(input: PlanInput, traces: Record<string, CalcTrace>): A
     id: id('cash-ef'),
     title: `Auto-move ~$${perMonth.toLocaleString()} / mo to HYSA/T-bills until cushion reached`,
     bucket: 'Cash',
+    priority: scorePriority(2, 'High', 'Low'),
     timeframe: 'This month',
     effort: 'Low',
     impact: 'High',
-    rationale: 'Build resilience so market dips or job risk don’t force selling assets.',
+    rationale: 'Build resilience so market dips or job risk dont force selling assets.',
     calcRefs: ['emergencyFund'],
     estDollars: { oneTimeCostOrFunding: ef },
     links: [{ label: 'Where to find: bank balance + monthly spend', href: '#' }],
-    toggles: ['Assume 3–6 months target'],
+    toggles: ['Pay-yourself-first']
   }];
 }
 
@@ -141,6 +143,7 @@ function actionsFromRSU(input: PlanInput, traces: Record<string, CalcTrace>): Ac
       id: id('tax-rsu'),
       title: `Increase tax set-aside for RSU vests by ~$${perVestSetAside.toLocaleString()} per vest`,
       bucket: 'Taxes',
+      priority: scorePriority(3, 'High', 'Low'),
       timeframe: 'This quarter',
       effort: 'Low',
       impact: 'High',
@@ -148,18 +151,19 @@ function actionsFromRSU(input: PlanInput, traces: Record<string, CalcTrace>): Ac
       calcRefs: ['rsuWithholdingGap'],
       estDollars: { annualTaxSavings: 0, oneTimeCostOrFunding: gap },
       links: [{ label: 'Where to find: vesting schedule & paystubs', href: '#' }],
-      toggles: ['Assume 35% marginal vs 22% withheld'],
+      toggles: ['Assume 35% marginal vs 22% withheld']
     },
     {
       id: id('invest-concentration'),
       title: 'Set a 10b5-1 or scheduled auto-sell to manage concentration',
       bucket: 'Investing',
+      priority: scorePriority(3, 'Medium', 'Medium'),
       timeframe: 'This quarter',
       effort: 'Medium',
       impact: 'Medium',
       rationale: 'Reduce single-stock risk while staying disciplined.',
-      calcRefs: ['rsuWithholdingGap'],
-    },
+      calcRefs: ['rsuWithholdingGap']
+    }
   ];
 }
 
@@ -172,27 +176,29 @@ function actionsFromSavingsRate(input: PlanInput, traces: Record<string, CalcTra
     id: id('cash-savingsrate'),
     title: `Raise auto-transfers by ~$${need.toLocaleString()} / mo to hit 20% savings`,
     bucket: 'Cash',
+    priority: scorePriority(2, 'High', 'Low'),
     timeframe: 'This month',
     effort: 'Low',
     impact: 'High',
     rationale: 'Pay-yourself-first enforces the plan without decision fatigue.',
     calcRefs: ['savingsRate'],
-    estDollars: { annualCashFlowChange: need * 12 },
+    estDollars: { annualCashFlowChange: need * 12 }
   }];
 }
 
 // Example investing/retirement nudge if not obviously maxing 401k
 function actionsFromRetirementSpace(input: PlanInput): Action[] {
-  // We don’t know exact 401k progress; provide a soft nudge
+  // We dont know exact 401k progress; provide a soft nudge
   return [{
     id: id('invest-401k'),
     title: 'Confirm 401(k) deferral will reach the annual employee limit',
     bucket: 'Investing',
+    priority: scorePriority(3, 'Medium', 'Low'),
     timeframe: 'This month',
     effort: 'Low',
     impact: 'Medium',
     rationale: 'Shelter more income; adjust payroll % after raises/bonuses.',
-    links: [{ label: 'Where to find: benefits portal > contributions', href: '#' }],
+    links: [{ label: 'Where to find: benefits portal > contributions', href: '#' }]
   }];
 }
 
@@ -206,7 +212,7 @@ export function buildActionPlan(input: PlanInput): ActionPlan {
     ...actionsFromCash(input, traces),
     ...actionsFromRSU(input, traces),
     ...actionsFromSavingsRate(input, traces),
-    ...actionsFromRetirementSpace(input),
+    ...actionsFromRetirementSpace(input)
   ];
 
   // score priorities
@@ -227,21 +233,17 @@ export function buildActionPlan(input: PlanInput): ActionPlan {
   const actionMap: Record<string, Action> = {};
   const checklists: Checklist[] = [];
   for (const t of lists) {
-    const ids = byTime[t].map(a => (actionMap[a.id] = a, a.id));
+    const ids = byTime[t].map(a => {
+      actionMap[a.id] = a;
+      return a.id;
+    });
     if (ids.length) checklists.push({ title: t, actions: ids });
   }
 
-  // flags (surface quick “heads up”)
-  const flags: string[] = [];
-  if ((traces.emergencyFund?.result as number) > 0) flags.push('Emergency fund below target');
-  if ((traces.rsuWithholdingGap?.result as number) > 0) flags.push('RSU withholding likely short');
-
   return {
     generatedAt: new Date().toISOString(),
-    assumptionsNote: 'Using simple federal heuristics; state modules coming online.',
     actions: actionMap,
     checklists,
-    flags,
-    traces,
+    traces
   };
 }
