@@ -1,28 +1,4 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import { 
-  calculateFederalTax, 
-  calculateCATax, 
-  calculateEstateTax,
-  TAX_CONSTANTS,
-  FEDERAL_BRACKETS_2025_MFJ,
-  CA_BRACKETS_2025
-} from './tax/TaxBrackets';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Tooltip, Slider } from './tax/TaxComponents';
-
-type FilingStatus = 'single' | 'married_joint' | 'married_separate' | 'head';
-type StateCode = 'CA' | 'WY' | 'TX' | 'FL' | 'NY';
-
-const STATE_TAX_RATES: Record<StateCode, number> = {
-  CA: 0.133,
-  NY: 0.109,
-  TX: 0,
-  FL: 0,
-  WY: 0
-};interface FormInputs {
+interface FormInputs {
   filingStatus: FilingStatus;
   stateResidence: StateCode;
   annualIncome: number;
