@@ -10,6 +10,12 @@ let browserClient: SupabaseClientType | null = null;
 
 // Server-side admin client (use Service Role; never expose to browser)
 export function sbAdmin(): SupabaseClientType {
+  // Return mock client in development mode
+  if (process.env.NEXT_PUBLIC_SKIP_AUTH === 'true') {
+    return createClient('http://localhost:54321', 'dummy-key', {
+      auth: { persistSession: false },
+    }) as SupabaseClientType;
+  }
   if (!adminClient) {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Missing Supabase URL or Service Role Key in environment variables');
@@ -23,6 +29,16 @@ export function sbAdmin(): SupabaseClientType {
 
 // Browser client (safe to expose the *anon* key only)
 export function sbBrowser(): SupabaseClientType {
+  // Return mock client in development mode
+  if (process.env.NEXT_PUBLIC_SKIP_AUTH === 'true') {
+    return createClient('http://localhost:54321', 'dummy-key', {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    }) as SupabaseClientType;
+  }
   if (!browserClient) {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       throw new Error('Missing Supabase URL or Anon Key in environment variables');
