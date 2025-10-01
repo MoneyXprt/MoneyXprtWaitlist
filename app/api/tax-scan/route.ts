@@ -1,68 +1,52 @@
 import { NextResponse } from 'next/server';
-import { taxScanRequest } from '@/lib/ai';
+import type { NextRequest } from 'next/server';
+import { TaxInfo } from '@/lib/taxStrategies';
 
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const form = await req.formData();
-    const file = form.get('file');
-    if (!(file instanceof Blob)) {
-      return NextResponse.json({ error: 'PDF is required (field name: file)' }, { status: 400 });
-    }
+    const input: TaxInfo = await request.json();
     
-    // In production, we would OCR and extract data from the PDF
-    // For now, we'll send a comprehensive analysis request
-    const prompt = `Please provide comprehensive tax optimization strategies focusing on:
+    const dummyStrategies = [
+      {
+        strategyId: "401k",
+        title: "Max Out 401(k) Contribution",
+        savings: 9500,
+        complexity: "Easy" as const,
+        requiresCPA: false,
+        plainExplanation: "Contributing to your 401(k) reduces your taxable income for both federal and state taxes. At your tax bracket, maxing out your contribution could save significant taxes.",
+      },
+      {
+        strategyId: "hsa",
+        title: "Health Savings Account (HSA)",
+        savings: 2800,
+        complexity: "Easy" as const,
+        requiresCPA: false,
+        plainExplanation: "HSA contributions are tax-deductible and grow tax-free. Withdrawals for medical expenses are also tax-free.",
+      },
+      {
+        strategyId: "scorp",
+        title: "S-Corporation Election for Side Business",
+        savings: "varies",
+        complexity: "Advanced" as const,
+        requiresCPA: true,
+        plainExplanation: "Converting your side business to an S-Corp can reduce self-employment taxes on a portion of your business income.",
+      },
+      {
+        strategyId: "qoz",
+        title: "Qualified Opportunity Zone Investment",
+        savings: "varies",
+        complexity: "Advanced" as const,
+        requiresCPA: true,
+        plainExplanation: "Investing capital gains into QOZ projects can defer and reduce taxes while providing development incentives.",
+      }
+    ];
 
-1. Entity Structure Optimization
-   - LLC/S-Corp analysis for business income
-   - Real estate holding company considerations
-   - Professional service corporation options
-
-2. Tax-Advantaged Account Maximization
-   - Traditional/Roth strategy based on income levels
-   - Backdoor and Mega Backdoor Roth opportunities
-   - HSA/FSA optimization strategies
-   - Solo 401(k) and SEP IRA analysis
-
-3. Real Estate Tax Strategies
-   - Cost segregation opportunities
-   - 1031 exchange evaluation
-   - QBI deduction optimization
-   - Short-term vs long-term rental considerations
-
-4. Investment Tax Optimization
-   - Tax-loss harvesting opportunities
-   - Asset location optimization across accounts
-   - Tax-efficient fund selection criteria
-   - Capital gains management strategies
-
-5. Estate Planning Integration
-   - Trust structure recommendations
-   - Gifting strategies and annual limits
-   - Legacy planning considerations
-   - Generation-skipping strategies
-
-6. Risk Management
-   - Asset protection structures
-   - Insurance integration with tax planning
-   - Liability mitigation strategies
-
-Please provide specific action items with:
-- Estimated financial impact [Estimated]
-- Implementation timeline
-- Required professional assistance
-- Compliance requirements
-- Ongoing maintenance needs`;
-
-    const response = await taxScanRequest(prompt);
-    
-    return NextResponse.json({
-      ok: true,
-      message: response.response,
-      sha256: response.requestHash,
-      filename: (file as any)?.name ?? 'upload.pdf'
-    });
-  } catch (err: any) {
-    return NextResponse.json({ error: err?.message || 'Unexpected error' }, { status: 500 });
+    return NextResponse.json({ strategies: dummyStrategies });
+  } catch (error) {
+    console.error('Error in tax scan endpoint:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
