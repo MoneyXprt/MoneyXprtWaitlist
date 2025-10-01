@@ -1,0 +1,13 @@
+"use strict";(()=>{var e={};e.id=744,e.ids=[744],e.modules={399:e=>{e.exports=require("next/dist/compiled/next-server/app-page.runtime.prod.js")},517:e=>{e.exports=require("next/dist/compiled/next-server/app-route.runtime.prod.js")},1091:(e,t,n)=>{n.r(t),n.d(t,{originalPathname:()=>g,patchFetch:()=>m,requestAsyncStorage:()=>l,routeModule:()=>u,serverHooks:()=>h,staticGenerationAsyncStorage:()=>d});var a={};n.r(a),n.d(a,{POST:()=>c});var s=n(9303),i=n(8716),r=n(3131),o=n(7070);let p=new(n(4122)).ZP({apiKey:process.env.OPENAI_API_KEY});async function c(e){try{let{question:t}=await e.json();if(!t)return o.NextResponse.json({error:"Question is required"},{status:400});let n=await p.chat.completions.create({model:"gpt-4",messages:[{role:"system",content:`You are MoneyXprt, an AI financial advisor specializing in helping high-income earners and real estate investors optimize their wealth. You provide expert advice on:
+
+- Tax planning and optimization strategies
+- Investment portfolio management
+- Real estate investment opportunities
+- Retirement planning
+- Estate planning
+- Business financial planning
+- Wealth preservation strategies
+
+Always provide practical, actionable advice. Be professional but approachable. When discussing specific financial strategies, include relevant disclaimers about consulting with qualified professionals for personalized advice.
+
+Keep responses concise but comprehensive, typically 2-3 paragraphs unless the question requires more detail.`},{role:"user",content:t}],max_tokens:1e3,temperature:.7}),a=n.choices[0]?.message?.content||"I apologize, but I was unable to generate a response. Please try rephrasing your question.";return o.NextResponse.json({response:a})}catch(e){if(console.error("OpenAI API error:",e),"insufficient_quota"===e.code)return o.NextResponse.json({error:"OpenAI API quota exceeded. Please check your API key and billing settings."},{status:429});return o.NextResponse.json({response:"I apologize, but I'm experiencing technical difficulties. Please try again later or contact support if the issue persists."})}}let u=new s.AppRouteRouteModule({definition:{kind:i.x.APP_ROUTE,page:"/api/chat/route",pathname:"/api/chat",filename:"route",bundlePath:"app/api/chat/route"},resolvedPagePath:"/Users/ianjoachim/Documents/GitHub/MoneyXprt/app/api/chat/route.ts",nextConfigOutput:"",userland:a}),{requestAsyncStorage:l,staticGenerationAsyncStorage:d,serverHooks:h}=u,g="/api/chat/route";function m(){return(0,r.patchFetch)({serverHooks:h,staticGenerationAsyncStorage:d})}}};var t=require("../../../webpack-runtime.js");t.C(e);var n=e=>t(t.s=e),a=t.X(0,[948,972,122],()=>n(1091));module.exports=a})();

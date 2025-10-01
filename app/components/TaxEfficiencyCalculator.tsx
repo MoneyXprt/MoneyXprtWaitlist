@@ -13,8 +13,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tooltip, Slider } from './tax/TaxComponents';
 
-type FilingStatus = 'single' | 'married_joint' | 'married_separate' | 'head';
+// FilingStatus type imported earlier
+
 type StateCode = 'CA' | 'WY' | 'TX' | 'FL' | 'NY';
+
+interface TaxScenarioWithSavings {
+  name: string;
+  federalTax: number;
+  stateTax: number;
+  estateTax: number;
+  totalTax: number;
+  savings: number;
+  savingsPercent: number;
+  strategies: string[];
+  assumptions?: string[];
+}
 
 const STATE_TAX_RATES: Record<StateCode, number> = {
   CA: 0.133,
@@ -22,7 +35,9 @@ const STATE_TAX_RATES: Record<StateCode, number> = {
   TX: 0,
   FL: 0,
   WY: 0
-};interface FormInputs {
+};
+
+interface FormInputs {
   filingStatus: FilingStatus;
   stateResidence: StateCode;
   annualIncome: number;
@@ -51,7 +66,9 @@ const STATE_TAX_RATES: Record<StateCode, number> = {
   existingExpenses: number;
 }
 
-interface TaxScenario {
+import type { FilingStatus } from '@/lib/types/tax-efficiency';
+
+interface TaxScenarioWithSavings {
   name: string;
   federalTax: number;
   stateTax: number;
@@ -60,6 +77,7 @@ interface TaxScenario {
   savings: number;
   savingsPercent: number;
   strategies: string[];
+  assumptions?: string[];
 }
 
 export default function TaxEfficiencyCalculator() {
@@ -93,7 +111,7 @@ export default function TaxEfficiencyCalculator() {
     existingExpenses: 50000
   });
 
-  const [scenarios, setScenarios] = useState<TaxScenario[]>([]);
+  const [scenarios, setScenarios] = useState<TaxScenarioWithSavings[]>([]);
 
   const handleInputChange = (field: keyof FormInputs, value: any) => {
     setFormInputs(prev => ({
@@ -117,7 +135,7 @@ export default function TaxEfficiencyCalculator() {
     const baselineEstateTax = calculateEstateTax(formInputs.estateValue);
     const baselineTotalTax = baselineFederalTax + baselineStateTax + baselineEstateTax;
 
-    const baseline: TaxScenario = {
+    const baseline: TaxScenarioWithSavings = {
       name: 'Baseline (No Structure)',
       federalTax: baselineFederalTax,
       stateTax: baselineStateTax,
@@ -128,7 +146,7 @@ export default function TaxEfficiencyCalculator() {
       strategies: ['Standard deductions only']
     };
 
-    const scenarios = [baseline];
+    const scenarios: TaxScenarioWithSavings[] = [baseline];
 
     // LLC Scenario
     if (formInputs.startLLC) {

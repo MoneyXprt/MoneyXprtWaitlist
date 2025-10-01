@@ -29,7 +29,8 @@ export const TAX_CONSTANTS = {
   CA_MHST_THRESHOLD: 1000000,
   CA_MHST_RATE: 0.01,
   CAPITAL_GAINS_RATE: 0.20,
-  FLP_DISCOUNT: 0.30
+  FLP_DISCOUNT: 0.30,
+  QSBS_MAX_EXCLUSION: 10000000
 };
 
 export function calculateFederalTax(taxableIncome: number): number {
