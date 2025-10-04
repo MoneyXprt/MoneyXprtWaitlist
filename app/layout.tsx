@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import SimpleAuthWidget from "./components/SimpleAuthWidget";
 import type { Metadata } from "next";
+import TopNav from "./components/TopNav";
 
 // (Optional) If you want guaranteed Inter loading regardless of OS fonts,
 // uncomment the next 2 lines and add `className={inter.className}` to <body>
@@ -60,65 +61,7 @@ export default function RootLayout({
               </span>
             </Link>
 
-            <nav
-              className="hidden sm:flex items-center gap-6"
-              aria-label="Primary"
-            >
-              <Link
-                href="/"
-                className="text-sm text-neutral-600 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-md px-1 py-0.5"
-              >
-                Home
-              </Link>
-              <Link
-                href="/app"
-                className="text-sm text-neutral-600 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-md px-1 py-0.5"
-              >
-                Beta
-              </Link>
-              <Link
-                href="/reports"
-                className="text-sm text-neutral-600 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-md px-1 py-0.5"
-              >
-                Reports
-              </Link>
-              <Link
-                href="/pricing"
-                className="text-sm text-neutral-600 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-md px-1 py-0.5"
-              >
-                Pricing
-              </Link>
-              
-              <Link
-                href="/scan"
-                className="text-sm text-neutral-600 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-md px-1 py-0.5"
-              >
-                Tax Scan
-              </Link>
-
-              <Link
-                href="/tax-efficiency"
-                className="text-sm text-neutral-600 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-md px-1 py-0.5"
-              >
-                Tax Planning
-              </Link>
-
-              {/* CTA */}
-              <Link
-                href="/signup"
-                className="text-sm rounded-lg px-3 py-2 bg-emerald-700 text-white shadow hover:bg-emerald-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
-              >
-                Get Started
-              </Link>
-              {process.env.NEXT_PUBLIC_ENABLE_PLANNER === undefined || process.env.NEXT_PUBLIC_ENABLE_PLANNER === 'true' ? (
-                <Link href="/planner/intake" className="text-sm text-neutral-600 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-md px-1 py-0.5">
-                  Planner
-                </Link>
-              ) : null}
-              <Link href="/labs" className="text-sm text-neutral-600 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-md px-1 py-0.5">
-                Labs
-              </Link>
-            </nav>
+            <TopNav />
 
             {/* Auth widget (keeps your existing logic/buttons) */}
             <div className="ml-4">
