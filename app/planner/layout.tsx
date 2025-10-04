@@ -1,3 +1,4 @@
+"use client";
 // app/planner/layout.tsx
 import Link from 'next/link';
 import { PlannerProvider } from '@/lib/strategy/ui/plannerStore';
