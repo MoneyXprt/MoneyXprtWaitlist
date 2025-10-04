@@ -50,3 +50,24 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ recommendations: bullets, snapshot, narrative });
 }
+
+export async function GET() {
+  // Provide simple docs so /api/plan is helpful when visited in a browser.
+  const sample = {
+    input: {
+      // Pass your planner input here; see lib/types.ts PlanInput
+      firstName: 'Jane',
+      lastName: 'Doe',
+      email: 'jane@example.com',
+    },
+    wantNarrative: false,
+  };
+  return NextResponse.json(
+    {
+      ok: true,
+      message: 'POST to this endpoint with { input: PlanInput; wantNarrative?: boolean }',
+      exampleCurl: `curl -X POST -H 'Content-Type: application/json' --data '${JSON.stringify(sample)}' ${process.env.NEXT_PUBLIC_APP_URL || ''}/api/plan`,
+    },
+    { status: 200 }
+  );
+}

@@ -19,8 +19,11 @@ export default function LabsPage() {
           <Link href="/planner" className="underline text-emerald-700 hover:text-emerald-800">
             Open Planner
           </Link>
+          <Link href="/labs/strategy-demo" className="underline text-emerald-700 hover:text-emerald-800">
+            Strategy Demo
+          </Link>
           <Link href="/api/plan" className="underline text-emerald-700 hover:text-emerald-800">
-            API: /api/plan
+            API Docs (GET)
           </Link>
         </div>
         <div className="text-xs text-neutral-600">
@@ -30,4 +33,3 @@ export default function LabsPage() {
     </div>
   );
 }
-
