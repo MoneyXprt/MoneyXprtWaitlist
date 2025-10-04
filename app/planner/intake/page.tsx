@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { buildDemoSnapshot } from '@/lib/strategy/ui/plannerStore';
 import { useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
+import LoadDemo from './LoadDemo';
 import { useSearchParams } from 'next/navigation';
 
 
@@ -30,10 +31,8 @@ export default function IntakePage() {
   const router = useRouter();
   return (
     <div className="space-y-2">
-      <div className="text-right text-sm">
-        <Link href="/planner/intake?demo=ca300k1rental" className="underline text-emerald-700">
-          Load demo
-        </Link>
+      <div className="flex items-center justify-end">
+        <LoadDemo />
       </div>
       {/* Step 1 — minimal profile fields wired to store */}
       <div className="rounded border p-4 mb-3">

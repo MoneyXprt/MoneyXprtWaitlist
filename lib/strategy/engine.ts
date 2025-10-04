@@ -110,3 +110,17 @@ export function runEngine(snapshot: Snapshot): StrategyItem[] {
   return out.sort((a, b) => b.savingsEst - a.savingsEst);
 }
 
+/**
+ * Back-compat alias for legacy UI that imports `buildRecommendations(...)`.
+ * Optional filter to hide high-risk items (none are high-risk yet in v1.1a).
+ */
+export function buildRecommendations(
+  snapshot: Snapshot,
+  opts?: { includeHighRisk?: boolean }
+): StrategyItem[] {
+  const items = runEngine(snapshot);
+  return opts?.includeHighRisk ? items : items.filter((i) => !i.highRisk);
+}
+
+// If you prefer, also provide a default export to cover any default-import usage:
+// export default { runEngine, buildRecommendations };
