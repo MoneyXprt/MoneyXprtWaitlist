@@ -1,6 +1,7 @@
 "use client";
 // app/planner/layout.tsx
 import Link from 'next/link';
+import { useState } from 'react';
 import { PlannerProvider } from '@/lib/strategy/ui/plannerStore';
 import { usePathname } from 'next/navigation';
 import { usePlanner } from '@/lib/strategy/ui/plannerStore';
@@ -8,7 +9,7 @@ import { usePlanner } from '@/lib/strategy/ui/plannerStore';
 function SubNav() {
   const path = usePathname();
   const { state, dispatch } = usePlanner();
-  const [showAck, setShowAck] = React.useState(false);
+  const [showAck, setShowAck] = useState(false);
   const onToggle = (checked: boolean) => {
     if (checked) {
       const hasAck = document.cookie.split('; ').some((c) => c.startsWith('planner_high_risk_ack='));
