@@ -23,3 +23,10 @@ vite.config.ts.*
 .env.local
 .env.*.local
 .vercel/
+
+# Build & local
+.next/
+.vercel/
+.env
+.env.local
+.env.*.local
