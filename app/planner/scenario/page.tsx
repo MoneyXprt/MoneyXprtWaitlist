@@ -6,7 +6,6 @@ import { usePlanner } from '@/lib/strategy/ui/plannerStore';
 import { findConflicts } from '@/lib/strategy/conflicts';
 import Link from 'next/link';
 
-export const dynamic = 'force-dynamic';
 
 export default function ScenarioPage() {
   const { state, dispatch } = usePlanner();
@@ -75,4 +74,3 @@ export default function ScenarioPage() {
     </div>
   );
 }
-

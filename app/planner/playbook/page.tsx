@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { usePlanner } from '@/lib/strategy/ui/plannerStore';
 import { toEngineSnapshot } from '@/lib/strategy/ui/plannerStore';
 
-export const dynamic = 'force-dynamic';
 
 export default function PlaybookPage() {
   const { state } = usePlanner();

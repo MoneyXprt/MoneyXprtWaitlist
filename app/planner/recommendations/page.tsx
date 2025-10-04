@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { usePlanner } from '@/lib/strategy/ui/plannerStore';
 import { toEngineSnapshot } from '@/lib/strategy/ui/plannerStore';
 
-export const dynamic = 'force-dynamic';
 
 type Row = {
   strategyId: string;
@@ -107,4 +106,3 @@ export default function RecommendationsPage() {
     </div>
   );
 }
-

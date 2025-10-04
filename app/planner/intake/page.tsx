@@ -5,8 +5,6 @@ import { usePlanner } from '@/lib/strategy/ui/plannerStore';
 import { useEffect } from 'react';
 import type { PlanInput } from '@/lib/types';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 export default function IntakePage() {
   // Ensure Wizard reads/writes planner store via props override where possible
