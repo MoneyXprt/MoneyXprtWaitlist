@@ -66,9 +66,9 @@ export async function POST(req: Request) {
             reco_id: reco.id,
             strategy_id: metaById[it.strategyId]?.id || it.strategyId,
             savings_est: String(it.savingsEst || 0),
-            cash_outlay_est: String(it.cashOutlayEst || 0),
+            cash_outlay_est: String(0),
             state_addbacks: null,
-            flags: it.flags || {},
+            flags: {},
             steps: it.stepsPreview || [],
           }));
           await supabaseAdmin.from('recommendation_items').insert(rows);
