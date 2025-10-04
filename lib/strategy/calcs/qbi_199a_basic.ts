@@ -11,7 +11,11 @@ function sum(nums: number[]) {
 }
 
 export const qbi199aBasic: StrategyCalcFn = (ctx: CalcContext): CalcResult | null => {
-  const qbiIncome = sum(ctx.income.filter((i) => i.qbiFlag).map((i) => i.amount));
+  const qbiIncome = sum(
+    (ctx.income || [])
+      .filter((i: any) => i?.qbiFlag)
+      .map((i: any) => Number(i?.amount) || 0)
+  );
   if (qbiIncome <= 0) return null;
 
   // crude proxy for taxable income: AGI estimate less standard deduction (not provided here); keep simple.
@@ -36,4 +40,3 @@ export const qbi199aBasic: StrategyCalcFn = (ctx: CalcContext): CalcResult | nul
 };
 
 export default qbi199aBasic as StrategyCalcFn;
-
