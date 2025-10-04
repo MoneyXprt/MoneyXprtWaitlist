@@ -103,7 +103,7 @@ export function buildRecommendations(
 // ---------- Minimal engine over Snapshot for Pass 4 ----------
 import type { Snapshot } from './ui/plannerStore';
 import { BASIC_CALC_MAP } from './calcs/basic';
-import type { RecommendationItem } from './reco';
+import type { RecommendationItem as MiniRecommendationItem } from './reco';
 import core from './registry/core.json' assert { type: 'json' };
 
 type CoreEntry = { code: string; name: string; category: string; eligibility: any };
@@ -112,8 +112,8 @@ function getPath(obj: any, path: string): any {
   return path.split('.').reduce((acc, k) => (acc == null ? undefined : acc[k]), obj);
 }
 
-export function runEngine(snapshot: Snapshot): RecommendationItem[] {
-  const items: RecommendationItem[] = [];
+export function runEngine(snapshot: Snapshot): MiniRecommendationItem[] {
+  const items: MiniRecommendationItem[] = [];
   const regs: CoreEntry[] = (core as any) || [];
   for (const r of regs) {
     const eligible = evalPredicate(r.eligibility as any, {
