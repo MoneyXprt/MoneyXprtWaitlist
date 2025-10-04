@@ -3,7 +3,8 @@
 
 import { useMemo } from 'react';
 import { usePlanner } from '@/lib/strategy/ui/plannerStore';
-import { findConflicts } from '@/lib/strategy/conflicts';
+import { findConflicts, detectConflicts } from '@/lib/strategy/conflicts';
+import { usePlannerSnapshot } from '@/lib/strategy/ui/plannerStore';
 import Link from 'next/link';
 
 
@@ -21,14 +22,36 @@ export default function ScenarioPage() {
     (acc, r) => ({ savings: acc.savings + (r?.savingsEst || 0), cash: acc.cash + (r?.cashOutlayEst || 0), risk: acc.risk + (r?.risk || 0) }),
     { savings: 0, cash: 0, risk: 0 }
   );
+  const avgRisk = rows.length ? Math.round(totals.risk / rows.length) : 0;
   const conflicts = findConflicts(codes);
+  const snapshot = usePlannerSnapshot();
+  const conflictRes = detectConflicts(codes, rows as any, snapshot);
 
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Scenario Builder</h1>
       {conflicts.length > 0 && (
+        <div className="rounded border border-amber-300 bg-amber-50 p-3 text-amber-900 text-sm space-y-1">
+          <div className="font-medium">Potential conflicts</div>
+          <ul className="list-disc pl-5">
+            {conflicts.map((c, i) => (
+              <li key={i}>{c.b ? `${c.a} ↔ ${c.b}` : c.a}: {c.reason}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {conflictRes.warnings.length > 0 && (
         <div className="rounded border border-amber-300 bg-amber-50 p-3 text-amber-900 text-sm">
-          Potential conflicts: {conflicts.map((c) => `${c.a} ↔ ${c.b}`).join(', ')}
+          <ul className="list-disc pl-5">
+            {conflictRes.warnings.map((w, i) => (
+              <li key={i}>{w}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {conflictRes.invalid.length > 0 && (
+        <div className="rounded border border-red-300 bg-red-50 p-3 text-red-800 text-sm">
+          The following selections are invalid for your inputs: {conflictRes.invalid.join(', ')}
         </div>
       )}
       {rows.length === 0 ? (
@@ -62,7 +85,7 @@ export default function ScenarioPage() {
               <td className="py-2">Totals</td>
               <td>${Math.round(totals.savings).toLocaleString()}</td>
               <td>${Math.round(totals.cash).toLocaleString()}</td>
-              <td></td>
+              <td className="text-sm text-neutral-700">Avg risk: {avgRisk}</td>
             </tr>
           </tfoot>
         </table>

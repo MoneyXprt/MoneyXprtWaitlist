@@ -77,7 +77,7 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
         if (raw) return JSON.parse(raw) as PlannerState;
       } catch {}
     }
-    return { data: EMPTY_PLAN, includeHighRisk: false, selectedStrategies: [] } satisfies PlannerState;
+    return { data: EMPTY_PLAN, includeHighRisk: false, selectedStrategies: [], lastRecoItems: [] } satisfies PlannerState;
   });
 
   useEffect(() => {
