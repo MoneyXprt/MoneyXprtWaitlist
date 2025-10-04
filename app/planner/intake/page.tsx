@@ -3,26 +3,29 @@
 import Wizard from '../Wizard';
 import { usePlanner } from '@/lib/strategy/ui/plannerStore';
 import { buildDemoSnapshot } from '@/lib/strategy/ui/plannerStore';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
 
-export default function IntakePage() {
-  const { state, dispatch } = usePlanner();
+function DemoLoader() {
+  const { dispatch } = usePlanner();
   const params = useSearchParams();
   const once = useRef(false);
-
   useEffect(() => {
     if (once.current) return;
     const demo = params.get('demo');
     if (demo) {
-      const snapshot = buildDemoSnapshot(demo);
-      if (snapshot) dispatch({ type: 'setAll', payload: snapshot });
+      const data = buildDemoSnapshot(demo);
+      if (data) dispatch({ type: 'setAll', payload: data });
       once.current = true;
     }
   }, [params, dispatch]);
+  return null;
+}
 
+export default function IntakePage() {
+  const { state } = usePlanner();
   return (
     <div className="space-y-2">
       <div className="text-right text-sm">
@@ -30,6 +33,9 @@ export default function IntakePage() {
           Load demo
         </Link>
       </div>
+      <Suspense fallback={null}>
+        <DemoLoader />
+      </Suspense>
       <Wizard />
     </div>
   );
