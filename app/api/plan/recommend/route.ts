@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { buildRecommendations as engineBuild, runEngine } from '@/lib/strategy/engine';
+import { buildRecommendations as engineBuild } from '@/lib/strategy/engine';
+import { runEngine as runSimpleEngine } from '@/lib/strategy/engine';
 import STRATEGY_REGISTRY from '@/lib/strategy/registry';
 import { supabaseAdmin } from '@/lib/supabaseServer';
 
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
     const allowHighRisk = !!includeHighRisk && ack;
 
     // Pass 4/8 minimal engine (pure, local). Returns {code,name,category,savingsEst,risk,steps,docs?}
-    const minimal = runEngine(snapshot, { allowHighRisk });
+    const minimal = runSimpleEngine(snapshot, { allowHighRisk });
 
     // Also build using existing registry if available (to keep compatibility with other pages)
     const itemsRaw = engineBuild(

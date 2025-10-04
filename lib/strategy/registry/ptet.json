@@ -1,0 +1,9 @@
+{
+  "code": "ptet_state",
+  "name": "PTET election",
+  "category": "State SALT workaround",
+  "risk": 2,
+  "docs": ["Election form", "Owner credit memos", "Quarterly estimate schedule"],
+  "states": ["CA", "NY", "IL", "MN"]
+}
+

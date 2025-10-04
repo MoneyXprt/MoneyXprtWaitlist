@@ -1,0 +1,8 @@
+{
+  "code": "qbi_199a",
+  "name": "QBI §199A deduction",
+  "category": "Pass-through",
+  "risk": 2,
+  "docs": ["Reasonable comp memo", "W-2 wage calc", "UBIA computation"]
+}
+

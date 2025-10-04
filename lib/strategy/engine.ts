@@ -1,154 +1,112 @@
-// lib/strategy/engine.ts
-import { evalPredicate } from './dsl';
-import STRATEGY_REGISTRY from './registry';
-import {
-  CalcContext,
-  EngineOptions,
-  RecommendationItem,
-  StrategyCalcFn,
-  TaxProfile,
-  Entity,
-  IncomeStream,
-  Property,
-} from './types';
+import type { Snapshot, StrategyItem } from "./types";
+import { CA } from "./state/CA"; import { NY } from "./state/NY";
+import { MN } from "./state/MN"; import { IL } from "./state/IL";
 
-import qbi_199a_basic from './calcs/qbi_199a_basic';
-import state_ptet_basic from './calcs/state_ptet_basic';
-import re_cost_seg_bonus_basic from './calcs/re_cost_seg_bonus_basic';
-import retirement_max_gap from './calcs/retirement_max_gap';
-import charity_daf_bunch from './calcs/charity_daf_bunch';
-import augusta_280a from './calcs/augusta_280a';
-import employ_children from './calcs/employ_children';
+// rough constants for MVP estimates
+const FED_RATE = 0.37;
 
-const CALC_MAP: Record<string, StrategyCalcFn> = {
-  qbi_199a_basic,
-  state_ptet_basic,
-  re_cost_seg_bonus_basic,
-  retirement_max_gap,
-  charity_daf_bunch,
-  augusta_280a,
-  employ_children,
-};
+const STATE = { CA, NY, MN, IL } as Record<string, { ptetRate: number; supportsPTET: boolean; name: string }>;
 
-function sum(nums: number[]) {
-  return nums.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
-}
+export function runEngine(snapshot: Snapshot): StrategyItem[] {
+  const states = snapshot.settings?.states ?? [];
+  const w2 = snapshot.income?.w2 ?? 0;
+  const k1 = snapshot.income?.k1 ?? 0;
+  const se = snapshot.income?.se ?? 0;
+  const entities = snapshot.entities ?? [];
+  const rentals = (snapshot.properties ?? []).filter(p => p.type === "rental");
+  const hasPassThrough = entities.some(e => e.type === "S-Corp" || e.type === "Partnership");
 
-// Enrich context with computed totals referenced by DSL
-function buildEvalContext(profile: TaxProfile, entities: Entity[], income: IncomeStream[], properties: Property[]) {
-  const qbi = sum(income.filter((i) => i.qbiFlag).map((i) => i.amount));
-  const passThru = sum(
-    income.filter((i) => i.source === 'k1' || i.source === '1099' || i.source === 'schc').map((i) => i.amount)
-  );
-  const depreciableBasis = properties.reduce((acc, p) => acc + (p.costBasis ?? 0) * (1 - Math.min(0.9, Math.max(0, (p.landAllocPct ?? 20) / 100))), 0);
+  const out: StrategyItem[] = [];
 
-  return {
-    profile,
-    entities,
-    income,
-    properties,
-    incomeTotal: { qbi, passThru },
-    propertiesTotal: { depreciableBasis },
-  } as Record<string, any>;
-}
+  // --- PTET (state SALT workaround) ---
+  const ptetState = states.find(s => STATE[s]?.supportsPTET);
+  if (hasPassThrough && ptetState) {
+    // proxy base: pass-through income; if unknown, allow W-2 overflow as crude stand-in
+    const base = Math.max(k1 + se, Math.max(0, w2 - 200_000));
+    const rate = STATE[ptetState].ptetRate ?? 0.09;
+    const est = Math.round(base * rate * FED_RATE);
+    if (est > 0) {
+      out.push({
+        code: "ptet_state",
+        name: "PTET election",
+        category: "State SALT workaround",
+        savingsEst: est,
+        risk: 2,
+        steps: [`Elect PTET in ${ptetState}`, "Schedule quarterly estimates", "Credit owners on annual return"],
+        docs: ["Election form", "Owner credit memos", "Quarterly estimate schedule"],
+        states: [ptetState],
+      });
+    }
+  }
 
-export function buildRecommendations(
-  profile: TaxProfile,
-  entities: Entity[],
-  income: IncomeStream[],
-  properties: Property[],
-  options: EngineOptions = {}
-): RecommendationItem[] {
-  const ctxEval = buildEvalContext(profile, entities, income, properties);
-
-  const ctxCalc: CalcContext = {
-    profile,
-    entities,
-    income,
-    properties,
-    stateParams: defaultStateParams, // MVP seed
-    lawParams: defaultLawParams2025, // MVP seed
-  };
-
-  const year = options.year ?? profile.year;
-  if (typeof year === 'number') ctxCalc.profile.year = year;
-
-  const includeHighRisk = !!options.includeHighRisk;
-
-  const items: RecommendationItem[] = [];
-  for (const s of STRATEGY_REGISTRY) {
-    if (!s.active) continue;
-    if (s.highRiskToggle && !includeHighRisk) continue;
-    const eligible = evalPredicate(s.eligibility, ctxEval);
-    if (!eligible) continue;
-    const fn = CALC_MAP[s.calc];
-    if (!fn) continue;
-    const res = fn(ctxCalc);
-    if (!res || !(res.savingsEst > 0)) continue;
-    items.push({
-      strategyId: s.id,
-      savingsEst: res.savingsEst,
-      cashOutlayEst: res.cashOutlayEst,
-      stateAddbacks: res.stateAddbacks,
-      flags: res.flags,
-      steps: res.steps,
-      riskScore: res.riskScore ?? s.riskLevel,
-      complexity: res.complexity,
+  // --- QBI §199A (very rough MVP) ---
+  const qbiBase = Math.max(0, k1 + se);
+  const qbiEst = Math.min(qbiBase * 0.20, 50000); // crude wage/UBIA cap
+  if (qbiEst > 0) {
+    out.push({
+      code: "qbi_199a",
+      name: "QBI §199A deduction",
+      category: "Pass-through",
+      savingsEst: Math.round(qbiEst),
+      risk: 2,
+      steps: ["Compute wages/UBIA", "Aggregation memo if needed", "Claim §199A on return"],
+      docs: ["Reasonable comp memo", "W-2 wage calc", "UBIA computation"],
     });
   }
 
-  return items.sort((a, b) => b.savingsEst - a.savingsEst);
-}
-
-// ---------- Minimal engine over Snapshot for Pass 4 ----------
-import type { Snapshot } from './ui/plannerStore';
-import { BASIC_CALC_MAP } from './calcs/basic';
-import type { RecommendationItem as MiniRecommendationItem } from './reco';
-import core from './registry/core.json' assert { type: 'json' };
-
-type CoreEntry = { code: string; name: string; category: string; eligibility: any; highRisk?: boolean; docs?: string[] };
-
-function getPath(obj: any, path: string): any {
-  return path.split('.').reduce((acc, k) => (acc == null ? undefined : acc[k]), obj);
-}
-
-export function runEngine(snapshot: Snapshot, opts?: { allowHighRisk?: boolean }): MiniRecommendationItem[] {
-  const items: MiniRecommendationItem[] = [];
-  const regs: CoreEntry[] = (core as any) || [];
-  for (const r of regs) {
-    if (r.highRisk && !opts?.allowHighRisk) continue;
-    const eligible = evalPredicate(r.eligibility as any, {
-      ...snapshot,
-      properties: snapshot.properties,
-      income: snapshot.income,
-      profile: snapshot.profile,
-      settings: snapshot.settings,
-      get: getPath,
-    } as any);
-    if (!eligible) continue;
-    const calc = BASIC_CALC_MAP[r.code];
-    if (!calc) continue;
-    const res = calc(snapshot);
-    if (!res || !(res.savingsEst > 0)) continue;
-    const itm: any = { code: r.code, name: r.name, category: r.category, savingsEst: res.savingsEst, risk: res.risk, steps: res.steps };
-    if (Array.isArray(r.docs)) itm.docs = r.docs;
-    items.push(itm);
+  // --- Cost Seg + Bonus (rental basis proxy) ---
+  const rentalsCount = rentals.length;
+  const avgBasis = rentalsCount ? Math.round(rentals.reduce((a, r) => a + (r.basis ?? 0), 0) / rentalsCount) : 0;
+  if (rentalsCount && avgBasis > 0) {
+    const depreciable = avgBasis * 0.8; // remove land (20%)
+    const bonusRate = 0.60; // phase-down rough
+    const est = Math.round(depreciable * bonusRate * FED_RATE);
+    if (est > 0) {
+      out.push({
+        code: "cost_seg_bonus",
+        name: "Cost segregation + bonus depreciation",
+        category: "Real estate",
+        savingsEst: est,
+        risk: 3,
+        steps: ["Order engineering study", "File Form 4562", "Update fixed asset register"],
+        docs: ["Engineering cost segregation report", "Form 4562", "Fixed asset register updates"],
+      });
+    }
   }
-  return items.sort((a, b) => b.savingsEst - a.savingsEst);
+
+  // --- Augusta Rule (§280A) ---
+  const hasOwnerOp = entities.some(e => e.type === "S-Corp" || e.type === "C-Corp");
+  if (hasOwnerOp) {
+    // rough: 14 days × $750 nightly market rate
+    const est = 14 * 750 * (1 - 0.09); // assume state PIT savings too (very crude)
+    out.push({
+      code: "augusta_280a",
+      name: "Augusta Rule (§280A) - rent your home to your business",
+      category: "Owner operator",
+      savingsEst: Math.round(est),
+      risk: 2,
+      steps: ["Approve board minutes", "Document market rate comps", "Invoice & pay from entity"],
+      docs: ["Board minutes / rental agreement", "Comparable rate support", "Invoices & payment proof"],
+    });
+  }
+
+  // --- Employ your children ---
+  const kids = snapshot.dependents ?? 0;
+  if (kids > 0 && hasOwnerOp) {
+    // rough: $6,500 deductible @ 37% marginal, per child
+    const est = Math.round(kids * 6500 * 0.37);
+    out.push({
+      code: "employ_kids",
+      name: "Employ your children (family payroll planning)",
+      category: "Owner operator",
+      savingsEst: est,
+      risk: 2,
+      steps: ["Create bona fide job & pay reasonable wage", "Track time", "Run payroll; consider Roth IRA"],
+      docs: ["Job description & timesheets", "Payroll setup", "Custodial Roth IRA (optional)"],
+    });
+  }
+
+  // sort by impact
+  return out.sort((a, b) => b.savingsEst - a.savingsEst);
 }
 
-// Minimal in-file seed params for MVP. Replace with DB-backed lookups.
-export const defaultLawParams2025 = {
-  '199A_thresholds': { single: 191950, married_joint: 383900 },
-  'bonus_pct': 0.6, // example placeholder
-};
-
-export const defaultStateParams: Record<string, { ptet_available: boolean; ptet_rate: number }> = {
-  CA: { ptet_available: true, ptet_rate: 0.093 },
-  NY: { ptet_available: true, ptet_rate: 0.10 },
-  TX: { ptet_available: false, ptet_rate: 0 }, // no PIT; PTET nuances
-  FL: { ptet_available: false, ptet_rate: 0 },
-  WA: { ptet_available: false, ptet_rate: 0 }, // B&O; PTET style limited
-  IL: { ptet_available: true, ptet_rate: 0.048 },
-  MN: { ptet_available: true, ptet_rate: 0.0965 },
-};

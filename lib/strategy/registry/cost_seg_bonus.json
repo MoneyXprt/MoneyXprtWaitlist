@@ -1,0 +1,8 @@
+{
+  "code": "cost_seg_bonus",
+  "name": "Cost segregation + bonus depreciation",
+  "category": "Real estate",
+  "risk": 3,
+  "docs": ["Engineering cost segregation report", "Form 4562", "Fixed asset register updates"]
+}
+
