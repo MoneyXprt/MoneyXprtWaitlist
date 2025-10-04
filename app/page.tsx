@@ -37,19 +37,21 @@ export default function HomePage() {
 
                 <div className="flex flex-col sm:flex-row gap-4 pt-2">
                   <Link
-                    href="/signup"
+                    href="/planner/intake"
+                    aria-label="Get Started with Planner"
                     className="rounded-xl px-6 py-3 font-semibold shadow-md text-center
-                               bg-[hsl(45_70%_65%)] text-[hsl(157_48%_15%)] hover:brightness-105"
+                               bg-[hsl(45_70%_65%)] text-[hsl(157_48%_15%)] hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                   >
-                    Get Started
+                    Get Started →
                   </Link>
 
                   <Link
-                    href="/app"
+                    href="/pricing"
+                    aria-label="See Pricing"
                     className="rounded-xl px-6 py-3 text-center border border-white/25
-                               text-white/95 hover:bg-white/10"
+                               text-white/95 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                   >
-                    Launch the App →
+                    See Pricing
                   </Link>
                 </div>
 
@@ -121,30 +123,28 @@ export default function HomePage() {
       <section id="features" className="py-20">
         <div className="mx-auto max-w-7xl px-6">
           <div className="max-w-2xl">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-              Everything you need to act with confidence
-            </h2>
-            <p className="mt-3 text-neutral-600">
-              Powerful planning—without the conflicts. Your data stays yours, your reports are verifiable, and your
-              subscription is flat‑fee.
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Powerful, practical planning</h2>
+            <p className="mt-3 text-neutral-600">Advanced tax strategies, clear scenarios, and CPA‑ready playbooks.</p>
+            <p className="mt-2 text-sm">
+              <Link href="/labs" className="underline text-[hsl(157_48%_25%)] hover:opacity-90">As seen in Labs → Tax Strategy Engine</Link>
             </p>
           </div>
 
           <div className="mt-10 grid md:grid-cols-3 gap-6">
             <FeatureCard
-              title="AI tax playbooks"
-              body="Quarterly, proactive strategies tuned to your income, equity, and state—before deadlines hit."
-              icon={<CalendarIcon />}
-            />
-            <FeatureCard
-              title="Entity optimization"
-              body="LLC vs S‑Corp vs PLLC? Model take‑home pay, reasonable comp, and payroll taxes instantly."
+              title="Advanced tax strategies"
+              body="Deep recommendations (QBI, PTET, cost seg, REP/STR, Augusta rule, etc.)."
               icon={<OrgIcon />}
             />
             <FeatureCard
-              title="Fee transparency"
-              body="Upload a holdings CSV to reveal fund costs, hidden fees, and tax drag across accounts."
-              icon={<ChartIcon />}
+              title="Scenario + Playbook"
+              body="Stack strategies, resolve conflicts, export a step‑by‑step plan."
+              icon={<CalendarIcon />}
+            />
+            <FeatureCard
+              title="Works with pros"
+              body="Share a CPA‑ready plan with steps, docs, and deadlines."
+              icon={<ShieldIcon />}
             />
           </div>
         </div>
