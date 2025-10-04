@@ -130,7 +130,9 @@ export type StrategyCalcFn = (ctx: CalcContext) => CalcResult | null;
 export type StrategyCalcCode =
   | 'qbi_199a_basic'
   | 'state_ptet_basic'
-  | 're_cost_seg_bonus_basic';
+  | 're_cost_seg_bonus_basic'
+  | 'retirement_max_gap'
+  | 'charity_daf_bunch';
 
 export type RecommendationItem = {
   strategyId: string;
@@ -148,4 +150,3 @@ export type EngineOptions = {
   year?: number; // default current year
   primaryState?: string;
 };
-

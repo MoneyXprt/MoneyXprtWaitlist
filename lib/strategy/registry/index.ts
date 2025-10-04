@@ -51,7 +51,33 @@ export const STRATEGY_REGISTRY: StrategyRegistryItem[] = [
     },
     calc: 're_cost_seg_bonus_basic',
   },
+  {
+    id: 'retirement_max',
+    name: 'Max 401(k) Employee Deferral',
+    category: 'Retirement',
+    description: 'Increase payroll deferrals to hit the annual 401(k) employee limit.',
+    active: true,
+    riskLevel: 1,
+    eligibility: {
+      and: [
+        { gt: ['profile.agiEstimate', 150000] },
+        { gt: ['incomeTotal.passThru', -1] },
+      ],
+    },
+    calc: 'retirement_max_gap',
+  },
+  {
+    id: 'charity_daf_bunch',
+    name: 'Charitable Bunching via DAF',
+    category: 'Charity',
+    description: 'Use a donor-advised fund to bunch charitable deductions in high-income years.',
+    active: true,
+    riskLevel: 1,
+    eligibility: {
+      or: [{ gt: ['profile.agiEstimate', 200000] }, { eq: ['profile.itemize', true] }],
+    },
+    calc: 'charity_daf_bunch',
+  },
 ];
 
 export default STRATEGY_REGISTRY;
-

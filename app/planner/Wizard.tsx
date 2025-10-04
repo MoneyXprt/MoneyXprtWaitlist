@@ -1,9 +1,10 @@
 // app/planner/Wizard.tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { PlanInput } from '@/lib/types';
 import { EMPTY_PLAN } from '@/lib/types';
+import { usePlanner } from '@/lib/strategy/ui/plannerStore';
 
 import Profile from './steps/Profile';
 import Compensation from './steps/Compensation';
@@ -16,7 +17,8 @@ import Risk from './steps/Risk';
 import Review from './steps/Review';
 
 export default function Wizard() {
-  const [data, setData] = useState<PlanInput>(EMPTY_PLAN);
+  const { state, dispatch } = usePlanner();
+  const [data, setData] = useState<PlanInput>(state.data ?? EMPTY_PLAN);
   const [step, setStep] = useState<number>(1);
   const [loading, setLoading] = useState(false);
   const [recs, setRecs] = useState<string[] | null>(null);
@@ -25,6 +27,11 @@ export default function Wizard() {
   // total steps updated to 8 (Profile, Compensation, CashFlow, BalanceSheet, Taxes, Retirement, Risk, Review)
   const next = () => setStep((s) => Math.min(8, s + 1));
   const back = () => setStep((s) => Math.max(1, s - 1));
+
+  // Persist to planner store on change
+  useEffect(() => {
+    dispatch({ type: 'setAll', payload: data });
+  }, [data, dispatch]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
