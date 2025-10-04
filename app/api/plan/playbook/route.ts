@@ -9,35 +9,46 @@ export async function POST(req: Request) {
     const { snapshot, selected, includeHighRisk } = (await req.json()) as any;
     if (!snapshot || !Array.isArray(selected)) return NextResponse.json({ error: 'Missing snapshot/selected' }, { status: 400 });
 
-    const all = engineBuild(snapshot.profile, snapshot.entities || [], snapshot.income || [], snapshot.properties || [], { includeHighRisk: !!includeHighRisk });
+    const all = engineBuild(
+      snapshot.profile,
+      snapshot.entities || [],
+      snapshot.income || [],
+      snapshot.properties || [],
+      { includeHighRisk: !!includeHighRisk }
+    );
     const pick = new Map(all.map((i) => [i.strategyId, i]));
     const items = selected
-      .map((id: string) => {
-        const meta = STRATEGY_REGISTRY.find((s) => s.id === id);
-        const res = pick.get(id);
+      .map((code: string) => {
+        const meta = STRATEGY_REGISTRY.find((s) => s.id === code);
+        const res = pick.get(code);
         if (!meta || !res) return null;
         return {
-          id,
+          code,
           name: meta.name,
-          category: meta.category,
-          eligible: true,
-          steps: res.steps || [],
-          deadlines: (res.steps || []).filter((s) => s.due),
-          required_docs: meta.requiredInputs || [],
-          flags: res.flags || {},
-          riskNotes: [`Risk level: ${res.riskScore ?? meta.riskLevel ?? 0}`],
+          steps: (res.steps || []).map((s: any) => s.label ?? String(s)),
+          docs: (meta.requiredInputs as any) || [],
+          deadlines: (res.steps || []).map((s: any) => s.due).filter(Boolean),
+          riskNotes: [`Risk: ${res.riskScore ?? meta.riskLevel ?? 0}`],
           savingsEst: res.savingsEst || 0,
         };
       })
-      .filter(Boolean);
+      .filter(Boolean) as any[];
+
+    const totalSavings = items.reduce((a, b) => a + (b?.savingsEst || 0), 0);
+    const year = Number(snapshot.profile?.year || new Date().getFullYear());
+    const assumptions = [
+      'Estimates only—verify with a CPA before acting.',
+      `Assumed tax year ${year}. State rules may vary.`,
+    ];
+    const overallDocs = Array.from(new Set(items.flatMap((it) => it.docs || [])));
+    const overallDeadlines = Array.from(new Set(items.flatMap((it) => it.deadlines || [])));
 
     const playbook = {
-      summary: {
-        strategies: items.length,
-        estSavings: items.reduce((a: number, b: any) => a + (b?.savingsEst || 0), 0),
-      },
-      assumptions: { year: snapshot.profile?.year, state: snapshot.profile?.primaryState },
-      items,
+      summary: { count: items.length, totalSavings, year },
+      items: items.map((it) => ({ code: it.code, name: it.name, steps: it.steps, docs: it.docs, deadlines: it.deadlines, riskNotes: it.riskNotes })),
+      assumptions,
+      docs: overallDocs,
+      deadlines: overallDeadlines,
     };
 
     return NextResponse.json(playbook);
@@ -45,4 +56,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e?.message || 'failed' }, { status: 500 });
   }
 }
-
