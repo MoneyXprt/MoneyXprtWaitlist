@@ -132,7 +132,9 @@ export type StrategyCalcCode =
   | 'state_ptet_basic'
   | 're_cost_seg_bonus_basic'
   | 'retirement_max_gap'
-  | 'charity_daf_bunch';
+  | 'charity_daf_bunch'
+  | 'augusta_280a'
+  | 'employ_children';
 
 export type RecommendationItem = {
   strategyId: string;

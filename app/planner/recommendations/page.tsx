@@ -69,40 +69,67 @@ export default function RecommendationsPage() {
       </div>
       {loading && <p>Running engine…</p>}
       {err && <p className="text-red-700">{err}</p>}
-      {!loading && rows.length > 0 && (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left border-b">
-              <th className="py-2">Strategy</th>
-              <th>Est. Savings</th>
-              <th>Cash Outlay</th>
-              <th>Risk</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.strategyId} className="border-b hover:bg-neutral-50">
-                <td className="py-2">
-                  <div className="font-medium">{r.name}</div>
-                  <div className="text-neutral-600">{r.category}</div>
-                </td>
-                <td>${Math.round(r.savingsEst).toLocaleString()}</td>
-                <td>${Math.round(r.cashOutlayEst || 0).toLocaleString()}</td>
-                <td>{r.risk}</td>
-                <td>
-                  <button
-                    className="underline text-emerald-700"
-                    onClick={() => dispatch({ type: 'select', code: r.strategyId })}
-                  >
-                    Add to Scenario
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2">
+          {!loading && rows.length > 0 && (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left border-b">
+                  <th className="py-2">Strategy</th>
+                  <th>Est. Savings</th>
+                  <th>Cash Outlay</th>
+                  <th>Risk</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.strategyId} className="border-b hover:bg-neutral-50">
+                    <td className="py-2">
+                      <div className="font-medium">{r.name}</div>
+                      <div className="text-neutral-600">{r.category}</div>
+                    </td>
+                    <td>${Math.round(r.savingsEst).toLocaleString()}</td>
+                    <td>${Math.round(r.cashOutlayEst || 0).toLocaleString()}</td>
+                    <td>{r.risk}</td>
+                    <td>
+                      <button
+                        className="underline text-emerald-700"
+                        onClick={() => {
+                          dispatch({ type: 'select', code: r.strategyId });
+                        }}
+                      >
+                        Add to Scenario
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        <aside className="md:col-span-1">
+          <div className="rounded border p-3 text-sm">
+            <div className="font-semibold mb-2">Selected ({state.selectedStrategies.length})</div>
+            {state.selectedStrategies.length === 0 ? (
+              <p className="text-neutral-600">No strategies selected.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {state.selectedStrategies.map((c) => (
+                  <span key={c} className="px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {c}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="mt-3">
+              <a href="/planner/scenario" className="rounded bg-emerald-700 text-white px-3 py-2 inline-block">
+                Build Scenario
+              </a>
+            </div>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

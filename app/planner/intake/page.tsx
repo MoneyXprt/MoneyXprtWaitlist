@@ -2,17 +2,35 @@
 // app/planner/intake/page.tsx
 import Wizard from '../Wizard';
 import { usePlanner } from '@/lib/strategy/ui/plannerStore';
-import { useEffect } from 'react';
-import type { PlanInput } from '@/lib/types';
+import { buildDemoSnapshot } from '@/lib/strategy/ui/plannerStore';
+import { useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 
 export default function IntakePage() {
-  // Ensure Wizard reads/writes planner store via props override where possible
   const { state, dispatch } = usePlanner();
-  // Wizard currently manages its own state; keep it, but prime defaults from store on mount by cloning EMPTY_PLAN in Wizard.
-  // No additional wiring needed here yet; future change can lift Wizard's state.
+  const params = useSearchParams();
+  const once = useRef(false);
+
   useEffect(() => {
-    // placeholder to show store is available
-  }, [state.data]);
-  return <Wizard />;
+    if (once.current) return;
+    const demo = params.get('demo');
+    if (demo) {
+      const snapshot = buildDemoSnapshot(demo);
+      if (snapshot) dispatch({ type: 'setAll', payload: snapshot });
+      once.current = true;
+    }
+  }, [params, dispatch]);
+
+  return (
+    <div className="space-y-2">
+      <div className="text-right text-sm">
+        <Link href="/planner/intake?demo=ca300k1rental" className="underline text-emerald-700">
+          Load demo
+        </Link>
+      </div>
+      <Wizard />
+    </div>
+  );
 }

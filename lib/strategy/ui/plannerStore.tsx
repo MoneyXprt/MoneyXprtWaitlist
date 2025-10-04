@@ -16,10 +16,12 @@ type PlannerState = {
 type PlannerAction =
   | { type: 'setAll'; payload: PlanInput }
   | { type: 'patch'; payload: Partial<PlanInput> }
+  | { type: 'updatePath'; path: string; value: any }
   | { type: 'toggleHighRisk'; value?: boolean }
   | { type: 'setRecoItems'; items: any[] }
   | { type: 'select'; code: string }
   | { type: 'deselect'; code: string }
+  | { type: 'clearSelected' }
   | { type: 'reorder'; from: number; to: number };
 
 const STORAGE_KEY = 'planner:v1';
@@ -30,6 +32,14 @@ function reducer(state: PlannerState, action: PlannerAction): PlannerState {
       return { ...state, data: action.payload };
     case 'patch':
       return { ...state, data: { ...state.data, ...action.payload } };
+    case 'updatePath': {
+      const next = structuredClone(state.data) as any;
+      const parts = action.path.split('.');
+      let cur = next;
+      for (let i = 0; i < parts.length - 1; i++) cur = cur[parts[i]] ?? (cur[parts[i]] = {});
+      cur[parts[parts.length - 1]] = action.value;
+      return { ...state, data: next };
+    }
     case 'toggleHighRisk':
       return { ...state, includeHighRisk: action.value ?? !state.includeHighRisk };
     case 'setRecoItems':
@@ -40,6 +50,8 @@ function reducer(state: PlannerState, action: PlannerAction): PlannerState {
     }
     case 'deselect':
       return { ...state, selectedStrategies: state.selectedStrategies.filter((c) => c !== action.code) };
+    case 'clearSelected':
+      return { ...state, selectedStrategies: [] };
     case 'reorder': {
       const arr = [...state.selectedStrategies];
       const [item] = arr.splice(action.from, 1);
@@ -121,4 +133,37 @@ export function toEngineSnapshot(data: PlanInput, opts?: { year?: number; state?
   }));
 
   return { profile, entities, income, properties };
+}
+
+// Demo prefill helper
+export function buildDemoSnapshot(kind: string): PlanInput | null {
+  const demo = kind === 'ca300k1rental';
+  if (!demo) return null;
+  const year = new Date().getFullYear();
+  const p: PlanInput = {
+    ...EMPTY_PLAN,
+    firstName: 'Demo',
+    lastName: 'User',
+    email: 'demo@example.com',
+    state: 'CA',
+    filingStatus: 'single',
+    w2BaseAnnual: 300000,
+    salary: 300000,
+    rentNOI: 24000,
+    properties: [
+      {
+        id: 'demo-prop-1',
+        use: 'rental',
+        estimatedValue: 450000,
+        mortgageBalance: 0,
+        state: 'CA',
+        nickname: 'Demo Rental',
+        // extra fields consumed by engine mapper
+        ...( { placedInService: `${year}-01-01` } as any),
+      },
+    ],
+    itemizeLikely: true,
+    targetRetireAge: 65,
+  };
+  return p;
 }

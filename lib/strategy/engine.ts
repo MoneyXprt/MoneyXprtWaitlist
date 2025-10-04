@@ -17,6 +17,8 @@ import state_ptet_basic from './calcs/state_ptet_basic';
 import re_cost_seg_bonus_basic from './calcs/re_cost_seg_bonus_basic';
 import retirement_max_gap from './calcs/retirement_max_gap';
 import charity_daf_bunch from './calcs/charity_daf_bunch';
+import augusta_280a from './calcs/augusta_280a';
+import employ_children from './calcs/employ_children';
 
 const CALC_MAP: Record<string, StrategyCalcFn> = {
   qbi_199a_basic,
@@ -24,6 +26,8 @@ const CALC_MAP: Record<string, StrategyCalcFn> = {
   re_cost_seg_bonus_basic,
   retirement_max_gap,
   charity_daf_bunch,
+  augusta_280a,
+  employ_children,
 };
 
 function sum(nums: number[]) {
