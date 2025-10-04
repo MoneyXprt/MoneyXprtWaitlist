@@ -4,3 +4,15 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+# Build & env
+.next/
+.env
+.env.local
+.env.*.local
+
+# Build & local
+.next/
+.vercel/
+.env
+.env.local
+.env.*.local
