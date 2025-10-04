@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { buildRecommendations as engineBuild } from '@/lib/strategy/engine';
 import STRATEGY_REGISTRY from '@/lib/strategy/registry';
 import core from '@/lib/strategy/registry/core.json' assert { type: 'json' };
