@@ -135,6 +135,75 @@ export function toEngineSnapshot(data: PlanInput, opts?: { year?: number; state?
   return { profile, entities, income, properties };
 }
 
+// ---------- PASS 3: public Snapshot type + selector ----------
+export type Snapshot = {
+  profile: {
+    filingStatus: 'Single' | 'MFJ' | 'MFS' | 'HOH';
+    domicileState: string;
+    residency?: { state: string; start?: string; end?: string }[];
+    dependents?: number;
+  };
+  income: { w2?: number; k1?: number; other1099?: number; passiveRE?: number };
+  entities: { type: 's_corp' | 'partnership' | 'sole_prop'; wages?: number; ubia?: number }[];
+  properties: {
+    use: 'rental_res' | 'rental_comm' | 'STR';
+    basis: number;
+    landPct: number;
+    placedInService?: string;
+    bonusEligible?: boolean;
+    materialParticipation?: 'none' | '100' | '500' | 'MBP';
+  }[];
+  settings: { year: number; states: string[]; highRisk?: boolean };
+  selected: string[];
+};
+
+function filingToSnapshot(fs: PlanInput['filingStatus']): Snapshot['profile']['filingStatus'] {
+  switch (fs) {
+    case 'married_joint':
+      return 'MFJ';
+    case 'married_separate':
+      return 'MFS';
+    case 'head':
+      return 'HOH';
+    default:
+      return 'Single';
+  }
+}
+
+export function toSnapshot(data: PlanInput): Snapshot {
+  const year = new Date().getFullYear();
+  return {
+    profile: {
+      filingStatus: filingToSnapshot(data.filingStatus),
+      domicileState: data.state || '',
+      residency: (data.residency || []).map((r) => ({ state: r.state, start: r.startDate, end: r.endDate })),
+      dependents: undefined,
+    },
+    income: {
+      w2: data.w2BaseAnnual || data.salary || 0,
+      k1: (data.k1Active || 0) + (data.k1Passive || 0),
+      other1099: data.selfEmployment || 0,
+      passiveRE: data.rentNOI || 0,
+    },
+    entities: data.entityOrSideBiz ? [{ type: 's_corp', wages: data.w2BaseAnnual || 0, ubia: undefined }] : [],
+    properties: (data.properties || []).map((p: any) => ({
+      use: (p.use === 'rental' ? 'rental_res' : p.use) || 'rental_res',
+      basis: p.estimatedValue || 0,
+      landPct: 0.2,
+      placedInService: p.placedInService,
+      bonusEligible: true,
+      materialParticipation: 'none',
+    })),
+    settings: { year, states: data.state ? [data.state] : [], highRisk: undefined },
+    selected: [],
+  };
+}
+
+export function usePlannerSnapshot(): Snapshot {
+  const { state } = usePlanner();
+  return useMemo(() => toSnapshot(state.data), [state.data]);
+}
+
 // Demo prefill helper
 export function buildDemoSnapshot(kind: string): PlanInput | null {
   const demo = kind === 'ca300k1rental';

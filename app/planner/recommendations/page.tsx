@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { usePlanner } from '@/lib/strategy/ui/plannerStore';
-import { toEngineSnapshot } from '@/lib/strategy/ui/plannerStore';
+import { toEngineSnapshot, usePlannerSnapshot } from '@/lib/strategy/ui/plannerStore';
 
 
 type Row = {
@@ -19,6 +19,7 @@ type Row = {
 
 export default function RecommendationsPage() {
   const { state, dispatch } = usePlanner();
+  const snapshotPass3 = usePlannerSnapshot();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -66,6 +67,9 @@ export default function RecommendationsPage() {
           />
           Show high-risk strategies
         </label>
+      </div>
+      <div className="rounded border p-3 text-xs text-neutral-600">
+        Snapshot (pass‑3): year {snapshotPass3.settings.year || new Date().getFullYear()}, state(s) {snapshotPass3.settings.states.join(', ') || '—'}
       </div>
       {loading && <p>Running engine…</p>}
       {err && <p className="text-red-700">{err}</p>}
