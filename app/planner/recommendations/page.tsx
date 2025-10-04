@@ -4,6 +4,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { usePlanner } from '@/lib/strategy/ui/plannerStore';
 import { toEngineSnapshot, usePlannerSnapshot } from '@/lib/strategy/ui/plannerStore';
+import { fmtUSD } from '@/lib/ui/format';
+import RiskBadge from '@/lib/ui/RiskBadge';
 
 
 type Row = {
@@ -94,9 +96,9 @@ export default function RecommendationsPage() {
                   <div className="font-medium">{r.name}</div>
                   <div className="text-neutral-600">{r.category}</div>
                 </td>
-                <td>${Math.round(r.savingsEst).toLocaleString()}</td>
-                <td>${Math.round(r.cashOutlayEst || 0).toLocaleString()}</td>
-                <td>{r.risk}</td>
+                <td>{fmtUSD(r.savingsEst)}</td>
+                <td>{fmtUSD(r.cashOutlayEst || 0)}</td>
+                <td><RiskBadge score={r.risk} /></td>
                 <td>
                   <button
                     className="underline text-emerald-700"

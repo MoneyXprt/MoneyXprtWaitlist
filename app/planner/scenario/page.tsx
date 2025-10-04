@@ -6,6 +6,8 @@ import { usePlanner } from '@/lib/strategy/ui/plannerStore';
 import { findConflicts, detectConflicts } from '@/lib/strategy/conflicts';
 import { usePlannerSnapshot } from '@/lib/strategy/ui/plannerStore';
 import Link from 'next/link';
+import { fmtUSD } from '@/lib/ui/format';
+import RiskBadge from '@/lib/ui/RiskBadge';
 
 
 export default function ScenarioPage() {
@@ -70,8 +72,8 @@ export default function ScenarioPage() {
             {rows.map((r: any, idx: number) => (
               <tr key={r.strategyId} className="border-b">
                 <td className="py-2">{r.name}</td>
-                <td>${Math.round(r.savingsEst).toLocaleString()}</td>
-                <td>${Math.round(r.cashOutlayEst || 0).toLocaleString()}</td>
+                <td>{fmtUSD(r.savingsEst)}</td>
+                <td>{fmtUSD(r.cashOutlayEst || 0)}</td>
                 <td className="space-x-2">
                   <button className="underline" onClick={() => dispatch({ type: 'reorder', from: idx, to: Math.max(0, idx - 1) })}>Up</button>
                   <button className="underline" onClick={() => dispatch({ type: 'reorder', from: idx, to: Math.min(rows.length - 1, idx + 1) })}>Down</button>
@@ -83,9 +85,9 @@ export default function ScenarioPage() {
           <tfoot>
             <tr className="font-medium">
               <td className="py-2">Totals</td>
-              <td>${Math.round(totals.savings).toLocaleString()}</td>
-              <td>${Math.round(totals.cash).toLocaleString()}</td>
-              <td className="text-sm text-neutral-700">Avg risk: {avgRisk}</td>
+              <td>{fmtUSD(totals.savings)}</td>
+              <td>{fmtUSD(totals.cash)}</td>
+              <td className="text-sm text-neutral-700">Avg risk: <RiskBadge score={avgRisk} /></td>
             </tr>
           </tfoot>
         </table>

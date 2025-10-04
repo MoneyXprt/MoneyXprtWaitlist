@@ -3,6 +3,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { usePlanner } from '@/lib/strategy/ui/plannerStore';
+import { fmtUSD } from '@/lib/ui/format';
 import { toEngineSnapshot } from '@/lib/strategy/ui/plannerStore';
 
 
@@ -60,8 +61,9 @@ export default function PlaybookPage() {
         <div className="space-y-6">
           <div>
             <div className="text-sm text-neutral-700">Summary</div>
-            <div className="text-sm">Strategies: {playbook.summary?.strategies}</div>
-            <div className="text-sm">Estimated Savings: ${Math.round(playbook.summary?.estSavings || 0).toLocaleString()}</div>
+            <div className="text-sm">Strategies: {playbook.summary?.count ?? playbook.summary?.strategies}</div>
+            <div className="text-sm">Estimated Savings: {fmtUSD(playbook.summary?.totalSavings ?? playbook.summary?.estSavings)}</div>
+            <div className="text-xs text-neutral-600">Year: {playbook.summary?.year ?? snapshot.profile?.year}</div>
           </div>
           <div className="space-y-4">
             <h2 className="font-semibold">Strategy Steps</h2>
