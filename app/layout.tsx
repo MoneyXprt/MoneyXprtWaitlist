@@ -113,6 +113,9 @@ export default function RootLayout({
               <Link href="/planner" className="text-sm text-neutral-600 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-md px-1 py-0.5">
                 Planner
               </Link>
+              <Link href="/labs" className="text-sm text-neutral-600 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-md px-1 py-0.5">
+                Labs
+              </Link>
             </nav>
 
             {/* Auth widget (keeps your existing logic/buttons) */}
