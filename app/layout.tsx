@@ -1,9 +1,6 @@
-import "./globals.css";
-import Link from "next/link";
-import Image from "next/image";
-import SimpleAuthWidget from "./components/SimpleAuthWidget";
 import type { Metadata } from "next";
-import TopNav from "./components/TopNav";
+import "./globals.css";
+import SiteHeader from "@/components/nav/SiteHeader";
 
 // (Optional) If you want guaranteed Inter loading regardless of OS fonts,
 // uncomment the next 2 lines and add `className={inter.className}` to <body>
@@ -11,102 +8,37 @@ import TopNav from "./components/TopNav";
 // const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "MoneyXprt Beta",
+  title: "MoneyXprt — AI Tax Strategy for High Earners",
   description:
-    "AI-powered financial planning for high‑income earners — tax savings, entity optimization, and fee‑free investing with tamper‑evident reports.",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+    "Advanced tax strategies (QBI, PTET, cost seg, Augusta, etc.) with a scenario builder and exportable playbook.",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      {/* Add `suppressHydrationWarning` only if you later mix themes */}
-      <body className="min-h-screen bg-background text-neutral-800 antialiased">
-        {/* Skip link for a11y */}
-        <a
-          href="#main"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 rounded-md bg-foreground px-3 py-2 text-white"
-        >
-          Skip to content
-        </a>
-
-        {/* Compliance / info banner */}
-        <div className="w-full bg-amber-100 text-amber-900 text-center text-sm py-2">
-          MoneyXprt outputs are for informational purposes. All AI content may
-          include [Unverified] estimates.
+      <body className="min-h-screen bg-gray-50 text-gray-900">
+        {/* global info banner (kept) */}
+        <div className="w-full bg-amber-50 text-center text-xs text-amber-900">
+          <div className="mx-auto max-w-6xl px-3 py-2">
+            MoneyXprt outputs are for informational purposes. All AI content may include [Unverified] estimates.
+          </div>
         </div>
 
-        {/* Header */}
-        <header className="sticky top-0 z-40 border-b bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/70">
-          <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-            <Link
-              href="/"
-              className="flex items-center gap-3 group"
-              aria-label="MoneyXprt home"
-            >
-              <Image
-                src="/logo-alt.png"
-                alt="MoneyXprt logo"
-                width={36}
-                height={36}
-                className="rounded-full"
-                priority
-              />
-              <span className="text-lg font-semibold tracking-tight text-neutral-900 group-hover:opacity-90">
-                MoneyXprt
-              </span>
-            </Link>
+        <SiteHeader />
 
-            <TopNav />
+        <main>{children}</main>
 
-            {/* Auth widget (keeps your existing logic/buttons) */}
-            <div className="ml-4">
-              <SimpleAuthWidget />
+        <footer className="mt-16 border-t bg-white">
+          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-2 px-4 py-8 text-sm text-gray-500 md:grid-cols-3">
+            <div>© {new Date().getFullYear()} MoneyXprt. All rights reserved.</div>
+            <div className="flex gap-4">
+              <a href="/privacy" className="hover:text-gray-700">Privacy</a>
+              <a href="/terms" className="hover:text-gray-700">Terms</a>
+              <a href="/security" className="hover:text-gray-700">Security</a>
+              <a href="/contact" className="hover:text-gray-700">Contact</a>
             </div>
-          </div>
-        </header>
-
-        {/* Page container */}
-        <main id="main" className="max-w-6xl mx-auto px-6 py-10">
-          {children}
-        </main>
-
-        {/* Footer */}
-        <footer className="border-t bg-white">
-          <div className="max-w-6xl mx-auto px-6 py-10 grid gap-6 sm:grid-cols-2 items-center">
-            <p className="text-sm text-neutral-600">
-              © {new Date().getFullYear()} MoneyXprt. All rights reserved.
-            </p>
-
-            <div className="justify-self-start sm:justify-self-end flex items-center gap-4 text-sm">
-              <Link
-                href="/privacy"
-                className="text-neutral-600 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-md px-1 py-0.5"
-              >
-                Privacy
-              </Link>
-              <Link
-                href="/terms"
-                className="text-neutral-600 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-md px-1 py-0.5"
-              >
-                Terms
-              </Link>
-              <Link
-                href="/security"
-                className="text-neutral-600 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-md px-1 py-0.5"
-              >
-                Security
-              </Link>
-              <Link
-                href="/contact"
-                className="text-neutral-600 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-md px-1 py-0.5"
-              >
-                Contact
-              </Link>
+            <div className="md:text-right">
+              <a href="/labs" className="hover:text-gray-700">Labs → Tax Strategy Engine (MVP)</a>
             </div>
           </div>
         </footer>
