@@ -61,7 +61,7 @@ export default function RecommendationsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Recommendations</h1>
+        <h1 className="text-xl font-semibold">Recommendations {state.includeHighRisk && <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">High-Risk enabled</span>}</h1>
         <label className="text-sm flex items-center gap-2">
           <input
             type="checkbox"
@@ -95,6 +95,9 @@ export default function RecommendationsPage() {
                 <td className="py-2">
                   <div className="font-medium">{r.name}</div>
                   <div className="text-neutral-600">{r.category}</div>
+                  {(r as any).docs && (r as any).docs.length > 0 && (
+                    <div className="text-xs text-neutral-500">Docs ({(r as any).docs.length})</div>
+                  )}
                 </td>
                 <td>{fmtUSD(r.savingsEst)}</td>
                 <td>{fmtUSD(r.cashOutlayEst || 0)}</td>

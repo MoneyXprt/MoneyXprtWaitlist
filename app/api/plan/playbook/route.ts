@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { buildRecommendations as engineBuild } from '@/lib/strategy/engine';
 import STRATEGY_REGISTRY from '@/lib/strategy/registry';
+import core from '@/lib/strategy/registry/core.json' assert { type: 'json' };
 
 export const dynamic = 'force-dynamic';
 
@@ -22,11 +23,12 @@ export async function POST(req: Request) {
         const meta = STRATEGY_REGISTRY.find((s) => s.id === code);
         const res = pick.get(code);
         if (!meta || !res) return null;
+        const coreMeta = (core as any[]).find((c) => c.code === code) as any;
         return {
           code,
           name: meta.name,
           steps: (res.steps || []).map((s: any) => s.label ?? String(s)),
-          docs: (meta.requiredInputs as any) || [],
+          docs: (coreMeta?.docs as any) || ((meta.requiredInputs as any) || []),
           deadlines: (res.steps || []).map((s: any) => s.due).filter(Boolean),
           riskNotes: [`Risk: ${res.riskScore ?? meta.riskLevel ?? 0}`],
           savingsEst: res.savingsEst || 0,

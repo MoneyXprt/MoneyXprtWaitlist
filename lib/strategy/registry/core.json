@@ -3,19 +3,29 @@
     "code": "cost_seg_bonus",
     "name": "Cost segregation + bonus",
     "category": "Real Estate",
-    "eligibility": { "and": [ { "gt": ["properties.0.basis", 50000] }, { "eq": ["profile.filingStatus", "Single"] }, { "in": ["settings.states.0", ["CA","NY","TX","FL","WA","IL","MN"]] } ] }
+    "eligibility": { "and": [ { "gt": ["properties.0.basis", 50000] }, { "in": ["settings.states.0", ["CA","NY","TX","FL","WA","IL","MN"]] } ] },
+    "docs": ["Engineering cost segregation report", "Form 4562", "Fixed asset register updates"]
   },
   {
     "code": "qbi_199a",
     "name": "§199A QBI deduction",
     "category": "Entity/Comp",
-    "eligibility": { "gt": ["income.k1", 0] }
+    "eligibility": { "gt": ["income.k1", 0] },
+    "docs": ["Payroll reports (W-2)", "UBIA calculation", "Aggregation memo (if applicable)"]
   },
   {
     "code": "ptet_state",
     "name": "Entity-level PTET election",
     "category": "State/Local",
-    "eligibility": { "in": ["settings.states.0", ["CA","NY","IL","MN"]] }
+    "eligibility": { "in": ["settings.states.0", ["CA","NY","IL","MN"]] },
+    "docs": ["State election confirmation", "Quarterly entity tax vouchers", "Owner credit memos"]
+  },
+  {
+    "code": "ppli_wrapper",
+    "name": "PPLI/PPVA Wrapper (stub)",
+    "category": "Insurance",
+    "eligibility": { "gt": ["income.w2", 250000] },
+    "highRisk": true,
+    "docs": ["Policy illustration", "Carrier due diligence", "Investor control analysis"]
   }
 ]
-

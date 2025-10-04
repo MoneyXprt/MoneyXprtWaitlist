@@ -106,16 +106,17 @@ import { BASIC_CALC_MAP } from './calcs/basic';
 import type { RecommendationItem as MiniRecommendationItem } from './reco';
 import core from './registry/core.json' assert { type: 'json' };
 
-type CoreEntry = { code: string; name: string; category: string; eligibility: any };
+type CoreEntry = { code: string; name: string; category: string; eligibility: any; highRisk?: boolean; docs?: string[] };
 
 function getPath(obj: any, path: string): any {
   return path.split('.').reduce((acc, k) => (acc == null ? undefined : acc[k]), obj);
 }
 
-export function runEngine(snapshot: Snapshot): MiniRecommendationItem[] {
+export function runEngine(snapshot: Snapshot, opts?: { allowHighRisk?: boolean }): MiniRecommendationItem[] {
   const items: MiniRecommendationItem[] = [];
   const regs: CoreEntry[] = (core as any) || [];
   for (const r of regs) {
+    if (r.highRisk && !opts?.allowHighRisk) continue;
     const eligible = evalPredicate(r.eligibility as any, {
       ...snapshot,
       properties: snapshot.properties,
@@ -129,7 +130,9 @@ export function runEngine(snapshot: Snapshot): MiniRecommendationItem[] {
     if (!calc) continue;
     const res = calc(snapshot);
     if (!res || !(res.savingsEst > 0)) continue;
-    items.push({ code: r.code, name: r.name, category: r.category, savingsEst: res.savingsEst, risk: res.risk, steps: res.steps });
+    const itm: any = { code: r.code, name: r.name, category: r.category, savingsEst: res.savingsEst, risk: res.risk, steps: res.steps };
+    if (Array.isArray(r.docs)) itm.docs = r.docs;
+    items.push(itm);
   }
   return items.sort((a, b) => b.savingsEst - a.savingsEst);
 }

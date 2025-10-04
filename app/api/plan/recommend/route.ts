@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { buildRecommendations as engineBuild, runEngine } from '@/lib/strategy/engine';
 import STRATEGY_REGISTRY from '@/lib/strategy/registry';
 import { supabaseAdmin } from '@/lib/supabaseServer';
@@ -12,8 +13,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing snapshot' }, { status: 400 });
     }
 
-    // Pass 4 minimal engine (pure, local). Returns {code,name,category,savingsEst,risk,steps}
-    const minimal = runEngine(snapshot);
+    // High-risk gating requires both toggle and cookie ack
+    const ack = cookies().get('planner_high_risk_ack')?.value === '1';
+    const allowHighRisk = !!includeHighRisk && ack;
+
+    // Pass 4/8 minimal engine (pure, local). Returns {code,name,category,savingsEst,risk,steps,docs?}
+    const minimal = runEngine(snapshot, { allowHighRisk });
 
     // Also build using existing registry if available (to keep compatibility with other pages)
     const itemsRaw = engineBuild(
@@ -38,14 +43,15 @@ export async function POST(req: Request) {
     }));
 
     // Prefer minimal engine items for display; keep compat in case UI expects extra fields
-    const items = minimal.map((m) => ({
+    const items = minimal.map((m: any) => ({
       code: m.code,
       strategyId: m.code,
       name: m.name,
       category: m.category,
       savingsEst: m.savingsEst,
       risk: m.risk,
-      stepsPreview: m.steps.map((label) => ({ label })),
+      stepsPreview: m.steps.map((label: string) => ({ label })),
+      docs: m.docs || [],
     }));
 
     const totals = {
