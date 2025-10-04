@@ -37,7 +37,8 @@ export default function PlaybookPage() {
 
   async function exportFile() {
     if (!playbook) return;
-    const res = await fetch('/api/plan/playbook.export', {
+    const year = playbook?.summary?.year || snapshot.profile?.year || new Date().getFullYear();
+    const res = await fetch(`/api/plan/playbook.export?filename=playbook-${year}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ playbook }),
@@ -51,6 +52,18 @@ export default function PlaybookPage() {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+  }
+
+  if ((state.selectedStrategies || []).length === 0) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-xl font-semibold">Playbook</h1>
+        <div className="rounded border p-6 text-center text-sm text-neutral-700">
+          <p>No strategies selected. Start in Recommendations and add a few items.</p>
+          <a href="/planner/recommendations" className="mt-3 inline-block rounded bg-emerald-700 text-white px-3 py-2">Go to Recommendations</a>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -108,6 +121,26 @@ export default function PlaybookPage() {
               </div>
             ))}
           </div>
+          {(playbook.docs?.length || 0) > 0 && (
+            <div>
+              <h2 className="font-semibold">Overall Documents</h2>
+              <ul className="list-disc pl-5 text-sm">
+                {playbook.docs.map((d: string, i: number) => (
+                  <li key={i}>{d}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {(playbook.deadlines?.length || 0) > 0 && (
+            <div>
+              <h2 className="font-semibold">Overall Deadlines</h2>
+              <ul className="list-disc pl-5 text-sm">
+                {playbook.deadlines.map((d: string, i: number) => (
+                  <li key={i}>{d}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="flex items-center gap-3">
             <button onClick={exportFile} className="rounded bg-emerald-700 text-white px-3 py-2">Export</button>
             <a href="/planner/intake" className="underline text-sm">Start Over</a>

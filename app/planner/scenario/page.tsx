@@ -8,6 +8,8 @@ import { usePlannerSnapshot } from '@/lib/strategy/ui/plannerStore';
 import Link from 'next/link';
 import { fmtUSD } from '@/lib/ui/format';
 import RiskBadge from '@/lib/ui/RiskBadge';
+import SelectedList from '@/components/planner/SelectedList';
+import { useRouter } from 'next/navigation';
 
 
 export default function ScenarioPage() {
@@ -28,12 +30,13 @@ export default function ScenarioPage() {
   const conflicts = findConflicts(codes);
   const snapshot = usePlannerSnapshot();
   const conflictRes = detectConflicts(codes, rows as any, snapshot);
+  const router = useRouter();
 
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Scenario Builder</h1>
       {conflicts.length > 0 && (
-        <div className="rounded border border-amber-300 bg-amber-50 p-3 text-amber-900 text-sm space-y-1">
+        <div className="rounded border border-amber-300 bg-amber-50 p-3 text-amber-900 text-sm space-y-1" aria-live="polite">
           <div className="font-medium">Potential conflicts</div>
           <ul className="list-disc pl-5">
             {conflicts.map((c, i) => (
@@ -43,7 +46,7 @@ export default function ScenarioPage() {
         </div>
       )}
       {conflictRes.warnings.length > 0 && (
-        <div className="rounded border border-amber-300 bg-amber-50 p-3 text-amber-900 text-sm">
+        <div className="rounded border border-amber-300 bg-amber-50 p-3 text-amber-900 text-sm" aria-live="polite">
           <ul className="list-disc pl-5">
             {conflictRes.warnings.map((w, i) => (
               <li key={i}>{w}</li>
@@ -52,50 +55,26 @@ export default function ScenarioPage() {
         </div>
       )}
       {conflictRes.invalid.length > 0 && (
-        <div className="rounded border border-red-300 bg-red-50 p-3 text-red-800 text-sm">
+        <div className="rounded border border-red-300 bg-red-50 p-3 text-red-800 text-sm" aria-live="polite">
           The following selections are invalid for your inputs: {conflictRes.invalid.join(', ')}
         </div>
       )}
       {rows.length === 0 ? (
         <p className="text-sm text-neutral-600">No strategies selected yet. Go to <Link href="/planner/recommendations" className="underline">Recommendations</Link> and add some.</p>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left border-b">
-              <th className="py-2">Strategy</th>
-              <th>Est. Savings</th>
-              <th>Cash Outlay</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r: any, idx: number) => (
-              <tr key={r.strategyId} className="border-b">
-                <td className="py-2">{r.name}</td>
-                <td>{fmtUSD(r.savingsEst)}</td>
-                <td>{fmtUSD(r.cashOutlayEst || 0)}</td>
-                <td className="space-x-2">
-                  <button className="underline" onClick={() => dispatch({ type: 'reorder', from: idx, to: Math.max(0, idx - 1) })}>Up</button>
-                  <button className="underline" onClick={() => dispatch({ type: 'reorder', from: idx, to: Math.min(rows.length - 1, idx + 1) })}>Down</button>
-                  <button className="underline text-red-700" onClick={() => dispatch({ type: 'deselect', code: r.strategyId })}>Remove</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr className="font-medium">
-              <td className="py-2">Totals</td>
-              <td>{fmtUSD(totals.savings)}</td>
-              <td>{fmtUSD(totals.cash)}</td>
-              <td className="text-sm text-neutral-700">Avg risk: <RiskBadge score={avgRisk} /></td>
-            </tr>
-          </tfoot>
-        </table>
+        <SelectedList
+          items={rows as any}
+          selected={codes}
+          total={totals.savings}
+          onMove={(i, dir) => {
+            const to = Math.max(0, Math.min(rows.length - 1, i + dir));
+            dispatch({ type: 'reorder', from: i, to });
+          }}
+          onRemove={(code) => dispatch({ type: 'deselect', code })}
+          onContinue={() => router.push('/planner/playbook')}
+          disabled={conflictRes.invalid.length > 0}
+        />
       )}
-
-      <div>
-        <Link href="/planner/playbook" className="rounded bg-emerald-700 text-white px-3 py-2">Generate Playbook</Link>
-      </div>
     </div>
   );
 }
