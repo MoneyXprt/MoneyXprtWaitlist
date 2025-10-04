@@ -1,34 +1,19 @@
 "use client";
 
 import { useMemo } from 'react';
-import { buildRecommendations, TaxProfile, Entity, IncomeStream, Property } from '@/lib/strategy';
+import { runEngine } from '@/lib/strategy';
 
 export default function StrategyDemoPage() {
   const { recs } = useMemo(() => {
-    const profile: TaxProfile = {
-      filingStatus: 'married_joint',
-      primaryState: 'CA',
-      year: 2025,
-      agiEstimate: 650000,
-      itemize: true,
+    const snapshot = {
+      settings: { states: ['CA'], year: 2025 },
+      profile: { filingStatus: 'MFJ' },
+      income: { w2: 300000, k1: 220000 },
+      entities: [{ type: 'S-Corp' }],
+      properties: [{ type: 'rental', basis: 900000 }],
     } as any;
 
-    const entities: Entity[] = [{ type: 's_corp', ownershipPct: 100 }];
-    const income: IncomeStream[] = [
-      { source: 'w2', amount: 300000 },
-      { source: 'k1', amount: 220000, qbiFlag: true },
-    ];
-    const properties: Property[] = [
-      {
-        use: 'rental_res',
-        placedInService: '2023-01-01',
-        costBasis: 900000,
-        landAllocPct: 20,
-        bonusEligible: true,
-      },
-    ];
-
-    const recs = buildRecommendations(profile, entities, income, properties, { includeHighRisk: false });
+    const recs = runEngine(snapshot);
     return { recs };
   }, []);
 
@@ -43,9 +28,9 @@ export default function StrategyDemoPage() {
           <p>No recommendations returned for sample data.</p>
         ) : (
           <ul className="list-disc pl-5 space-y-2">
-            {recs.map((r) => (
-              <li key={r.strategyId}>
-                <span className="font-medium">{r.strategyId}</span> — est. savings ${r.savingsEst.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            {recs.map((r: any) => (
+              <li key={r.code}>
+                <span className="font-medium">{r.code}</span> — est. savings ${r.savingsEst.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </li>
             ))}
           </ul>
@@ -57,4 +42,3 @@ export default function StrategyDemoPage() {
     </div>
   );
 }
-
