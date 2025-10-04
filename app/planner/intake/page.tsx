@@ -1,3 +1,4 @@
+"use client";
 // app/planner/intake/page.tsx
 import Wizard from '../Wizard';
 import { usePlanner } from '@/lib/strategy/ui/plannerStore';

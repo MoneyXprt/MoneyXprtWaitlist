@@ -1,4 +1,4 @@
-// lib/strategy/ui/plannerStore.ts
+// lib/strategy/ui/plannerStore.tsx
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer } from 'react';
@@ -122,4 +122,3 @@ export function toEngineSnapshot(data: PlanInput, opts?: { year?: number; state?
 
   return { profile, entities, income, properties };
 }
-
