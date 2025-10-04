@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
-import { buildRecommendations as engineBuild } from '@/lib/strategy/engine';
+import { runEngine as runSimpleEngine } from '@/lib/strategy/engine';
 import STRATEGY_REGISTRY from '@/lib/strategy/registry';
 import core from '@/lib/strategy/registry/core.json' assert { type: 'json' };
 
@@ -11,27 +11,21 @@ export async function POST(req: Request) {
     const { snapshot, selected, includeHighRisk } = (await req.json()) as any;
     if (!snapshot || !Array.isArray(selected)) return NextResponse.json({ error: 'Missing snapshot/selected' }, { status: 400 });
 
-    const all = engineBuild(
-      snapshot.profile,
-      snapshot.entities || [],
-      snapshot.income || [],
-      snapshot.properties || [],
-      { includeHighRisk: !!includeHighRisk }
-    );
-    const pick = new Map(all.map((i) => [i.strategyId, i]));
+    const all = runSimpleEngine(snapshot);
+    const pick = new Map(all.map((i: any) => [i.code, i]));
     const items = selected
       .map((code: string) => {
         const meta = STRATEGY_REGISTRY.find((s) => s.id === code);
-        const res = pick.get(code);
+        const res: any = pick.get(code);
         if (!meta || !res) return null;
         const coreMeta = (core as any[]).find((c) => c.code === code) as any;
         return {
           code,
-          name: meta.name,
-          steps: (res.steps || []).map((s: any) => s.label ?? String(s)),
+          name: res.name || meta.name,
+          steps: (res.steps || []) as string[],
           docs: (coreMeta?.docs as any) || ((meta.requiredInputs as any) || []),
-          deadlines: (res.steps || []).map((s: any) => s.due).filter(Boolean),
-          riskNotes: [`Risk: ${res.riskScore ?? meta.riskLevel ?? 0}`],
+          deadlines: [],
+          riskNotes: [`Risk: ${res.risk ?? meta.riskLevel ?? 0}`],
           savingsEst: res.savingsEst || 0,
         };
       })
