@@ -7,13 +7,14 @@ import { toEngineSnapshot, usePlannerSnapshot } from '@/lib/strategy/ui/plannerS
 
 
 type Row = {
-  strategyId: string;
+  code?: string;
+  strategyId?: string;
   name: string;
   category: string;
   savingsEst: number;
-  cashOutlayEst: number;
+  cashOutlayEst?: number;
   risk: number;
-  flags: any;
+  flags?: any;
   stepsPreview: { label: string; due?: string }[];
 };
 
