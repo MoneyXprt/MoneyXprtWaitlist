@@ -19,3 +19,16 @@ export type Snapshot = {
   settings?: { year?: number; states?: string[]; highRisk?: boolean };
 };
 
+// ---- Legacy calc interfaces (stubs for compatibility with existing files) ----
+export type CalcContext = any;
+export type CalcResult = {
+  savingsEst: number;
+  cashOutlayEst?: number;
+  stateAddbacks?: Record<string, number>;
+  flags?: any;
+  steps?: { label: string; due?: string }[];
+  riskScore?: number;
+  complexity?: number;
+};
+export type StrategyCalcFn = (ctx: CalcContext) => CalcResult | null;
+
