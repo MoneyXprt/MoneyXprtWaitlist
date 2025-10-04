@@ -1,9 +1,6 @@
 // app/planner/page.tsx
-import Wizard from './Wizard';
+import { redirect } from 'next/navigation';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
-export default function Page() {
-  return <Wizard />;
+export default function PlannerIndex() {
+  redirect('/planner/intake');
 }

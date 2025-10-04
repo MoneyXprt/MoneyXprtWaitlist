@@ -110,9 +110,11 @@ export default function RootLayout({
               >
                 Get Started
               </Link>
-              <Link href="/planner" className="text-sm text-neutral-600 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-md px-1 py-0.5">
-                Planner
-              </Link>
+              {process.env.NEXT_PUBLIC_ENABLE_PLANNER === undefined || process.env.NEXT_PUBLIC_ENABLE_PLANNER === 'true' ? (
+                <Link href="/planner/intake" className="text-sm text-neutral-600 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-md px-1 py-0.5">
+                  Planner
+                </Link>
+              ) : null}
               <Link href="/labs" className="text-sm text-neutral-600 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-md px-1 py-0.5">
                 Labs
               </Link>

@@ -16,7 +16,7 @@ export default function LabsPage() {
           We added a rule-driven strategy engine with a JSON DSL, calculators, and a small registry.
         </p>
         <div className="flex gap-3 text-sm">
-          <Link href="/planner" className="underline text-emerald-700 hover:text-emerald-800">
+          <Link href="/planner/intake" className="underline text-emerald-700 hover:text-emerald-800">
             Open Planner
           </Link>
           <Link href="/labs/strategy-demo" className="underline text-emerald-700 hover:text-emerald-800">
