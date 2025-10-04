@@ -11,7 +11,7 @@ export default function ScenarioPage() {
   const { state, dispatch } = usePlanner();
   const itemsById: Record<string, any> = useMemo(() => {
     const out: Record<string, any> = {};
-    for (const it of state.lastRecoItems || []) out[it.strategyId] = it;
+    for (const it of state.lastRecoItems || []) out[(it as any).code || it.strategyId] = it;
     return out;
   }, [state.lastRecoItems]);
 

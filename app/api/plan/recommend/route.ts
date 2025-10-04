@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { buildRecommendations as engineBuild } from '@/lib/strategy/engine';
+import { buildRecommendations as engineBuild, runEngine } from '@/lib/strategy/engine';
 import STRATEGY_REGISTRY from '@/lib/strategy/registry';
 import { supabaseAdmin } from '@/lib/supabaseServer';
 
@@ -12,6 +12,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing snapshot' }, { status: 400 });
     }
 
+    // Pass 4 minimal engine (pure, local). Returns {code,name,category,savingsEst,risk,steps}
+    const minimal = runEngine(snapshot);
+
+    // Also build using existing registry if available (to keep compatibility with other pages)
     const itemsRaw = engineBuild(
       snapshot.profile,
       snapshot.entities || [],
@@ -21,8 +25,9 @@ export async function POST(req: Request) {
     );
 
     const metaById: Record<string, any> = Object.fromEntries(STRATEGY_REGISTRY.map((s) => [s.id, s]));
-    const items = itemsRaw.map((r) => ({
+    const compat = itemsRaw.map((r) => ({
       strategyId: r.strategyId,
+      code: r.strategyId,
       name: metaById[r.strategyId]?.name || r.strategyId,
       category: metaById[r.strategyId]?.category || 'Unknown',
       savingsEst: r.savingsEst,
@@ -30,6 +35,17 @@ export async function POST(req: Request) {
       risk: r.riskScore ?? metaById[r.strategyId]?.riskLevel ?? 0,
       flags: r.flags || {},
       stepsPreview: r.steps || [],
+    }));
+
+    // Prefer minimal engine items for display; keep compat in case UI expects extra fields
+    const items = minimal.map((m) => ({
+      code: m.code,
+      strategyId: m.code,
+      name: m.name,
+      category: m.category,
+      savingsEst: m.savingsEst,
+      risk: m.risk,
+      stepsPreview: m.steps.map((label) => ({ label })),
     }));
 
     const totals = {
@@ -65,4 +81,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: err?.message || 'failed' }, { status: 500 });
   }
 }
-

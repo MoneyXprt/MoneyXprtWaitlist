@@ -1,0 +1,21 @@
+[
+  {
+    "code": "cost_seg_bonus",
+    "name": "Cost segregation + bonus",
+    "category": "Real Estate",
+    "eligibility": { "and": [ { "gt": ["properties.0.basis", 50000] }, { "eq": ["profile.filingStatus", "Single"] }, { "in": ["settings.states.0", ["CA","NY","TX","FL","WA","IL","MN"]] } ] }
+  },
+  {
+    "code": "qbi_199a",
+    "name": "§199A QBI deduction",
+    "category": "Entity/Comp",
+    "eligibility": { "gt": ["income.k1", 0] }
+  },
+  {
+    "code": "ptet_state",
+    "name": "Entity-level PTET election",
+    "category": "State/Local",
+    "eligibility": { "in": ["settings.states.0", ["CA","NY","IL","MN"]] }
+  }
+]
+

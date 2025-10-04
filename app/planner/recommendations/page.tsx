@@ -87,27 +87,27 @@ export default function RecommendationsPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
-                  <tr key={r.strategyId} className="border-b hover:bg-neutral-50">
-                    <td className="py-2">
-                      <div className="font-medium">{r.name}</div>
-                      <div className="text-neutral-600">{r.category}</div>
-                    </td>
-                    <td>${Math.round(r.savingsEst).toLocaleString()}</td>
-                    <td>${Math.round(r.cashOutlayEst || 0).toLocaleString()}</td>
-                    <td>{r.risk}</td>
-                    <td>
-                      <button
-                        className="underline text-emerald-700"
-                        onClick={() => {
-                          dispatch({ type: 'select', code: r.strategyId });
-                        }}
-                      >
-                        Add to Scenario
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+            {rows.map((r) => (
+              <tr key={r.code || r.strategyId} className="border-b hover:bg-neutral-50">
+                <td className="py-2">
+                  <div className="font-medium">{r.name}</div>
+                  <div className="text-neutral-600">{r.category}</div>
+                </td>
+                <td>${Math.round(r.savingsEst).toLocaleString()}</td>
+                <td>${Math.round(r.cashOutlayEst || 0).toLocaleString()}</td>
+                <td>{r.risk}</td>
+                <td>
+                  <button
+                    className="underline text-emerald-700"
+                    onClick={() => {
+                      dispatch({ type: 'select', code: (r as any).code || r.strategyId });
+                    }}
+                  >
+                    Add to Scenario
+                  </button>
+                </td>
+              </tr>
+            ))}
               </tbody>
             </table>
           )}

@@ -100,6 +100,40 @@ export function buildRecommendations(
   return items.sort((a, b) => b.savingsEst - a.savingsEst);
 }
 
+// ---------- Minimal engine over Snapshot for Pass 4 ----------
+import type { Snapshot } from './ui/plannerStore';
+import { BASIC_CALC_MAP } from './calcs/basic';
+import type { RecommendationItem } from './reco';
+import core from './registry/core.json' assert { type: 'json' };
+
+type CoreEntry = { code: string; name: string; category: string; eligibility: any };
+
+function getPath(obj: any, path: string): any {
+  return path.split('.').reduce((acc, k) => (acc == null ? undefined : acc[k]), obj);
+}
+
+export function runEngine(snapshot: Snapshot): RecommendationItem[] {
+  const items: RecommendationItem[] = [];
+  const regs: CoreEntry[] = (core as any) || [];
+  for (const r of regs) {
+    const eligible = evalPredicate(r.eligibility as any, {
+      ...snapshot,
+      properties: snapshot.properties,
+      income: snapshot.income,
+      profile: snapshot.profile,
+      settings: snapshot.settings,
+      get: getPath,
+    } as any);
+    if (!eligible) continue;
+    const calc = BASIC_CALC_MAP[r.code];
+    if (!calc) continue;
+    const res = calc(snapshot);
+    if (!res || !(res.savingsEst > 0)) continue;
+    items.push({ code: r.code, name: r.name, category: r.category, savingsEst: res.savingsEst, risk: res.risk, steps: res.steps });
+  }
+  return items.sort((a, b) => b.savingsEst - a.savingsEst);
+}
+
 // Minimal in-file seed params for MVP. Replace with DB-backed lookups.
 export const defaultLawParams2025 = {
   '199A_thresholds': { single: 191950, married_joint: 383900 },
