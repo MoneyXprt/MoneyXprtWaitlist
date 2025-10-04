@@ -1,7 +1,5 @@
 {
   "/page": "app/page.js",
-  "/api/plan/recommend/route": "app/api/plan/recommend/route.js",
   "/planner/intake/page": "app/planner/intake/page.js",
-  "/planner/recommendations/page": "app/planner/recommendations/page.js",
-  "/planner/scenario/page": "app/planner/scenario/page.js"
+  "/planner/recommendations/page": "app/planner/recommendations/page.js"
 }

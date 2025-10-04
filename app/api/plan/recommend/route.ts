@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     const allowHighRisk = !!includeHighRisk && ack;
 
     // Pass 4/8 minimal engine (pure, local). Returns {code,name,category,savingsEst,risk,steps,docs?}
-    const minimal = runSimpleEngine(snapshot, { allowHighRisk });
+    const minimal = runSimpleEngine(snapshot);
 
     // Use minimal engine items for display
     const items = minimal.map((m: any) => ({
