@@ -12,9 +12,9 @@ function sum(nums: number[]) {
 export const statePtetBasic: StrategyCalcFn = (ctx: CalcContext) => {
   const state = ctx.profile.primaryState;
   const passThruIncome = sum(
-    ctx.income
-      .filter((i) => i.source === 'k1' || i.source === '1099' || i.source === 'schc')
-      .map((i) => i.amount)
+    (ctx.income || [])
+      .filter((i: any) => i?.source === 'k1' || i?.source === '1099' || i?.source === 'schc')
+      .map((i: any) => Number(i?.amount) || 0)
   );
 
   if (passThruIncome <= 0) return null;
