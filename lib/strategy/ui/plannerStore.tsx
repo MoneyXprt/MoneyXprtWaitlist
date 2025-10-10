@@ -101,11 +101,10 @@ export function usePlanner() {
 }
 
 // Snapshot composer for strategy engine MVP (reuses existing engine mapping)
-import type { TaxProfile, Entity, IncomeStream, Property } from '@/lib/strategy';
 
 export function toEngineSnapshot(data: PlanInput, opts?: { year?: number; state?: string }) {
   // Coarse mapping from PlanInput to engine inputs
-  const profile: TaxProfile = {
+  const profile: any = {
     filingStatus: (data.filingStatus as any) || 'single',
     primaryState: data.state || opts?.state || 'CA',
     year: opts?.year ?? new Date().getFullYear(),
@@ -113,17 +112,17 @@ export function toEngineSnapshot(data: PlanInput, opts?: { year?: number; state?
     itemize: !!data.itemizeLikely,
   } as any;
 
-  const entities: Entity[] = data.entityOrSideBiz
+  const entities: any[] = data.entityOrSideBiz
     ? [{ type: 's_corp', ownershipPct: 100, reasonableCompEst: data.w2BaseAnnual || 0 }]
     : [];
 
-  const income: IncomeStream[] = [
+  const income: any[] = [
     { source: 'w2', amount: data.w2BaseAnnual || data.salary || 0 },
     { source: 'k1', amount: (data.k1Active || 0) + (data.k1Passive || 0), qbiFlag: true },
     { source: 'interest', amount: data.otherIncome || 0 },
   ];
 
-  const properties: Property[] = (data.properties || []).map((p) => ({
+  const properties: any[] = (data.properties || []).map((p) => ({
     use: p.use === 'rental' || p.use === 'primary_home' ? ('rental_res' as any) : ((p.use as any) ?? 'rental_res'),
     placedInService: (p as any).placedInService || undefined,
     costBasis: p.estimatedValue || 0,
