@@ -1,5 +1,5 @@
 // lib/strategy/calcs/charity_daf_bunch.ts
-import { StrategyCalcFn } from '../types';
+type StrategyCalcFn = (ctx: any) => any;
 
 // Rough DAF bunching estimate: assume target giving of $10k and marginal rate 35% for MVP.
 export const charityDafBunch: StrategyCalcFn = (ctx) => {
@@ -19,4 +19,3 @@ export const charityDafBunch: StrategyCalcFn = (ctx) => {
 };
 
 export default charityDafBunch;
-

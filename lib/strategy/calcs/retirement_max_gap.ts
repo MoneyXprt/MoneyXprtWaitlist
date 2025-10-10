@@ -1,5 +1,5 @@
 // lib/strategy/calcs/retirement_max_gap.ts
-import { StrategyCalcFn } from '../types';
+type StrategyCalcFn = (ctx: any) => any;
 
 // Estimate tax savings from maxing employee 401(k) deferrals.
 export const retirementMaxGap: StrategyCalcFn = (ctx) => {
@@ -19,4 +19,3 @@ export const retirementMaxGap: StrategyCalcFn = (ctx) => {
 };
 
 export default retirementMaxGap;
-

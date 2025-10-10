@@ -1,5 +1,5 @@
 // lib/strategy/calcs/augusta_280a.ts
-import { StrategyCalcFn } from '../types';
+type StrategyCalcFn = (ctx: any) => any;
 
 // Augusta 280A(g) simple placeholder: 14 days rental of home at fair rate
 export const augusta280A: StrategyCalcFn = (ctx) => {
@@ -18,4 +18,3 @@ export const augusta280A: StrategyCalcFn = (ctx) => {
 };
 
 export default augusta280A;
-

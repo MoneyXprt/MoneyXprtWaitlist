@@ -1,5 +1,6 @@
 // lib/strategy/calcs/state_ptet_basic.ts
-import { CalcContext, StrategyCalcFn } from '../types';
+type CalcContext = any;
+type StrategyCalcFn = (ctx: any) => any;
 
 // Simplified PTET estimate: if state has PTET, apply state PTET rate to pass-through income
 // to approximate federal benefit (deductible at entity level). This is a rough MVP only.
@@ -40,4 +41,3 @@ export const statePtetBasic: StrategyCalcFn = (ctx: CalcContext) => {
 };
 
 export default statePtetBasic as StrategyCalcFn;
-

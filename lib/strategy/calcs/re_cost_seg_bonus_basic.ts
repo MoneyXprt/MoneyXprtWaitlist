@@ -1,5 +1,6 @@
 // lib/strategy/calcs/re_cost_seg_bonus_basic.ts
-import { CalcContext, StrategyCalcFn } from '../types';
+type CalcContext = any;
+type StrategyCalcFn = (ctx: any) => any;
 
 // Simplified cost segregation + bonus depreciation estimator.
 // MVP assumptions: if rental property placed in service and bonus eligible, accelerate ~20-30% of basis in year 1.
@@ -40,4 +41,3 @@ export const reCostSegBonusBasic: StrategyCalcFn = (ctx: CalcContext) => {
 };
 
 export default reCostSegBonusBasic as StrategyCalcFn;
-

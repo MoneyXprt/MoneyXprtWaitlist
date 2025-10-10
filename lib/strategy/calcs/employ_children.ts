@@ -1,5 +1,5 @@
 // lib/strategy/calcs/employ_children.ts
-import { StrategyCalcFn } from '../types';
+type StrategyCalcFn = (ctx: any) => any;
 
 // Employ children: wages up to standard deduction; rough savings 10k * marginal
 export const employChildren: StrategyCalcFn = (ctx) => {
@@ -21,4 +21,3 @@ export const employChildren: StrategyCalcFn = (ctx) => {
 };
 
 export default employChildren;
-

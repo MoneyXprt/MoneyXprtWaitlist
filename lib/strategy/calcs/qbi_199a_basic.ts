@@ -1,5 +1,7 @@
 // lib/strategy/calcs/qbi_199a_basic.ts
-import { CalcContext, CalcResult, StrategyCalcFn } from '../types';
+type CalcContext = any;
+type CalcResult = any;
+type StrategyCalcFn = (ctx: any) => any;
 
 // Very simplified 199A calculation for MVP.
 // Assumptions (MVP):

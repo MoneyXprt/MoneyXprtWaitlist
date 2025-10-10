@@ -3,11 +3,12 @@ export type StrategyItem = {
   name: string;
   category: string;
   savingsEst: number;
-  risk: number; // 1..5
+  risk: number;          // 1..5
   steps: string[];
   docs?: string[];
   highRisk?: boolean;
-  states?: string[]; // if strategy is state-specific
+  states?: string[];
+  notes?: string[];      // NEW: caveats, state notes
 };
 
 export type Snapshot = {
@@ -19,16 +20,13 @@ export type Snapshot = {
   settings?: { year?: number; states?: string[]; highRisk?: boolean };
 };
 
-// ---- Legacy calc interfaces (stubs for compatibility with existing files) ----
-export type CalcContext = any;
-export type CalcResult = {
-  savingsEst: number;
-  cashOutlayEst?: number;
-  stateAddbacks?: Record<string, number>;
-  flags?: any;
-  steps?: { label: string; due?: string }[];
-  riskScore?: number;
-  complexity?: number;
+export type PlanConflict = {
+  kind: "missing_prereq" | "ordering" | "exclusive";
+  message: string;
+  codes: string[]; // involved strategy codes
 };
-export type StrategyCalcFn = (ctx: CalcContext) => CalcResult | null;
 
+export type PlanResult = {
+  items: StrategyItem[];
+  conflicts: PlanConflict[];
+};

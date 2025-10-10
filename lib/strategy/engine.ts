@@ -122,5 +122,5 @@ export function buildRecommendations(
   return opts?.includeHighRisk ? items : items.filter((i) => !i.highRisk);
 }
 
-// If you prefer, also provide a default export to cover any default-import usage:
-// export default { runEngine, buildRecommendations };
+// Provide a default export to cover any default-import usage
+export default { runEngine, buildRecommendations };
