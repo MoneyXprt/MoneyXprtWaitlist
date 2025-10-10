@@ -33,7 +33,7 @@ type AnyReco = any;
 export function detectConflicts(
   selected: string[],
   items: AnyReco[],
-  snapshot: Snapshot
+  snapshot: any
 ): ConflictResult {
   const warnings: string[] = [];
   const invalid: string[] = [];
