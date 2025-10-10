@@ -1,3 +1,4 @@
+import { runEngine as runEngineLocal } from './engine';
 export * from './types';
 export { evalPredicate } from './dsl';
 export { runEngine, buildRecommendations } from './engine';
@@ -14,6 +15,6 @@ export function buildRecommendationsLegacy(profile: any, entities: any[] = [], i
     entities: (entities || []).map((e: any) => ({ type: String(e?.type || '').toLowerCase().includes('s') ? 'S-Corp' : String(e?.type || '').toLowerCase().includes('part') ? 'Partnership' : 'LLC' })),
     settings: { year: profile?.year || new Date().getFullYear(), states: profile?.primaryState ? [profile.primaryState] : [] },
   };
-  const items = runEngine(snapshot);
+  const items = runEngineLocal(snapshot);
   return items.map((i: any) => ({ strategyId: i.code, savingsEst: i.savingsEst, steps: i.steps }));
 }
