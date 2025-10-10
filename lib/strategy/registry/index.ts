@@ -1,8 +1,7 @@
 // lib/strategy/registry/index.ts
-import { StrategyRegistryItem } from '../types';
 
 // Registry for MVP: a few representative strategies. Expand iteratively.
-export const STRATEGY_REGISTRY: StrategyRegistryItem[] = [
+export const STRATEGY_REGISTRY = [
   {
     id: 'qbi_199a',
     name: '§199A Qualified Business Income (QBI)',
