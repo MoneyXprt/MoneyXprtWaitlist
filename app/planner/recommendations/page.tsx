@@ -2,12 +2,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { usePlanner } from '@/lib/strategy/ui/plannerStore';
 import { toEngineSnapshot, usePlannerSnapshot } from '@/lib/strategy/ui/plannerStore';
 import { fmtUSD } from '@/lib/ui/format';
 import RiskBadge from '@/lib/ui/RiskBadge';
-import StrategyCard from '@/components/planner/StrategyCard';
+import RecommendationCard from '@/components/RecommendationCard';
 import Link from 'next/link';
+import { usePlannerStore } from '@/lib/store/planner';
 
 
 type Row = {
@@ -30,6 +32,10 @@ export default function RecommendationsPage() {
   const [err, setErr] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<'impact' | 'risk'>('impact');
   const [toast, setToast] = useState<string | null>(null);
+  const [stateFilter, setStateFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const scenario = usePlannerStore();
+  const params = useSearchParams();
 
   const snapshot = useMemo(() => toEngineSnapshot(state.data), [state.data]);
 
@@ -57,17 +63,50 @@ export default function RecommendationsPage() {
       }
     }
     run();
+    // If nothing loads, auto-try demo once
+    // Wait a tick to let first fetch complete
+    const t = setTimeout(async () => {
+      if (!mounted) return;
+      if (rows.length === 0 || params?.get('demo') === '1') {
+        const demo = {
+          settings: { states: ['CA'], year: new Date().getFullYear() },
+          profile: { filingStatus: 'Single' },
+          income: { w2: 300000, k1: 120000 },
+          entities: [{ type: 'S-Corp' }],
+          properties: [{ type: 'rental', basis: 450000 }],
+        };
+        try {
+          const resp = await fetch('/api/plan/recommend', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ snapshot: demo })
+          });
+          const data = await resp.json();
+          if (resp.ok && (data?.items || []).length > 0) {
+            setRows(data.items);
+            dispatch({ type: 'setRecoItems', items: data.items });
+          }
+        } catch {}
+      }
+    }, 400);
     return () => {
       mounted = false;
+      clearTimeout(t);
     };
   }, [snapshot, state.includeHighRisk, dispatch]);
 
+  const filtered = useMemo(() => {
+    let list = [...rows];
+    if (stateFilter !== 'all') list = list.filter((r: any) => (r.states || []).includes(stateFilter));
+    if (categoryFilter !== 'all') list = list.filter((r) => r.category === categoryFilter);
+    return list;
+  }, [rows, stateFilter, categoryFilter]);
+
   const sorted = useMemo(() => {
-    const copy = [...rows];
+    const copy = [...filtered];
     if (sortKey === 'impact') copy.sort((a, b) => (b.savingsEst || 0) - (a.savingsEst || 0));
-    else copy.sort((a, b) => (b.risk || 0) - (a.risk || 0));
+    else if (sortKey === 'risk') copy.sort((a, b) => (b.risk || 0) - (a.risk || 0));
+    else copy.sort((a, b) => (a.category || '').localeCompare(b.category || ''));
     return copy;
-  }, [rows, sortKey]);
+  }, [filtered, sortKey]);
 
   const selectedItems = useMemo(() => {
     const byId: Record<string, Row> = {};
@@ -87,6 +126,21 @@ export default function RecommendationsPage() {
             <select value={sortKey} onChange={(e) => setSortKey(e.target.value as any)} className="border rounded px-2 py-1">
               <option value="impact">Impact</option>
               <option value="risk">Risk</option>
+              <option value="category">Category</option>
+            </select>
+          </label>
+          <label className="flex items-center gap-2">
+            <span>State</span>
+            <select value={stateFilter} onChange={(e) => setStateFilter(e.target.value)} className="border rounded px-2 py-1">
+              <option value="all">All</option>
+              {['CA','NY','IL','MN'].map((s) => (<option key={s} value={s}>{s}</option>))}
+            </select>
+          </label>
+          <label className="flex items-center gap-2">
+            <span>Category</span>
+            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="border rounded px-2 py-1">
+              <option value="all">All</option>
+              {Array.from(new Set(rows.map((r) => r.category))).map((c) => (<option key={c} value={c}>{c}</option>))}
             </select>
           </label>
           <label className="flex items-center gap-2">
@@ -115,11 +169,14 @@ export default function RecommendationsPage() {
           {!loading && rows.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
               {sorted.map((r) => (
-                <StrategyCard
+                <RecommendationCard
                   key={(r as any).code || (r as any).strategyId}
-                  item={{ ...r, docs: (r as any).docs }}
+                  item={{ ...(r as any), code: (r as any).code || (r as any).strategyId }}
+                  // Add action handled via inner component + store
                   onAdd={() => {
-                    dispatch({ type: 'select', code: (r as any).code || r.strategyId });
+                    const code = (r as any).code || r.strategyId;
+                    scenario.add({ code, name: r.name, savingsEst: r.savingsEst, states: (r as any).states, risk: r.risk });
+                    dispatch({ type: 'select', code });
                     setToast('Added to Scenario');
                     setTimeout(() => setToast(null), 1500);
                   }}
@@ -130,19 +187,19 @@ export default function RecommendationsPage() {
         </div>
         <aside className="md:col-span-1">
           <div className="rounded border p-3 text-sm">
-            <div className="font-semibold mb-2">Selected ({state.selectedStrategies.length})</div>
-            {state.selectedStrategies.length === 0 ? (
+            <div className="font-semibold mb-2">Selected ({scenario.selected.length})</div>
+            {scenario.selected.length === 0 ? (
               <p className="text-neutral-600">No strategies selected.</p>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {state.selectedStrategies.map((c) => (
-                  <span key={c} className="px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    {c}
+                {scenario.selected.map((it) => (
+                  <span key={it.code} className="px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {it.name}
                   </span>
                 ))}
               </div>
             )}
-            <div className="mt-3 text-sm text-neutral-700">Total Savings: <span className="font-semibold">{fmtUSD(selectedTotal)}</span></div>
+            <div className="mt-3 text-sm text-neutral-700">Total Savings: <span className="font-semibold">{fmtUSD(scenario.total())}</span></div>
             <div className="mt-3">
               <a href="/planner/scenario" className="rounded bg-emerald-700 text-white px-3 py-2 inline-block">
                 Build Scenario
