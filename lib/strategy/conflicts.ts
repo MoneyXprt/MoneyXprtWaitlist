@@ -24,13 +24,11 @@ export function findConflicts(codes: string[]): Conflict[] {
 }
 
 // ---------- Pass 5: richer conflict detector (warnings + invalid) ----------
-import type { Snapshot } from './ui/plannerStore';
-import type { RecommendationItem as ComplexRecommendationItem } from './types';
-import type { RecommendationItem as MiniRecommendationItem } from './reco';
+import type { Snapshot } from './types';
 
 export type ConflictResult = { warnings: string[]; invalid: string[] };
 
-type AnyReco = ComplexRecommendationItem | MiniRecommendationItem | any;
+type AnyReco = any;
 
 export function detectConflicts(
   selected: string[],
