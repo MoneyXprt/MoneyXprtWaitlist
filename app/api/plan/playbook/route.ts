@@ -23,7 +23,7 @@ export async function POST(req: Request) {
           code,
           name: res.name || meta.name,
           steps: (res.steps || []) as string[],
-          docs: (coreMeta?.docs as any) || ((meta.requiredInputs as any) || []),
+          docs: (coreMeta?.docs as any) || (((meta as any).docs || (meta as any).requiredInputs) || []),
           deadlines: [],
           riskNotes: [`Risk: ${res.risk ?? meta.riskLevel ?? 0}`],
           savingsEst: res.savingsEst || 0,
