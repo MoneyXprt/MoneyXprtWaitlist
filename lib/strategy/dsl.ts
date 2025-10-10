@@ -1,5 +1,16 @@
 // lib/strategy/dsl.ts
-import { DslNode } from './types';
+// Local DSL node typing to keep this module self-contained
+export type DslNode =
+  | { and: DslNode[] }
+  | { or: DslNode[] }
+  | { not: DslNode }
+  | { gt: [string, number] }
+  | { gte: [string, number] }
+  | { lt: [string, number] }
+  | { lte: [string, number] }
+  | { eq: [string, any] }
+  | { in: [string, (string | number | boolean | null)[]] }
+  | { exists: [string] };
 
 // Resolve a dotted path like "profile.agiEstimate" from a context object.
 function getPath(obj: any, path: string): any {
@@ -63,4 +74,3 @@ export function evalPredicate(node: DslNode, ctx: Record<string, any>): boolean 
       return false;
   }
 }
-
