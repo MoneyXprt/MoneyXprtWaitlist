@@ -3,7 +3,9 @@ type StrategyCalcFn = (ctx: any) => any;
 
 // Estimate tax savings from maxing employee 401(k) deferrals.
 export const retirementMaxGap: StrategyCalcFn = (ctx) => {
-  const w2Income = (ctx.income || []).filter((i) => i.source === 'w2').reduce((a, b) => a + (b.amount || 0), 0);
+  const w2Income = (ctx.income || [])
+    .filter((i: any) => i?.source === 'w2')
+    .reduce((a: number, b: any) => a + (Number(b?.amount) || 0), 0);
   if (w2Income <= 0) return null;
   const limit = 23000; // 2025 employee deferral
   const current = 0; // unknown in snapshot; assume not maxed
