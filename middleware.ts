@@ -10,12 +10,12 @@ export async function middleware(request: NextRequest) {
   })
 
   // Skip authentication in development mode
-  let user = env.NEXT_PUBLIC_SKIP_AUTH === 'true' ? { id: 'dev-user' } : null
+  let user = env.public.NEXT_PUBLIC_SKIP_AUTH === 'true' ? { id: 'dev-user' } : null
   
-  if (!env.NEXT_PUBLIC_SKIP_AUTH) {
+  if (!env.public.NEXT_PUBLIC_SKIP_AUTH) {
     const supabase = createServerClient(
-      env.NEXT_PUBLIC_SUPABASE_URL,
-      env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      env.public.NEXT_PUBLIC_SUPABASE_URL!,
+      env.public.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           get(name: string) {

@@ -1,53 +1,46 @@
-import { z } from 'zod'
+import { z } from "zod";
 
-const PublicSchema = z.object({
+// Aligns with requested structure; extend with repo flags we use.
+const publicSchema = z.object({
   NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
-  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
-  NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
+  NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY: z.string().optional(),
+  NEXT_PUBLIC_STRIPE_PRICE_PRO_ANNUAL: z.string().optional(),
+  // repo feature flags
   NEXT_PUBLIC_ENABLE_PLANNER: z.string().optional(),
   NEXT_PUBLIC_SKIP_AUTH: z.string().optional(),
   NEXT_PUBLIC_SHOW_DEBUG: z.string().optional(),
-})
+});
 
-const ServerSchema = z.object({
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
-  OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required'),
-  STRIPE_SECRET_KEY: z.string().min(1, 'STRIPE_SECRET_KEY is required'),
-  STRIPE_WEBHOOK_SECRET: z.string().min(1, 'STRIPE_WEBHOOK_SECRET is required'),
-  PORT: z.string().optional(),
+const serverSchema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  OPENAI_API_KEY: z.string().optional(),
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  PLAID_CLIENT_ID: z.string().optional(),
+  PLAID_SECRET: z.string().optional(),
+  // repo-specific
+  DATABASE_URL: z.string().optional(),
   START_EXPRESS: z.string().optional(),
-})
+  PORT: z.string().optional(),
+});
 
-const isServer = typeof window === 'undefined'
+export const env = {
+  public: publicSchema.parse(process.env),
+  server: serverSchema.parse(process.env),
+};
 
-const raw = process.env as Record<string, string | undefined>
-
-const publicParsed = PublicSchema.safeParse(raw)
-if (!publicParsed.success) {
-  // Fail fast in all environments (public vars are required to boot the app)
-  const issues = publicParsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ')
-  throw new Error(`Invalid public environment: ${issues}`)
-}
-
-let serverParsed: z.SafeParseReturnType<any, any> = { success: true, data: {} }
-if (isServer) {
-  serverParsed = ServerSchema.safeParse(raw)
-  if (!serverParsed.success) {
-    const issues = serverParsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ')
-    throw new Error(`Invalid server environment: ${issues}`)
+/**
+ * Call this inside the specific route/feature that needs certain vars.
+ * Example: assertEnv(["OPENAI_API_KEY"]);
+ */
+export function assertEnv<K extends keyof typeof env.server>(keys: K[]) {
+  for (const k of keys) {
+    const v = env.server[k];
+    if (!v) throw new Error(`Missing required env: ${String(k)}`);
   }
 }
 
-// Compute canonical site URL (prefer NEXT_PUBLIC_APP_URL, else NEXT_PUBLIC_SITE_URL)
-const SITE_URL = publicParsed.data.NEXT_PUBLIC_APP_URL || publicParsed.data.NEXT_PUBLIC_SITE_URL || ''
-
-export const env = {
-  ...publicParsed.data,
-  ...(serverParsed.success ? serverParsed.data : {}),
-  SITE_URL,
-}
-
 export type Env = typeof env
-

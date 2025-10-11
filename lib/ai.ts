@@ -8,7 +8,7 @@ import { redactPII, sanitizeForAI, safeLog } from './redact'
  * Designed for privacy-compliant financial AI interactions
  */
 
-const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY })
+const openai = new OpenAI({ apiKey: env.server.OPENAI_API_KEY })
 
 export interface AIRequest {
   prompt: string
@@ -63,7 +63,7 @@ export async function secureAIRequest(request: AIRequest): Promise<AIResponse> {
 
   try {
     // Validate API key
-    if (!env.OPENAI_API_KEY) {
+    if (!env.server.OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY not configured')
     }
 

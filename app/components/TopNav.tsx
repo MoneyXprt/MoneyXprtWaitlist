@@ -18,7 +18,7 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
 }
 
 export default function TopNav() {
-  const showPlanner = env.NEXT_PUBLIC_ENABLE_PLANNER === undefined || env.NEXT_PUBLIC_ENABLE_PLANNER === 'true';
+  const showPlanner = env.public.NEXT_PUBLIC_ENABLE_PLANNER === undefined || env.public.NEXT_PUBLIC_ENABLE_PLANNER === 'true';
   return (
     <nav className="hidden sm:flex items-center gap-6" aria-label="Primary">
       <NavLink href="/">Home</NavLink>

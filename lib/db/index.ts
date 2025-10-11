@@ -6,7 +6,7 @@ let _db: ReturnType<typeof drizzle> | null = null;
 
 export function getDb() {
   if (_db) return _db;
-  const sql = neon(env.DATABASE_URL);
+  const sql = neon(env.server.DATABASE_URL!);
   _db = drizzle(sql);
   return _db;
 }

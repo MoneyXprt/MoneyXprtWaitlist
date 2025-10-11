@@ -12,16 +12,16 @@ let browserClient: SupabaseClientType | null = null;
 // Server-side admin client (use Service Role; never expose to browser)
 export function sbAdmin(): SupabaseClientType {
   // Return mock client in development mode
-  if (env.NEXT_PUBLIC_SKIP_AUTH === 'true') {
+  if (env.public.NEXT_PUBLIC_SKIP_AUTH === 'true') {
     return createClient('http://localhost:54321', 'dummy-key', {
       auth: { persistSession: false },
     }) as SupabaseClientType;
   }
   if (!adminClient) {
-    if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (!env.public.NEXT_PUBLIC_SUPABASE_URL || !env.server.SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Missing Supabase URL or Service Role Key in environment variables');
     }
-    adminClient = createClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    adminClient = createClient<Database>(env.public.NEXT_PUBLIC_SUPABASE_URL!, env.server.SUPABASE_SERVICE_ROLE_KEY!, {
       auth: { persistSession: false },
     });
   }
@@ -31,7 +31,7 @@ export function sbAdmin(): SupabaseClientType {
 // Browser client (safe to expose the *anon* key only)
 export function sbBrowser(): SupabaseClientType {
   // Return mock client in development mode
-  if (env.NEXT_PUBLIC_SKIP_AUTH === 'true') {
+  if (env.public.NEXT_PUBLIC_SKIP_AUTH === 'true') {
     return createClient('http://localhost:54321', 'dummy-key', {
       auth: {
         persistSession: true,
@@ -41,10 +41,10 @@ export function sbBrowser(): SupabaseClientType {
     }) as SupabaseClientType;
   }
   if (!browserClient) {
-    if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    if (!env.public.NEXT_PUBLIC_SUPABASE_URL || !env.public.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       throw new Error('Missing Supabase URL or Anon Key in environment variables');
     }
-    browserClient = createClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+    browserClient = createClient<Database>(env.public.NEXT_PUBLIC_SUPABASE_URL!, env.public.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,

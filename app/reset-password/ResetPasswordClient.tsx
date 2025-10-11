@@ -9,8 +9,8 @@ export default function ResetPasswordClient() {
   const router = useRouter();
   const [supabase] = useState(() =>
     createBrowserClient(
-      env.NEXT_PUBLIC_SUPABASE_URL,
-      env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      env.public.NEXT_PUBLIC_SUPABASE_URL!,
+      env.public.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
   );
 

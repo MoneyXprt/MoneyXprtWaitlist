@@ -13,8 +13,8 @@ export default function SimpleAuthWidget() {
   useEffect(() => {
     setMounted(true);
     const supabase = createBrowserClient(
-      env.NEXT_PUBLIC_SUPABASE_URL,
-      env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      env.public.NEXT_PUBLIC_SUPABASE_URL!,
+      env.public.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
     supabase.auth.getUser().then(({ data }) => {
       setEmail(data.user?.email ?? null);
@@ -30,8 +30,8 @@ export default function SimpleAuthWidget() {
     <form
       action={async () => {
         const supabase = createBrowserClient(
-          env.NEXT_PUBLIC_SUPABASE_URL,
-          env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+          env.public.NEXT_PUBLIC_SUPABASE_URL!,
+          env.public.NEXT_PUBLIC_SUPABASE_ANON_KEY!
         );
         await supabase.auth.signOut();
         router.refresh();

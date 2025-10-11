@@ -1,15 +1,17 @@
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { env } from '@/lib/config/env';
+import { env, assertEnv } from '@/lib/config/env';
 
 export const runtime = 'nodejs';        // ensure Node runtime (not Edge)
 export const dynamic = 'force-dynamic'; // webhooks shouldn't be cached
 
-const stripe = new Stripe(env.STRIPE_SECRET_KEY); // no apiVersion override
+const stripe = new Stripe(env.server.STRIPE_SECRET_KEY || ''); // no apiVersion override
 
 export async function POST(req: Request) {
   try {
+    // Ensure required secrets exist for webhook verification
+    assertEnv(["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"]);
     const sig = (await headers()).get('stripe-signature');
     if (!sig) {
       return NextResponse.json({ error: 'Missing Stripe signature' }, { status: 400 });
@@ -23,7 +25,7 @@ export async function POST(req: Request) {
       event = stripe.webhooks.constructEvent(
         rawBody,
         sig,
-        env.STRIPE_WEBHOOK_SECRET!
+        env.server.STRIPE_WEBHOOK_SECRET!
       );
     } catch (err: any) {
       return NextResponse.json(

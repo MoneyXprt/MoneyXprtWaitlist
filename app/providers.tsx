@@ -17,8 +17,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createBrowserClient(
-    env.NEXT_PUBLIC_SUPABASE_URL,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    env.public.NEXT_PUBLIC_SUPABASE_URL!,
+    env.public.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
   useEffect(() => {
