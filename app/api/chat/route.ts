@@ -3,23 +3,19 @@ import OpenAI from 'openai'
 import { env, assertEnv } from '@/lib/config/env'
 import log from '@/lib/logger'
 
-const openai = new OpenAI({
-  apiKey: env.OPENAI_API_KEY,
-})
+// Ensure the API key exists at runtime and initialize client once per module
+assertEnv(["OPENAI_API_KEY"])
+const openai = new OpenAI({ apiKey: env.server.OPENAI_API_KEY! })
 
 export async function POST(request: NextRequest) {
   try {
-    if (!env.server.OPENAI_API_KEY) {
-      return NextResponse.json({ error: 'OPENAI_API_KEY is not set' }, { status: 500 })
-    }
-    const client = new OpenAI({ apiKey: env.server.OPENAI_API_KEY })
     const { question } = await request.json()
 
     if (!question) {
       return NextResponse.json({ error: 'Question is required' }, { status: 400 })
     }
 
-    const completion = await client.chat.completions.create({
+    const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
         {
