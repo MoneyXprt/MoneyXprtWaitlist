@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import type { PlanInput } from '@/lib/types';
 import { EMPTY_PLAN } from '@/lib/types';
-import { usePlanner } from '@/lib/strategy/ui/plannerStore';
+import { usePlannerStore } from '@/lib/store/planner';
 
 import Profile from './steps/Profile';
 import Compensation from './steps/Compensation';
@@ -17,8 +17,9 @@ import Risk from './steps/Risk';
 import Review from './steps/Review';
 
 export default function Wizard() {
-  const { state, dispatch } = usePlanner();
-  const [data, setData] = useState<PlanInput>(state.data ?? EMPTY_PLAN);
+  const storeData = usePlannerStore((s) => s.data);
+  const setAll = usePlannerStore((s) => s.setAll);
+  const [data, setData] = useState<PlanInput>(storeData ?? EMPTY_PLAN);
   const [step, setStep] = useState<number>(1);
   const [loading, setLoading] = useState(false);
   const [recs, setRecs] = useState<string[] | null>(null);
@@ -30,8 +31,8 @@ export default function Wizard() {
 
   // Persist to planner store on change
   useEffect(() => {
-    dispatch({ type: 'setAll', payload: data });
-  }, [data, dispatch]);
+    setAll(data);
+  }, [data, setAll]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();

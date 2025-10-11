@@ -1,6 +1,7 @@
 'use client';
 
 import { createBrowserClient } from '@supabase/ssr';
+import { env } from '@/lib/config/env';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -8,8 +9,8 @@ export default function ResetPasswordClient() {
   const router = useRouter();
   const [supabase] = useState(() =>
     createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      env.NEXT_PUBLIC_SUPABASE_URL,
+      env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     )
   );
 

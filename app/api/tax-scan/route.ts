@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import log from '@/lib/logger';
 import type { NextRequest } from 'next/server';
 import { TaxInfo } from '@/lib/taxStrategies';
 
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ strategies: dummyStrategies });
   } catch (error) {
-    console.error('Error in tax scan endpoint:', error);
+    log.error('Error in tax scan endpoint', { error: (error as any)?.message || String(error) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

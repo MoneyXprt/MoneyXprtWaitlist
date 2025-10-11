@@ -3,8 +3,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { usePlanner } from '@/lib/strategy/ui/plannerStore';
-import { toEngineSnapshot, usePlannerSnapshot } from '@/lib/strategy/ui/plannerStore';
+import { toEngineSnapshot, usePlannerSnapshot } from '@/lib/strategy/ui/snapshots';
 import { fmtUSD } from '@/lib/ui/format';
 import RiskBadge from '@/lib/ui/RiskBadge';
 import RecommendationCard from '@/components/RecommendationCard';
@@ -25,7 +24,10 @@ type Row = {
 };
 
 export default function RecommendationsPage() {
-  const { state, dispatch } = usePlanner();
+  const data = usePlannerStore((s) => s.data);
+  const includeHighRisk = usePlannerStore((s) => s.includeHighRisk);
+  const toggleHighRisk = usePlannerStore((s) => s.toggleHighRisk);
+  const setRecoItems = usePlannerStore((s) => s.setRecoItems);
   const snapshotPass3 = usePlannerSnapshot();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
@@ -37,7 +39,7 @@ export default function RecommendationsPage() {
   const scenario = usePlannerStore();
   const params = useSearchParams();
 
-  const snapshot = useMemo(() => toEngineSnapshot(state.data), [state.data]);
+  const snapshot = useMemo(() => toEngineSnapshot(data), [data]);
 
   useEffect(() => {
     let mounted = true;
@@ -48,13 +50,13 @@ export default function RecommendationsPage() {
         const res = await fetch('/api/plan/recommend', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ snapshot, includeHighRisk: state.includeHighRisk }),
+          body: JSON.stringify({ snapshot, includeHighRisk }),
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json?.error || 'Failed');
         if (mounted) {
           setRows(json.items || []);
-          dispatch({ type: 'setRecoItems', items: json.items || [] });
+          setRecoItems(json.items || []);
         }
       } catch (e: any) {
         if (mounted) setErr(e?.message || 'Failed');
@@ -82,7 +84,7 @@ export default function RecommendationsPage() {
           const data = await resp.json();
           if (resp.ok && (data?.items || []).length > 0) {
             setRows(data.items);
-            dispatch({ type: 'setRecoItems', items: data.items });
+            setRecoItems(data.items);
           }
         } catch {}
       }
@@ -91,7 +93,7 @@ export default function RecommendationsPage() {
       mounted = false;
       clearTimeout(t);
     };
-  }, [snapshot, state.includeHighRisk, dispatch]);
+  }, [snapshot, includeHighRisk, setRecoItems]);
 
   const filtered = useMemo(() => {
     let list = [...rows];
@@ -111,15 +113,16 @@ export default function RecommendationsPage() {
   const selectedItems = useMemo(() => {
     const byId: Record<string, Row> = {};
     for (const r of rows) byId[(r as any).code || (r as any).strategyId] = r as any;
-    return state.selectedStrategies.map((c) => byId[c]).filter(Boolean) as Row[];
-  }, [rows, state.selectedStrategies]);
+    const codes = scenario.selected.map((s) => s.code);
+    return codes.map((c) => byId[c]).filter(Boolean) as Row[];
+  }, [rows, scenario.selected]);
 
   const selectedTotal = selectedItems.reduce((a, r) => a + (r?.savingsEst || 0), 0);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Recommendations {state.includeHighRisk && <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">High-Risk enabled</span>}</h1>
+        <h1 className="text-xl font-semibold">Recommendations {includeHighRisk && <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">High-Risk enabled</span>}</h1>
         <div className="flex items-center gap-4 text-sm">
           <label className="flex items-center gap-2">
             <span>Sort</span>
@@ -144,11 +147,7 @@ export default function RecommendationsPage() {
             </select>
           </label>
           <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={state.includeHighRisk}
-              onChange={(e) => dispatch({ type: 'toggleHighRisk', value: e.target.checked })}
-            />
+            <input type="checkbox" checked={includeHighRisk} onChange={(e) => toggleHighRisk(e.target.checked)} />
             High-Risk
           </label>
         </div>
@@ -172,14 +171,6 @@ export default function RecommendationsPage() {
                 <RecommendationCard
                   key={(r as any).code || (r as any).strategyId}
                   item={{ ...(r as any), code: (r as any).code || (r as any).strategyId }}
-                  // Add action handled via inner component + store
-                  onAdd={() => {
-                    const code = (r as any).code || r.strategyId;
-                    scenario.add({ code, name: r.name, savingsEst: r.savingsEst, states: (r as any).states, risk: r.risk });
-                    dispatch({ type: 'select', code });
-                    setToast('Added to Scenario');
-                    setTimeout(() => setToast(null), 1500);
-                  }}
                 />
               ))}
             </div>

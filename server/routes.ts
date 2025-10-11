@@ -1,8 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import OpenAI from "openai";
+import { env } from "@/lib/config/env";
+import log from "@/lib/logger";
 import { storage } from "./storage";
-import { insertWaitlistSchema } from "@/shared/schema"; // was @shared/schema
+import { insertWaitlistSchema } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -37,7 +39,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.error("Waitlist creation error:", error);
+      log.error("Waitlist creation error", { error: (error as any)?.message || String(error) });
       return res.status(500).json({ message: "Failed to join waitlist" });
     }
   });
@@ -54,7 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if OpenAI API key is present
-      if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.trim() === "") {
+      if (!env.OPENAI_API_KEY || env.OPENAI_API_KEY.trim() === "") {
         return res.json({
           response:
             "Hello! I'm MoneyXprt, your AI financial co-pilot. To provide personalized financial advice, please add a valid OpenAI API key with available credits to your environment variables. Once configured, I'll be ready to help with tax optimization, investment strategies, and wealth preservation for high-income earners.",
@@ -62,7 +64,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       try {
-        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
         const completion = await openai.chat.completions.create({
           model: "gpt-4o",
@@ -98,7 +100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw openaiError;
       }
     } catch (error) {
-      console.error("AI Assistant error:", error);
+      log.error("AI Assistant error", { error: (error as any)?.message || String(error) });
       return res.status(500).json({ error: "Failed to get AI response. Please try again." });
     }
   });

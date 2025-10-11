@@ -1,6 +1,6 @@
 // lib/strategy/calcs/basic.ts
 import { LAW_2025 } from '../law-params';
-import type { Snapshot } from '../ui/plannerStore';
+import type { Snapshot } from '../ui/snapshots';
 
 export function costSegBonus(snapshot: Snapshot) {
   const props = snapshot.properties || [];
@@ -35,4 +35,3 @@ export const BASIC_CALC_MAP: Record<string, (s: Snapshot) => { savingsEst: numbe
   qbi_199a: qbi199a,
   ptet_state: ptetState,
 };
-

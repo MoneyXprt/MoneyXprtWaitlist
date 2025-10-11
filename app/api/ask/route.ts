@@ -1,11 +1,12 @@
 // app/api/ask/route.ts
 import { NextResponse } from 'next/server';
+import { env } from '@/lib/config/env';
 import type { PlanInput } from '@/lib/types';
 import { buildRecommendations, getPlanSnapshot } from '@/lib/recommend';
 
 export async function POST(req: Request) {
   const { input, question } = (await req.json()) as { input: PlanInput; question: string };
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = env.OPENAI_API_KEY;
 
   const bullets = buildRecommendations(input);
   const snapshot = getPlanSnapshot(input);

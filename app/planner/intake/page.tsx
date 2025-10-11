@@ -1,9 +1,9 @@
 "use client";
 // app/planner/intake/page.tsx
 import Wizard from '../Wizard';
-import { usePlanner } from '@/lib/strategy/ui/plannerStore';
+import { usePlannerStore } from '@/lib/store/planner';
 import { useRouter } from 'next/navigation';
-import { buildDemoSnapshot } from '@/lib/strategy/ui/plannerStore';
+import { buildDemoSnapshot } from '@/lib/strategy/ui/snapshots';
 import { useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import LoadDemo from './LoadDemo';
@@ -11,7 +11,7 @@ import { useSearchParams } from 'next/navigation';
 
 
 function DemoLoader() {
-  const { dispatch } = usePlanner();
+  const setAll = usePlannerStore((s) => s.setAll);
   const params = useSearchParams();
   const once = useRef(false);
   useEffect(() => {
@@ -19,15 +19,16 @@ function DemoLoader() {
     const demo = params.get('demo');
     if (demo) {
       const data = buildDemoSnapshot(demo);
-      if (data) dispatch({ type: 'setAll', payload: data });
+      if (data) setAll(data);
       once.current = true;
     }
-  }, [params, dispatch]);
+  }, [params, setAll]);
   return null;
 }
 
 export default function IntakePage() {
-  const { state, dispatch } = usePlanner();
+  const data = usePlannerStore((s) => s.data);
+  const updatePath = usePlannerStore((s) => s.updatePath);
   const router = useRouter();
   return (
     <div className="space-y-2">
@@ -40,8 +41,8 @@ export default function IntakePage() {
           <label className="grid gap-1">
             <span className="font-medium">Filing status</span>
             <select
-              value={state.data.filingStatus}
-              onChange={(e) => dispatch({ type: 'updatePath', path: 'filingStatus', value: e.target.value })}
+              value={data.filingStatus}
+              onChange={(e) => updatePath('filingStatus', e.target.value)}
               className="border rounded px-2 py-1"
             >
               <option value="single">Single</option>
@@ -54,8 +55,8 @@ export default function IntakePage() {
             <span className="font-medium">Domicile state</span>
             <input
               type="text"
-              value={state.data.state}
-              onChange={(e) => dispatch({ type: 'updatePath', path: 'state', value: e.target.value })}
+              value={data.state}
+              onChange={(e) => updatePath('state', e.target.value)}
               placeholder="e.g., CA"
               className="border rounded px-2 py-1"
             />

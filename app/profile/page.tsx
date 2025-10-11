@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import type { Profile } from '@/shared/schema'
+import type { Profile } from '@/lib/db/schema'
 
 export default function ProfilePage() {
   const { user, loading } = useSession()

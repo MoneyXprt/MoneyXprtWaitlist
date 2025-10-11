@@ -11,7 +11,10 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
-    "test": "vitest -c tests/strategy/vitest.config.ts"
+    "test": "vitest -c tests/strategy/vitest.config.ts",
+    "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
+    "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
+    "env:check": "tsx scripts/env-check.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { env } from '@/lib/config/env'
+import log from '@/lib/logger'
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: env.OPENAI_API_KEY,
 })
 
 export async function POST(request: NextRequest) {
@@ -45,7 +47,7 @@ Keep responses concise but comprehensive, typically 2-3 paragraphs unless the qu
 
     return NextResponse.json({ response })
   } catch (error: any) {
-    console.error('OpenAI API error:', error)
+    log.error('OpenAI API error', { error: error?.message || String(error) })
     
     if (error.code === 'insufficient_quota') {
       return NextResponse.json({ 

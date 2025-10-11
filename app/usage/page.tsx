@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useSession } from '@/lib/useSession'
-import type { UsageDaily } from '@/shared/schema'
+import type { UsageDaily } from '@/lib/db/schema'
 
 // Helper function to safely parse numbers
 const safeParseInt = (value: string | null | undefined): number => {

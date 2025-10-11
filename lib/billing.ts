@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient'
-import type { Billing } from '@/shared/schema'
+import type { Subscription } from '@/lib/db/schema'
 
-export async function getUserBilling(userId: string): Promise<Billing | null> {
+export async function getUserBilling(userId: string): Promise<Subscription | null> {
   try {
     const { data, error } = await supabase
       .from('billing')
@@ -21,6 +21,6 @@ export async function getUserBilling(userId: string): Promise<Billing | null> {
   }
 }
 
-export function isUserSubscribed(billing: Billing | null): boolean {
+export function isUserSubscribed(billing: Subscription | null): boolean {
   return billing?.isActive === 'true'
 }

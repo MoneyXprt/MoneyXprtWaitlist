@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import type { PlanInput } from '@/lib/types';
 import { buildRecommendations, getPlanSnapshot } from '@/lib/recommend';
+import { env } from '@/lib/config/env';
 
 export async function POST(req: Request) {
   const { input, wantNarrative } = (await req.json()) as { input: PlanInput; wantNarrative?: boolean };
@@ -10,12 +11,12 @@ export async function POST(req: Request) {
   const snapshot = getPlanSnapshot(input);
 
   let narrative = '';
-  if (wantNarrative && process.env.OPENAI_API_KEY) {
+  if (wantNarrative && env.OPENAI_API_KEY) {
     try {
       const resp = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          Authorization: `Bearer ${env.OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -66,7 +67,7 @@ export async function GET() {
     {
       ok: true,
       message: 'POST to this endpoint with { input: PlanInput; wantNarrative?: boolean }',
-      exampleCurl: `curl -X POST -H 'Content-Type: application/json' --data '${JSON.stringify(sample)}' ${process.env.NEXT_PUBLIC_APP_URL || ''}/api/plan`,
+      exampleCurl: `curl -X POST -H 'Content-Type: application/json' --data '${JSON.stringify(sample)}' ${(env.SITE_URL || '').replace(/\/$/, '')}/api/plan`,
     },
     { status: 200 }
   );

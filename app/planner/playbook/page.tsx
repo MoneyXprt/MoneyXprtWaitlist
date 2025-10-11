@@ -2,14 +2,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
-import { usePlanner } from '@/lib/strategy/ui/plannerStore';
+import { usePlannerStore } from '@/lib/store/planner';
 import { fmtUSD } from '@/lib/ui/format';
-import { toEngineSnapshot } from '@/lib/strategy/ui/plannerStore';
+import { toEngineSnapshot } from '@/lib/strategy/ui/snapshots';
 
 
 export default function PlaybookPage() {
-  const { state } = usePlanner();
-  const snapshot = useMemo(() => toEngineSnapshot(state.data), [state.data]);
+  const data = usePlannerStore((s) => s.data);
+  const selected = usePlannerStore((s) => s.selected);
+  const includeHighRisk = usePlannerStore((s) => s.includeHighRisk);
+  const snapshot = useMemo(() => toEngineSnapshot(data), [data]);
   const [playbook, setPlaybook] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -21,7 +23,7 @@ export default function PlaybookPage() {
         const res = await fetch('/api/plan/playbook', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ snapshot, selected: state.selectedStrategies, includeHighRisk: state.includeHighRisk }),
+          body: JSON.stringify({ snapshot, selected: selected.map((s) => s.code), includeHighRisk }),
         });
         const json = await res.json();
         if (mounted) setPlaybook(json);
@@ -33,7 +35,7 @@ export default function PlaybookPage() {
     return () => {
       mounted = false;
     };
-  }, [snapshot, state.selectedStrategies, state.includeHighRisk]);
+  }, [snapshot, selected, includeHighRisk]);
 
   async function exportFile() {
     if (!playbook) return;
@@ -54,7 +56,7 @@ export default function PlaybookPage() {
     URL.revokeObjectURL(url);
   }
 
-  if ((state.selectedStrategies || []).length === 0) {
+  if ((selected || []).length === 0) {
     return (
       <div className="space-y-4">
         <h1 className="text-xl font-semibold">Playbook</h1>

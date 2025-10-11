@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '@/shared/schema'; // Adjust path to your schema.ts
+import { Database } from '@/lib/db/schema';
+import { env } from '@/lib/config/env';
 
 // Type for the Supabase client with your database schema
 type SupabaseClientType = SupabaseClient<Database>;
@@ -11,16 +12,16 @@ let browserClient: SupabaseClientType | null = null;
 // Server-side admin client (use Service Role; never expose to browser)
 export function sbAdmin(): SupabaseClientType {
   // Return mock client in development mode
-  if (process.env.NEXT_PUBLIC_SKIP_AUTH === 'true') {
+  if (env.NEXT_PUBLIC_SKIP_AUTH === 'true') {
     return createClient('http://localhost:54321', 'dummy-key', {
       auth: { persistSession: false },
     }) as SupabaseClientType;
   }
   if (!adminClient) {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Missing Supabase URL or Service Role Key in environment variables');
     }
-    adminClient = createClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    adminClient = createClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
     });
   }
@@ -30,7 +31,7 @@ export function sbAdmin(): SupabaseClientType {
 // Browser client (safe to expose the *anon* key only)
 export function sbBrowser(): SupabaseClientType {
   // Return mock client in development mode
-  if (process.env.NEXT_PUBLIC_SKIP_AUTH === 'true') {
+  if (env.NEXT_PUBLIC_SKIP_AUTH === 'true') {
     return createClient('http://localhost:54321', 'dummy-key', {
       auth: {
         persistSession: true,
@@ -40,10 +41,10 @@ export function sbBrowser(): SupabaseClientType {
     }) as SupabaseClientType;
   }
   if (!browserClient) {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       throw new Error('Missing Supabase URL or Anon Key in environment variables');
     }
-    browserClient = createClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    browserClient = createClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,

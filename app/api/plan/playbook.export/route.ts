@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
+import { PlaybookExportBodySchema } from '@/lib/api/schemas';
 export const runtime = 'nodejs';
 
 export const dynamic = 'force-dynamic';
@@ -8,9 +9,10 @@ export async function POST(req: Request) {
   try {
     const url = new URL(req.url);
     const desired = url.searchParams.get('filename') || '';
-    const body = (await req.json()) as any;
-    const playbook = body?.playbook;
-    if (!playbook) return NextResponse.json({ error: 'Missing playbook' }, { status: 400 });
+    const json = await req.json();
+    const parsed = PlaybookExportBodySchema.safeParse(json);
+    if (!parsed.success) return NextResponse.json({ error: 'Invalid body', issues: parsed.error.issues }, { status: 400 });
+    const { playbook } = parsed.data;
 
     // Prefer PDF (pdf-lib available). Otherwise, fall back to HTML.
     try {

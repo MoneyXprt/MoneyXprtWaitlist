@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import log from '@/lib/logger';
 import type { TaxInfo } from '@/lib/taxStrategies';
 import { analyzeTaxStrategies } from '@/lib/taxStrategies';
 
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
       }
     });
   } catch (error) {
-    console.error('Error analyzing tax strategies:', error);
+    log.error('Error analyzing tax strategies', { error: (error as any)?.message || String(error) });
     return NextResponse.json(
       { error: 'Failed to analyze tax strategies' },
       { status: 500 }

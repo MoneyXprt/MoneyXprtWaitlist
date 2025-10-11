@@ -2,13 +2,13 @@
 // app/planner/layout.tsx
 import Link from 'next/link';
 import { useState } from 'react';
-import { PlannerProvider } from '@/lib/strategy/ui/plannerStore';
 import { usePathname } from 'next/navigation';
-import { usePlanner } from '@/lib/strategy/ui/plannerStore';
+import { usePlannerStore } from '@/lib/store/planner';
 
 function SubNav() {
   const path = usePathname();
-  const { state, dispatch } = usePlanner();
+  const includeHighRisk = usePlannerStore((s) => s.includeHighRisk);
+  const toggleHighRisk = usePlannerStore((s) => s.toggleHighRisk);
   const [showAck, setShowAck] = useState(false);
   const onToggle = (checked: boolean) => {
     if (checked) {
@@ -18,7 +18,7 @@ function SubNav() {
         return;
       }
     }
-    dispatch({ type: 'toggleHighRisk', value: checked });
+    toggleHighRisk(checked);
   };
   const link = (href: string, label: string) => (
     <Link
@@ -41,11 +41,7 @@ function SubNav() {
         {link('/planner/playbook', 'Playbook')}
       </nav>
       <label className="text-sm flex items-center gap-2">
-        <input
-          type="checkbox"
-          checked={state.includeHighRisk}
-          onChange={(e) => onToggle(e.target.checked)}
-        />
+        <input type="checkbox" checked={includeHighRisk} onChange={(e) => onToggle(e.target.checked)} />
         High-Risk
       </label>
       {showAck && (
@@ -64,7 +60,7 @@ function SubNav() {
                   expires.setFullYear(expires.getFullYear() + 1);
                   document.cookie = `planner_high_risk_ack=1; path=/; expires=${expires.toUTCString()}`;
                   setShowAck(false);
-                  dispatch({ type: 'toggleHighRisk', value: true });
+                  toggleHighRisk(true);
                 }}
               >
                 Proceed
@@ -79,16 +75,14 @@ function SubNav() {
 
 export default function PlannerLayout({ children }: { children: React.ReactNode }) {
   return (
-    <PlannerProvider>
-      <div className="space-y-6">
-        <SubNav />
-        <div role="note" className="bg-amber-50 border-b text-amber-900 text-sm">
-          <div className="container mx-auto p-3">
-            This Planner provides educational insights only and is not legal or tax advice. Consult a qualified CPA/attorney before implementing strategies.
-          </div>
+    <div className="space-y-6">
+      <SubNav />
+      <div role="note" className="bg-amber-50 border-b text-amber-900 text-sm">
+        <div className="container mx-auto p-3">
+          This Planner provides educational insights only and is not legal or tax advice. Consult a qualified CPA/attorney before implementing strategies.
         </div>
-        {children}
       </div>
-    </PlannerProvider>
+      {children}
+    </div>
   );
 }

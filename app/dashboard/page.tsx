@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useSession } from '@/lib/useSession'
 import AIBox from '@/app/components/AIBox'
-import type { Profile } from '@/shared/schema'
+import type { Profile } from '@/lib/db/schema'
 
 export default function DashboardPage() {
   const { user, loading } = useSession()

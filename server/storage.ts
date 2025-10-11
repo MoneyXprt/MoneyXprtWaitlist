@@ -1,5 +1,3 @@
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
 import { eq } from "drizzle-orm";
 import {
   type Waitlist,
@@ -7,11 +5,11 @@ import {
   type InsertConversation,
   type Profile,
   type InsertProfile,
-  type ConversationMeta,
   waitlist,
   conversations,
   profiles,
-} from "@/shared/schema";
+} from "@/lib/db/schema";
+import { getDb } from "@/lib/db/index";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -32,11 +30,7 @@ export class DatabaseStorage implements IStorage {
   private db;
 
   constructor() {
-    if (!process.env.DATABASE_URL) {
-      throw new Error("DATABASE_URL environment variable is required");
-    }
-    const sql = neon(process.env.DATABASE_URL);
-    this.db = drizzle(sql);
+    this.db = getDb();
   }
 
   async createWaitlistEntry({ address }: { address: string }): Promise<Waitlist> {
@@ -153,15 +147,13 @@ export class MemStorage implements IStorage {
       );
     }
 
-    const meta: ConversationMeta = conversation.meta ?? {};
-
     const newConversation: Conversation = {
       id,
       userId,
       prompt,
       response,
       createdAt: new Date(),
-      meta,
+      meta: (conversation as any).meta ?? {},
     };
 
     this.conversationsList.push(newConversation);

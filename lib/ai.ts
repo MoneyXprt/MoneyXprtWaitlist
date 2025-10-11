@@ -1,4 +1,5 @@
 import OpenAI from 'openai'
+import { env } from '@/lib/config/env'
 import { sha256Hex } from './crypto'
 import { redactPII, sanitizeForAI, safeLog } from './redact'
 
@@ -7,7 +8,7 @@ import { redactPII, sanitizeForAI, safeLog } from './redact'
  * Designed for privacy-compliant financial AI interactions
  */
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY })
 
 export interface AIRequest {
   prompt: string
@@ -62,7 +63,7 @@ export async function secureAIRequest(request: AIRequest): Promise<AIResponse> {
 
   try {
     // Validate API key
-    if (!process.env.OPENAI_API_KEY) {
+    if (!env.OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY not configured')
     }
 

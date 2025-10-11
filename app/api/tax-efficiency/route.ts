@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import log from '@/lib/logger';
 import type { TaxEfficiencyInputs, TaxScenario } from '@/lib/types/tax-efficiency';
 
 const TAX_RATES_2025 = {
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
     
     return NextResponse.json({ scenarios });
   } catch (error) {
-    console.error('Tax calculation error:', error);
+    log.error('Tax calculation error', { error: (error as any)?.message || String(error) });
     return NextResponse.json(
       { error: 'Failed to calculate tax scenarios' },
       { status: 500 }

@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { env } from '@/lib/config/env';
 
 // Use the SDK's pinned API version; require your secret key from env
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
 export async function POST(req: Request) {
   try {
     const { priceId, success_url, cancel_url } = await req.json();
 
-    if (!process.env.STRIPE_SECRET_KEY) {
+    if (!env.STRIPE_SECRET_KEY) {
       return NextResponse.json(
         { error: 'STRIPE_SECRET_KEY is not set' },
         { status: 500 }
@@ -36,4 +37,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

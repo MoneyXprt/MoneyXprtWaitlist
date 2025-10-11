@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { env } from '@/lib/config/env';
 
 function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
   const path = usePathname();
@@ -17,7 +18,7 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
 }
 
 export default function TopNav() {
-  const showPlanner = process.env.NEXT_PUBLIC_ENABLE_PLANNER === undefined || process.env.NEXT_PUBLIC_ENABLE_PLANNER === 'true';
+  const showPlanner = env.NEXT_PUBLIC_ENABLE_PLANNER === undefined || env.NEXT_PUBLIC_ENABLE_PLANNER === 'true';
   return (
     <nav className="hidden sm:flex items-center gap-6" aria-label="Primary">
       <NavLink href="/">Home</NavLink>
@@ -30,4 +31,3 @@ export default function TopNav() {
     </nav>
   );
 }
-

@@ -2,9 +2,9 @@
 "use client";
 
 import { useMemo } from 'react';
-import { usePlanner } from '@/lib/strategy/ui/plannerStore';
+import { usePlannerStore } from '@/lib/store/planner';
 import { findConflicts, detectConflicts } from '@/lib/strategy/conflicts';
-import { usePlannerSnapshot } from '@/lib/strategy/ui/plannerStore';
+import { usePlannerSnapshot } from '@/lib/strategy/ui/snapshots';
 import Link from 'next/link';
 import { fmtUSD } from '@/lib/ui/format';
 import RiskBadge from '@/lib/ui/RiskBadge';
@@ -13,14 +13,17 @@ import { useRouter } from 'next/navigation';
 
 
 export default function ScenarioPage() {
-  const { state, dispatch } = usePlanner();
+  const lastRecoItems = usePlannerStore((s) => s.lastRecoItems);
+  const selected = usePlannerStore((s) => s.selected);
+  const reorder = usePlannerStore((s) => s.reorder);
+  const remove = usePlannerStore((s) => s.remove);
   const itemsById: Record<string, any> = useMemo(() => {
     const out: Record<string, any> = {};
-    for (const it of state.lastRecoItems || []) out[(it as any).code || it.strategyId] = it;
+    for (const it of lastRecoItems || []) out[(it as any).code || it.strategyId] = it;
     return out;
-  }, [state.lastRecoItems]);
+  }, [lastRecoItems]);
 
-  const codes = state.selectedStrategies;
+  const codes = selected.map((s) => s.code);
   const rows = codes.map((c) => itemsById[c]).filter(Boolean);
   const totals = rows.reduce(
     (acc, r) => ({ savings: acc.savings + (r?.savingsEst || 0), cash: acc.cash + (r?.cashOutlayEst || 0), risk: acc.risk + (r?.risk || 0) }),
@@ -68,9 +71,9 @@ export default function ScenarioPage() {
           total={totals.savings}
           onMove={(i, dir) => {
             const to = Math.max(0, Math.min(rows.length - 1, i + dir));
-            dispatch({ type: 'reorder', from: i, to });
+            reorder(i, to);
           }}
-          onRemove={(code) => dispatch({ type: 'deselect', code })}
+          onRemove={(code) => remove(code)}
           onContinue={() => router.push('/planner/playbook')}
           disabled={conflictRes.invalid.length > 0}
         />

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { ExplainGetSchema, ExplainPostSchema } from '@/lib/api/schemas';
 
 const MAP: Record<string, { title: string; description: string }> = {
   ptet_state: {
@@ -30,14 +31,17 @@ const MAP: Record<string, { title: string; description: string }> = {
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const code = searchParams.get('code') || '';
+  const parsed = ExplainGetSchema.safeParse({ code: searchParams.get('code') || undefined });
+  const code = parsed.success ? parsed.data.code || '' : '';
   const info = MAP[code] || { title: 'Strategy', description: 'Explanation coming soon.' };
   return NextResponse.json({ code, ...info });
 }
 
 export async function POST(req: Request) {
-  const { code } = (await req.json()) as { code?: string };
+  const json = await req.json();
+  const parsed = ExplainPostSchema.safeParse(json);
+  if (!parsed.success) return NextResponse.json({ error: 'Invalid body', issues: parsed.error.issues }, { status: 400 });
+  const { code } = parsed.data;
   const info = code ? MAP[code] : undefined;
   return NextResponse.json({ code, ...(info || { title: 'Strategy', description: 'Explanation coming soon.' }) });
 }
-
