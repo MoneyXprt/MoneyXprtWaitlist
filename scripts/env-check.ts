@@ -1,23 +1,19 @@
 #!/usr/bin/env tsx
 import { env } from '@/lib/config/env'
 
-function mask(v?: string) {
-  if (!v) return 'MISSING'
-  if (v.length <= 6) return '******'
-  return v.slice(0, 3) + '***' + v.slice(-2)
-}
+const mask = (v?: string) => (!v ? 'MISSING' : v.length > 8 ? `${v.slice(0,4)}…${v.slice(-4)}` : 'SET')
 
 const summary = {
-  SITE_URL: env.SITE_URL || 'MISSING',
-  NEXT_PUBLIC_SUPABASE_URL: env.NEXT_PUBLIC_SUPABASE_URL,
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: mask(env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
-  SUPABASE_SERVICE_ROLE_KEY: mask((env as any).SUPABASE_SERVICE_ROLE_KEY),
-  DATABASE_URL: mask((env as any).DATABASE_URL),
-  OPENAI_API_KEY: mask((env as any).OPENAI_API_KEY),
-  STRIPE_SECRET_KEY: mask((env as any).STRIPE_SECRET_KEY),
-  STRIPE_WEBHOOK_SECRET: mask((env as any).STRIPE_WEBHOOK_SECRET),
+  NEXT_PUBLIC_SITE_URL: env.public.NEXT_PUBLIC_SITE_URL ?? 'MISSING',
+  NEXT_PUBLIC_SUPABASE_URL: env.public.NEXT_PUBLIC_SUPABASE_URL ?? 'MISSING',
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: mask(env.public.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+  SUPABASE_SERVICE_ROLE_KEY: mask(env.server.SUPABASE_SERVICE_ROLE_KEY),
+  OPENAI_API_KEY: mask(env.server.OPENAI_API_KEY),
+  STRIPE_SECRET_KEY: mask(env.server.STRIPE_SECRET_KEY),
+  STRIPE_WEBHOOK_SECRET: mask(env.server.STRIPE_WEBHOOK_SECRET),
+  PLAID_CLIENT_ID: mask(env.server.PLAID_CLIENT_ID),
+  PLAID_SECRET: mask(env.server.PLAID_SECRET),
 }
 
-console.log('Environment summary (masked):')
 console.table(summary)
-
+export {}
