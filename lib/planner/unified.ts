@@ -2,6 +2,7 @@ import { getDb } from '@/lib/db/index'
 import { calcSnapshot } from '@/lib/db/schema'
 import { desc, eq } from 'drizzle-orm'
 import { recalculateKeepMoreScore } from '@/lib/score/actions'
+import type { ScoreResult, ScoreBreakdown } from '@/lib/score/index'
 import { generateNarrative, type Narrative } from '@/lib/ai/narrative'
 
 type AnyRow = Record<string, any>
@@ -25,8 +26,8 @@ export interface UnifiedPlannerResult {
 }
 
 function computeDelta(
-  prev?: { score?: number; breakdown?: Record<string, number> },
-  next?: { score?: number; breakdown?: Record<string, number> }
+  prev?: { score?: number; breakdown?: ScoreBreakdown },
+  next?: { score?: number; breakdown?: ScoreBreakdown }
 ): { scorePct?: number; sections?: Record<string, number> } {
   if (!prev || !next) return {}
   const out: { scorePct?: number; sections?: Record<string, number> } = {}
@@ -36,8 +37,8 @@ function computeDelta(
     const base = pScore === 0 ? 1 : pScore
     out.scorePct = Math.round(((nScore - pScore) / base) * 100)
   }
-  const pB = prev.breakdown || {}
-  const nB = next.breakdown || {}
+  const pB = (prev.breakdown || {}) as Partial<ScoreBreakdown>
+  const nB = (next.breakdown || {}) as Partial<ScoreBreakdown>
   const keys = new Set([...Object.keys(pB), ...Object.keys(nB)])
   const sec: Record<string, number> = {}
   keys.forEach((k) => {
@@ -47,6 +48,17 @@ function computeDelta(
   })
   out.sections = sec
   return out
+}
+
+function breakdownToRecord(b: ScoreBreakdown): Record<string, number> {
+  return {
+    retirement: b.retirement,
+    entity: b.entity,
+    deductions: b.deductions,
+    investments: b.investments,
+    hygiene: b.hygiene,
+    advanced: b.advanced,
+  }
 }
 
 export async function runUnifiedPlanner({
@@ -71,10 +83,14 @@ export async function runUnifiedPlanner({
 
   // Recalculate score
   const { score, breakdown } = await recalculateKeepMoreScore()
-  const scoreResult = { score, breakdown: breakdown as Record<string, number>, notes: [] as string[] }
+  const scoreResult: ScoreResult = { score, breakdown: breakdown as ScoreBreakdown, notes: [] }
 
   // Generate narrative
-  const narrative = await generateNarrative({ profile, scoreResult, strategies: selectedStrategies })
+  const narrative = await generateNarrative({
+    profile,
+    scoreResult: { score: scoreResult.score, breakdown: breakdownToRecord(scoreResult.breakdown), notes: scoreResult.notes },
+    strategies: selectedStrategies,
+  })
 
   // Compute delta vs previous
   const delta = computeDelta(prevPayload, scoreResult)
@@ -105,4 +121,3 @@ export async function runUnifiedPlanner({
 }
 
 export default runUnifiedPlanner
-
