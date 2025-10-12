@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { PDFDocument, StandardFonts } from 'pdf-lib';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +8,7 @@ export async function POST(req: Request) {
     const playbook = body?.playbook;
     if (!playbook) return NextResponse.json({ error: 'Missing playbook' }, { status: 400 });
 
+    const { PDFDocument, StandardFonts } = await import('pdf-lib');
     const pdf = await PDFDocument.create();
     const page = pdf.addPage([612, 792]);
     const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -46,4 +46,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e?.message || 'failed' }, { status: 500 });
   }
 }
-

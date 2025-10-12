@@ -1,15 +1,16 @@
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
 import { env, assertEnv } from '@/lib/config/env';
 
 export const runtime = 'nodejs';        // ensure Node runtime (not Edge)
 export const dynamic = 'force-dynamic'; // webhooks shouldn't be cached
 
-const stripe = new Stripe(env.server.STRIPE_SECRET_KEY || ''); // no apiVersion override
+let stripe: any;
 
 export async function POST(req: Request) {
   try {
+    const Stripe = (await import('stripe')).default;
+    stripe = stripe || new Stripe(env.server.STRIPE_SECRET_KEY || ''); // no apiVersion override
     // Ensure required secrets exist for webhook verification
     assertEnv(["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"]);
     const sig = (await headers()).get('stripe-signature');

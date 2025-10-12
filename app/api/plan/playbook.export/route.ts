@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { PlaybookExportBodySchema } from '@/lib/api/schemas';
 export const runtime = 'nodejs';
 
@@ -16,6 +15,7 @@ export async function POST(req: Request) {
 
     // Prefer PDF (pdf-lib available). Otherwise, fall back to HTML.
     try {
+      const { PDFDocument, StandardFonts } = await import('pdf-lib');
       const pdf = await PDFDocument.create();
       const font = await pdf.embedFont(StandardFonts.Helvetica);
       let page = pdf.addPage([612, 792]);
