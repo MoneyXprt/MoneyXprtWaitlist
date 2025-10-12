@@ -47,16 +47,7 @@ function computeDelta(
   return out
 }
 
-function breakdownToRecord(b: ScoreBreakdown): Record<string, number> {
-  return {
-    retirement: b.retirement,
-    entity: b.entity,
-    deductions: b.deductions,
-    investments: b.investments,
-    hygiene: b.hygiene,
-    advanced: b.advanced,
-  }
-}
+// (no breakdown-to-record conversion needed; consumers use ScoreBreakdown)
 
 function recordToBreakdown(r: Record<string, number> | undefined): ScoreBreakdown {
   const z = (n?: number) => (Number.isFinite(n ?? NaN) ? Number(n) : 0)
@@ -98,7 +89,7 @@ export async function runUnifiedPlanner({
   // Generate narrative
   const narrative = await generateNarrative({
     profile,
-    scoreResult: { score: scoreResult.score, breakdown: breakdownToRecord(scoreResult.breakdown), notes: scoreResult.notes },
+    scoreResult, // pass ScoreResult (with ScoreBreakdown) directly
     strategies: selectedStrategies,
   })
 
