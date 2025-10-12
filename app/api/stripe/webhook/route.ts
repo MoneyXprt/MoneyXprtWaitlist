@@ -1,3 +1,4 @@
+import Stripe from "stripe";
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { env, assertEnv } from '@/lib/config/env';
@@ -5,15 +6,15 @@ import { env, assertEnv } from '@/lib/config/env';
 export const runtime = 'nodejs';        // ensure Node runtime (not Edge)
 export const dynamic = 'force-dynamic'; // webhooks shouldn't be cached
 
-let stripe: any;
-
 export async function POST(req: Request) {
   try {
-    const Stripe = (await import('stripe')).default;
-    stripe = stripe || new Stripe(env.server.STRIPE_SECRET_KEY || ''); // no apiVersion override
-    // Ensure required secrets exist for webhook verification
     assertEnv(["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"]);
-    const sig = (await headers()).get('stripe-signature');
+
+    const stripe = new Stripe(env.server.STRIPE_SECRET_KEY!, {
+      apiVersion: "2024-06-20",
+    });
+
+    const sig = headers().get('stripe-signature') ?? '';
     if (!sig) {
       return NextResponse.json({ error: 'Missing Stripe signature' }, { status: 400 });
     }
@@ -35,13 +36,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // Handle the event
     switch (event.type) {
-      case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
-        // TODO: provision access, record subscription, etc.
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated':
+      case 'customer.subscription.deleted':
+        // TODO: update Supabase subscription table
         break;
-      }
       default:
         // no-op
         break;
