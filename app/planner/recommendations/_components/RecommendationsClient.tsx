@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { toEngineSnapshot, usePlannerSnapshot } from '@/lib/strategy/ui/snapshots';
 import { fmtUSD } from '@/lib/ui/format';
@@ -34,6 +34,8 @@ export default function RecommendationsClient() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const scenario = usePlannerStore();
   const params = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+  const [streamMsg, setStreamMsg] = useState<string | null>(null);
 
   const snapshot = useMemo(() => toEngineSnapshot(data), [data]);
 
@@ -89,6 +91,37 @@ export default function RecommendationsClient() {
     };
   }, [snapshot, includeHighRisk, setRecoItems]);
 
+  // Stream re-scoring when scenario selection changes
+  useEffect(() => {
+    if (!scenario.selected) return;
+    startTransition(async () => {
+      try {
+        setStreamMsg('Re-scoring…');
+        const res = await fetch('/api/planner/stream', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ strategies: scenario.selected.map(s => s.code), profile: data }) });
+        if (!res.body) { setStreamMsg(null); return; }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buff = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buff += decoder.decode(value, { stream: true });
+          const parts = buff.split('\n');
+          buff = parts.pop() || '';
+          for (const line of parts) {
+            try {
+              const obj = JSON.parse(line);
+              if (obj.type === 'done') setStreamMsg(null);
+            } catch {}
+          }
+        }
+      } catch {
+        setStreamMsg(null);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scenario.selected.map(s => s.code).join(',')]);
+
   const filtered = useMemo(() => {
     let list = [...rows];
     if (stateFilter !== 'all') list = list.filter((r: any) => (r.states || []).includes(stateFilter));
@@ -118,6 +151,9 @@ export default function RecommendationsClient() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Recommendations {includeHighRisk && <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">High-Risk enabled</span>}</h1>
         <div className="flex items-center gap-4 text-sm">
+          {isPending && streamMsg && (
+            <span className="text-xs text-neutral-600">{streamMsg}</span>
+          )}
           <label className="flex items-center gap-2">
             <span>Sort</span>
             <select value={sortKey} onChange={(e) => setSortKey(e.target.value as any)} className="border rounded px-2 py-1">
@@ -201,4 +237,3 @@ export default function RecommendationsClient() {
     </div>
   );
 }
-
