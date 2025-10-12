@@ -1,6 +1,7 @@
 "use client";
 import React from 'react'
 import { recalcScore } from '@/lib/score/client'
+import ExplainDrawer from './ExplainDrawer'
 
 type Breakdown = { retirement: number; entity: number; deductions: number; investments: number; hygiene: number; advanced: number }
 
@@ -25,6 +26,7 @@ export default function ScoreCard() {
   const [score, setScore] = React.useState<number | null>(null)
   const [breakdown, setBreakdown] = React.useState<Breakdown | null>(null)
   const [updatedAt, setUpdatedAt] = React.useState<string | null>(null)
+  const [showExplain, setShowExplain] = React.useState(false)
 
   async function load() {
     setLoading(true); setError(null)
@@ -68,9 +70,14 @@ export default function ScoreCard() {
             What drives this score?
           </p>
         </div>
-        <button className="rounded px-3 py-1.5 bg-black text-white text-sm disabled:opacity-60" onClick={recalc} disabled={saving}>
-          {saving ? 'Recalculating…' : 'Recalculate'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button className="rounded px-3 py-1.5 border text-sm" onClick={() => setShowExplain(true)}>
+            Explain my score
+          </button>
+          <button className="rounded px-3 py-1.5 bg-black text-white text-sm disabled:opacity-60" onClick={recalc} disabled={saving}>
+            {saving ? 'Recalculating…' : 'Recalculate'}
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -102,6 +109,7 @@ export default function ScoreCard() {
           </div>
         </div>
       )}
+      <ExplainDrawer open={showExplain} onClose={() => setShowExplain(false)} />
     </section>
   )
 }
