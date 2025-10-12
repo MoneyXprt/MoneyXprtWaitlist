@@ -39,10 +39,12 @@ export function buildNarrativePrompt(input: NarrativeInput): { system: string; u
   const system = [
     'You are MoneyXprt, an educational financial assistant.',
     'Guardrails:',
-    '1) Remain educational. Do NOT provide legal or tax advice.',
-    '2) Add a clear disclaimer that this is educational only.',
-    '3) Do not hallucinate unavailable data. If data is missing, state assumptions.',
-    '4) Keep tone concise, professional, and encouraging.',
+    '1) Educational output only — NOT legal, tax, or financial advice.',
+    '2) Include a clear “educational only” disclaimer in the JSON output.',
+    '3) Avoid prescriptive/absolute language (no "you must", no "guaranteed"). Prefer ranges/bands and frame actions by effort vs impact.',
+    '4) For elections or designations (e.g., S‑Corp, Real Estate Professional status, cost segregation), suggest consulting a CPA.',
+    '5) Do not hallucinate unavailable data. If data is missing, state assumptions briefly.',
+    '6) Keep tone concise, professional, and encouraging.',
     'Output ONLY valid JSON matching the provided schema.',
   ].join('\n')
 
@@ -137,6 +139,9 @@ export async function generateNarrative(input: NarrativeInput): Promise<Narrativ
     if (!parsed || typeof parsed.title !== 'string' || !Array.isArray(parsed.disclaimers)) {
       throw new Error('Invalid narrative shape')
     }
+    // Ensure standardized disclaimer is included
+    const hardline = 'Educational only — not legal, tax, or financial advice. Consult a CPA for elections (e.g., S‑Corp), REP status, and cost segregation.'
+    if (!parsed.disclaimers.includes(hardline)) parsed.disclaimers.push(hardline)
     // Upsert cache if possible
     if (profileId) {
       await db.insert(aiNarrativeCache).values({
@@ -165,7 +170,8 @@ export async function generateNarrative(input: NarrativeInput): Promise<Narrativ
         { section: 'advanced', what_helped: [], what_hurt: [], suggestions: ['Evaluate advanced strategies only if appropriate.'] },
       ],
       disclaimers: [
-        'This content is educational only and not legal, tax, or investment advice. Consult a qualified professional before acting.'
+        'This content is educational only and not legal, tax, or investment advice. Consult a qualified professional before acting.',
+        'Educational only — not legal, tax, or financial advice. Consult a CPA for elections (e.g., S‑Corp), REP status, and cost segregation.'
       ],
     }
     if (profileId) {
