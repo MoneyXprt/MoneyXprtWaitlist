@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
 import { useState } from 'react';
 import { sbBrowser } from '@/lib/supabase';
+import ScoreCard from './_components/ScoreCard';
 
 export default function AppTools() {
   const supabase = sbBrowser();
@@ -49,6 +50,8 @@ export default function AppTools() {
   return (
     <main className="space-y-10 p-6">
       <h1 className="text-3xl font-semibold">MoneyXprt — Beta Tools</h1>
+
+      <ScoreCard />
 
       <section className="bg-white shadow p-4 rounded-xl">
         <h2 className="text-xl font-semibold">1) Tax Savings Scan (PDF)</h2>
