@@ -6,7 +6,8 @@ export async function POST() {
     const { score, breakdown } = await recalculateKeepMoreScore()
     return NextResponse.json({ score, breakdown })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'failed' }, { status: 500 })
+    const msg = e?.message || 'failed'
+    const isUnauthorized = /unauthorized|no user/i.test(msg)
+    return NextResponse.json({ error: msg }, { status: isUnauthorized ? 401 : 500 })
   }
 }
-

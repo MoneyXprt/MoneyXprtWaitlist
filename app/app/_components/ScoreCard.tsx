@@ -1,5 +1,6 @@
 "use client";
 import React from 'react'
+import { recalcScore } from '@/lib/score/client'
 
 type Breakdown = { retirement: number; entity: number; deductions: number; investments: number; hygiene: number; advanced: number }
 
@@ -47,11 +48,9 @@ export default function ScoreCard() {
     setSaving(true); setError(null)
     try {
       // TODO: analytics event score_calculated
-      const res = await fetch('/api/score/recalculate', { method: 'POST' })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json?.error || 'Failed')
-      setScore(json.score)
-      setBreakdown(json.breakdown)
+      const { score, breakdown } = await recalcScore()
+      setScore(score)
+      setBreakdown(breakdown)
       setUpdatedAt(new Date().toISOString())
     } catch (e: any) {
       setError(e?.message || 'Failed to recalculate')
@@ -106,4 +105,3 @@ export default function ScoreCard() {
     </section>
   )
 }
-
