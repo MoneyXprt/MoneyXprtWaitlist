@@ -34,6 +34,19 @@ export interface NarrativeInput {
   year?: number
 }
 
+const SYSTEM = `
+You are MoneyXprt’s educational tax & investing explainer.
+
+Constraints:
+- Educational information only. You are NOT a tax, legal, or investment advisor. Include a short disclaimer to that effect in the output.
+- No guarantees. Prefer ranges and “effort vs impact” framing.
+- For complex items (e.g., S-Corp election, Real Estate Professional status, cost segregation, QSBS), recommend consulting a qualified CPA.
+- Do not invent or infer details that are not present in the input. If unknown, say “Not enough info”.
+- Output MUST be strict JSON that matches the Narrative schema provided by the developer. Do not include backticks, markdown, or extra commentary—JSON only.
+
+Tone: concise, practical, plain English; focus on “how to keep more after taxes”.
+`;
+
 export function buildNarrativePrompt(input: NarrativeInput): { system: string; user: string } {
   const year = input.year ?? new Date().getFullYear()
   const system = [
@@ -80,9 +93,7 @@ export function buildNarrativePrompt(input: NarrativeInput): { system: string; u
 export async function generateNarrative(input: NarrativeInput): Promise<Narrative> {
   assertEnv(['OPENAI_API_KEY'])
   const client = new OpenAI({ apiKey: env.server.OPENAI_API_KEY! })
-  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
-
-  const { system, user } = buildNarrativePrompt(input)
+  const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini'
   // Optional cache/rate-limit only if we can infer a profile id
   const profileId = (input.profile as any)?.id as string | undefined
   const db = getDb()
@@ -122,13 +133,27 @@ export async function generateNarrative(input: NarrativeInput): Promise<Narrativ
     }
   }
 
+  // Build minimal user payload as strict JSON string
+  const year = input.year ?? new Date().getFullYear()
+  const profileSummary = {
+    filingStatus: (input.profile as any)?.filingStatus || (input.profile as any)?.filing_status || null,
+    state: (input.profile as any)?.state || (input.profile as any)?.primary_state || null,
+    entityType: (input.profile as any)?.entityType || (input.profile as any)?.entity_type || null,
+    year,
+  }
+  const userContent = JSON.stringify({
+    profileSummary,
+    scoreResult: input.scoreResult,
+    strategies: input.strategies || [],
+  })
+
   const completion = await client.chat.completions.create({
     model,
     temperature: 0.2,
     max_tokens: 1200,
     messages: [
-      { role: 'system', content: system },
-      { role: 'user', content: user },
+      { role: 'system', content: SYSTEM },
+      { role: 'user', content: userContent },
     ],
   })
 
@@ -139,6 +164,11 @@ export async function generateNarrative(input: NarrativeInput): Promise<Narrativ
     if (!parsed || typeof parsed.title !== 'string' || !Array.isArray(parsed.disclaimers)) {
       throw new Error('Invalid narrative shape')
     }
+    // Ensure standardized disclaimers are included
+    const hardline1 = 'Educational only — not legal, tax, or financial advice. Consult a CPA for elections (e.g., S‑Corp), REP status, and cost segregation.'
+    const hardline2 = 'MoneyXprt provides educational information only and is not a tax, legal, or investment advisor.'
+    if (!parsed.disclaimers.includes(hardline1)) parsed.disclaimers.push(hardline1)
+    if (!parsed.disclaimers.includes(hardline2)) parsed.disclaimers.push(hardline2)
     // Ensure standardized disclaimer is included
     const hardline = 'Educational only — not legal, tax, or financial advice. Consult a CPA for elections (e.g., S‑Corp), REP status, and cost segregation.'
     if (!parsed.disclaimers.includes(hardline)) parsed.disclaimers.push(hardline)
@@ -171,7 +201,8 @@ export async function generateNarrative(input: NarrativeInput): Promise<Narrativ
       ],
       disclaimers: [
         'This content is educational only and not legal, tax, or investment advice. Consult a qualified professional before acting.',
-        'Educational only — not legal, tax, or financial advice. Consult a CPA for elections (e.g., S‑Corp), REP status, and cost segregation.'
+        'Educational only — not legal, tax, or financial advice. Consult a CPA for elections (e.g., S‑Corp), REP status, and cost segregation.',
+        'MoneyXprt provides educational information only and is not a tax, legal, or investment advisor.'
       ],
     }
     if (profileId) {
