@@ -15,8 +15,26 @@ import { generateNarrative } from '@/lib/ai/narrative'
 import { mapToScoreInput } from '@/lib/score/map'
 import { calculateKeepMoreScore } from '@/lib/score'
 import { recalculateKeepMoreScore } from '@/lib/score/actions'
+import type { ScoreResult, ScoreBreakdown } from '@/lib/score'
 
 export const runtime = 'nodejs'
+
+function toScoreResult(prev?: { score?: number; breakdown?: Record<string, number> }): ScoreResult | undefined {
+  if (!prev) return undefined;
+  const b = prev.breakdown ?? {};
+  const breakdown: ScoreBreakdown = {
+    retirement: Number(b["retirement"] ?? 0),
+    entity: Number(b["entity"] ?? 0),
+    deductions: Number(b["deductions"] ?? 0),
+    investments: Number(b["investments"] ?? 0),
+    hygiene: Number(b["hygiene"] ?? 0),
+    advanced: Number(b["advanced"] ?? 0),
+  };
+  const score = typeof prev.score === "number"
+    ? prev.score
+    : (breakdown.retirement + breakdown.entity + breakdown.deductions + breakdown.investments + breakdown.hygiene + breakdown.advanced);
+  return { score, breakdown, notes: [] };
+}
 
 export async function POST(req: Request) {
   try {
@@ -72,15 +90,15 @@ export async function POST(req: Request) {
     }
 
     // Build scoreResult
-    let scoreResult: { score: number; breakdown: Record<string, number>; notes: string[] }
+    let scoreResult: ScoreResult
     const payload = (latestSnap as any)?.payload
     if (payload && typeof payload.score === 'number' && payload.breakdown) {
-      scoreResult = { score: payload.score, breakdown: payload.breakdown, notes: [] }
+      scoreResult = toScoreResult({ score: payload.score, breakdown: payload.breakdown })!
     } else {
       // Compute on the fly without persisting
       const scoreInput = mapToScoreInput({ profile: profileRow, household: householdRow, planItems: items })
       const res = calculateKeepMoreScore(scoreInput)
-      scoreResult = { score: res.score, breakdown: res.breakdown as any, notes: res.notes }
+      scoreResult = { score: res.score, breakdown: res.breakdown, notes: res.notes }
     }
 
     // Map strategies for narrative: codes and names when available on plan items
