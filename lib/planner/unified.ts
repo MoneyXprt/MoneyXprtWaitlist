@@ -2,7 +2,7 @@ import { getDb } from '@/lib/db/index'
 import { calcSnapshot } from '@/lib/db/schema'
 import { desc, eq } from 'drizzle-orm'
 import { recalculateKeepMoreScore } from '@/lib/score/actions'
-import type { ScoreResult, ScoreBreakdown } from '@/lib/score/index'
+import type { ScoreResult, ScoreBreakdown } from '@/lib/score'
 import { generateNarrative, type Narrative } from '@/lib/ai/narrative'
 
 type AnyRow = Record<string, any>
@@ -16,13 +16,10 @@ export interface UnifiedPlannerArgs {
 }
 
 export interface UnifiedPlannerResult {
-  scoreResult: { score: number; breakdown: Record<string, number>; notes: string[] }
-  narrative: Narrative
-  delta: {
-    scorePct?: number
-    sections?: Record<string, number>
-  }
-  snapshotId: string
+  scoreResult: ScoreResult
+  narrative: any
+  delta: ReturnType<typeof computeDelta>
+  snapshotId?: string
 }
 
 function computeDelta(
@@ -135,7 +132,7 @@ export async function runUnifiedPlanner({
     .values({ userId, kind: 'unified_planner', payload })
     .returning({ id: calcSnapshot.id })
 
-  const snapshotId = inserted?.[0]?.id as string
+  const snapshotId = inserted?.[0]?.id as string | undefined
 
   return { scoreResult, narrative, delta, snapshotId }
 }
