@@ -1,5 +1,6 @@
 import OpenAI from 'openai'
 import { env, assertEnv } from '@/lib/config/env'
+import type { ScoreResult, ScoreBreakdown } from '@/lib/score'
 import { sha256Hex } from '@/lib/crypto'
 import { getDb } from '@/lib/db/index'
 import { aiNarrativeCache } from '@/lib/db/schema'
@@ -29,7 +30,7 @@ export interface Narrative {
 
 export interface NarrativeInput {
   profile?: Record<string, unknown>
-  scoreResult: { score: number; breakdown: Record<string, number>; notes: string[] }
+  scoreResult: ScoreResult
   strategies?: Array<{ code: string; name?: string }>
   year?: number
 }
