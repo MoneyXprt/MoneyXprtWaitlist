@@ -3,6 +3,7 @@ import { calcSnapshot } from '@/lib/db/schema'
 import { desc, eq } from 'drizzle-orm'
 import { recalculateKeepMoreScore } from '@/lib/score/actions'
 import type { ScoreResult, ScoreBreakdown } from '@/lib/score'
+import { compareScores, type ScoreDelta } from '@/lib/score/delta'
 import { generateNarrative, type Narrative } from '@/lib/ai/narrative'
 
 type AnyRow = Record<string, any>
@@ -18,36 +19,11 @@ export interface UnifiedPlannerArgs {
 export interface UnifiedPlannerResult {
   scoreResult: ScoreResult
   narrative: any
-  delta: ReturnType<typeof computeDelta>
+  delta: ScoreDelta
   snapshotId?: string
 }
 
-function computeDelta(
-  prev?: { score?: number; breakdown?: ScoreBreakdown },
-  next?: { score?: number; breakdown?: ScoreBreakdown }
-): { scorePct?: number; sections?: Record<string, number> } {
-  if (!prev || !next) return {}
-  const out: { scorePct?: number; sections?: Record<string, number> } = {}
-  const pScore = typeof prev.score === 'number' ? prev.score : undefined
-  const nScore = typeof next.score === 'number' ? next.score : undefined
-  if (pScore !== undefined && nScore !== undefined) {
-    const base = pScore === 0 ? 1 : pScore
-    out.scorePct = Math.round(((nScore - pScore) / base) * 100)
-  }
-  const pB = (prev.breakdown || {}) as Partial<ScoreBreakdown>
-  const nB = (next.breakdown || {}) as Partial<ScoreBreakdown>
-  const keys = new Set([...Object.keys(pB), ...Object.keys(nB)])
-  const sec: Record<string, number> = {}
-  keys.forEach((k) => {
-    const a = typeof (pB as any)[k] === 'number' ? (pB as any)[k] : 0
-    const b = typeof (nB as any)[k] === 'number' ? (nB as any)[k] : 0
-    sec[k] = Math.round((b as number) - (a as number))
-  })
-  out.sections = sec
-  return out
-}
-
-// (no breakdown-to-record conversion needed; consumers use ScoreBreakdown)
+// (delta computation centralized in lib/score/delta)
 
 function recordToBreakdown(r: Record<string, number> | undefined): ScoreBreakdown {
   const z = (n?: number) => (Number.isFinite(n ?? NaN) ? Number(n) : 0)
@@ -101,7 +77,7 @@ export async function runUnifiedPlanner({
         notes: Array.isArray((prevPayload as any).notes) ? ((prevPayload as any).notes as string[]) : [],
       }
     : undefined
-  const delta = computeDelta(prevForDelta, scoreResult)
+  const delta = prevForDelta ? compareScores(prevForDelta, scoreResult) : compareScores({ score: 0, breakdown: recordToBreakdown({}), notes: [] }, scoreResult)
 
   // Store snapshot with narrative JSON
   const payload = {
