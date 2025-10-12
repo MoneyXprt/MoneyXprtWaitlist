@@ -56,7 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if OpenAI API key is present
-      if (!env.OPENAI_API_KEY || env.OPENAI_API_KEY.trim() === "") {
+      if (!env.server.OPENAI_API_KEY || env.server.OPENAI_API_KEY.trim() === "") {
         return res.json({
           response:
             "Hello! I'm MoneyXprt, your AI financial co-pilot. To provide personalized financial advice, please add a valid OpenAI API key with available credits to your environment variables. Once configured, I'll be ready to help with tax optimization, investment strategies, and wealth preservation for high-income earners.",
@@ -64,7 +64,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       try {
-        const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+        const openai = new OpenAI({ apiKey: env.server.OPENAI_API_KEY });
 
         const completion = await openai.chat.completions.create({
           model: "gpt-4o",
