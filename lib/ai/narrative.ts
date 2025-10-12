@@ -1,0 +1,124 @@
+import OpenAI from 'openai'
+import { env, assertEnv } from '@/lib/config/env'
+
+export interface NarrativeAction {
+  label: string
+  reason: string
+  effort: 'low'|'med'|'high'
+  est_savings_band?: '$$'|'$$$'|'$$$$'
+}
+
+export interface NarrativeSection {
+  section: 'retirement'|'entity'|'deductions'|'investments'|'hygiene'|'advanced'
+  what_helped: string[]
+  what_hurt: string[]
+  suggestions: string[]
+}
+
+export interface Narrative {
+  title: string
+  summary: string
+  key_actions: NarrativeAction[]
+  score_explainer: NarrativeSection[]
+  disclaimers: string[]
+}
+
+export interface NarrativeInput {
+  profile?: Record<string, unknown>
+  scoreResult: { score: number; breakdown: Record<string, number>; notes: string[] }
+  strategies?: Array<{ code: string; name?: string }>
+  year?: number
+}
+
+export function buildNarrativePrompt(input: NarrativeInput): { system: string; user: string } {
+  const year = input.year ?? new Date().getFullYear()
+  const system = [
+    'You are MoneyXprt, an educational financial assistant.',
+    'Guardrails:',
+    '1) Remain educational. Do NOT provide legal or tax advice.',
+    '2) Add a clear disclaimer that this is educational only.',
+    '3) Do not hallucinate unavailable data. If data is missing, state assumptions.',
+    '4) Keep tone concise, professional, and encouraging.',
+    'Output ONLY valid JSON matching the provided schema.',
+  ].join('\n')
+
+  const payload = {
+    title: `How to Keep More in ${year}`,
+    profile: input.profile ?? {},
+    scoreResult: input.scoreResult,
+    selectedStrategies: (input.strategies || []).map(s => ({ code: s.code, name: s.name || '' })),
+    schema: {
+      title: 'string',
+      summary: 'string (2–3 sentences)',
+      key_actions: [
+        { label: 'string', reason: 'string', effort: 'low|med|high', est_savings_band: '$$|$$$|$$$$ (optional)' }
+      ],
+      score_explainer: [
+        { section: 'retirement|entity|deductions|investments|hygiene|advanced', what_helped: ['string'], what_hurt: ['string'], suggestions: ['string'] }
+      ],
+      disclaimers: ['string']
+    }
+  }
+
+  const user = [
+    'Create a narrative using this context (JSON):',
+    JSON.stringify(payload, null, 2),
+    'Rules:',
+    '- Be deterministic and concise. Do not include extra commentary outside JSON.',
+    '- Prioritize high-impact, low-effort actions first.',
+  ].join('\n')
+
+  return { system, user }
+}
+
+export async function generateNarrative(input: NarrativeInput): Promise<Narrative> {
+  assertEnv(['OPENAI_API_KEY'])
+  const client = new OpenAI({ apiKey: env.server.OPENAI_API_KEY! })
+  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+
+  const { system, user } = buildNarrativePrompt(input)
+  const completion = await client.chat.completions.create({
+    model,
+    temperature: 0.2,
+    max_tokens: 1200,
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: user },
+    ],
+  })
+
+  const content = completion.choices?.[0]?.message?.content ?? ''
+  try {
+    const parsed = JSON.parse(content) as Narrative
+    // Basic structural guard
+    if (!parsed || typeof parsed.title !== 'string' || !Array.isArray(parsed.disclaimers)) {
+      throw new Error('Invalid narrative shape')
+    }
+    return parsed
+  } catch {
+    const year = input.year ?? new Date().getFullYear()
+    // Safe fallback
+    return {
+      title: `How to Keep More in ${year}`,
+      summary: 'Educational overview of actions to reduce taxes and improve after‑tax wealth. Data was insufficient for a tailored narrative; recommendations are generic.',
+      key_actions: [
+        { label: 'Increase 401(k) deferrals', reason: 'Reduces taxable wages', effort: 'med', est_savings_band: '$$' },
+        { label: 'Optimize asset location', reason: 'More tax‑efficient investment growth', effort: 'med' },
+      ],
+      score_explainer: [
+        { section: 'retirement', what_helped: [], what_hurt: [], suggestions: ['Evaluate 401(k), HSA, and IRA contributions.'] },
+        { section: 'entity', what_helped: [], what_hurt: [], suggestions: ['If you have SE income, assess S‑Corp fit with a CPA.'] },
+        { section: 'deductions', what_helped: [], what_hurt: [], suggestions: ['Check if itemizing beats standard; consider bunching/DAF.'] },
+        { section: 'investments', what_helped: [], what_hurt: [], suggestions: ['Place tax‑efficient assets in taxable; consider TLH readiness.'] },
+        { section: 'hygiene', what_helped: [], what_hurt: [], suggestions: ['Align withholdings/estimates to avoid penalties.'] },
+        { section: 'advanced', what_helped: [], what_hurt: [], suggestions: ['Evaluate advanced strategies only if appropriate.'] },
+      ],
+      disclaimers: [
+        'This content is educational only and not legal, tax, or investment advice. Consult a qualified professional before acting.'
+      ],
+    }
+  }
+}
+
+export default generateNarrative
+
