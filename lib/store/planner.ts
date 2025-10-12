@@ -11,9 +11,11 @@ export type ScenarioItem = {
   risk?: number;
 };
 
-type PlannerState = {
+export interface PlannerData extends PlanInput {}
+
+export interface PlannerState {
   // Core planner data (replaces legacy context state)
-  data: PlanInput;
+  data: PlannerData;
   includeHighRisk: boolean;
   lastRecoItems: any[];
 
@@ -21,8 +23,8 @@ type PlannerState = {
   selected: ScenarioItem[];
 
   // Actions: plan data
-  setAll: (input: PlanInput) => void;
-  patch: (partial: Partial<PlanInput>) => void;
+  setAll: (input: PlannerData) => void;
+  patch: (partial: Partial<PlannerData>) => void;
   updatePath: (path: string, value: unknown) => void;
   toggleHighRisk: (value?: boolean) => void;
   setRecoItems: (items: any[]) => void;
@@ -36,7 +38,7 @@ type PlannerState = {
   // Selectors/helpers
   total: () => number;
   selectedStrategies: () => string[]; // codes in order
-};
+}
 
 export const usePlannerStore = create<PlannerState>((set, get) => ({
   data: EMPTY_PLAN,
@@ -47,9 +49,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
 
   // Plan data
   setAll: (input) => set({ data: input }),
-  patch: (partial) => set((s) => ({ data: { ...s.data, ...partial } })),
+  patch: (partial) => set((s: PlannerState) => ({ data: { ...s.data, ...partial } })),
   updatePath: (path, value) =>
-    set((s) => {
+    set((s: PlannerState) => {
       const next: any = structuredClone(s.data);
       const parts = path.split(".");
       let cur = next as any;
@@ -58,20 +60,20 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       return { data: next } as Partial<PlannerState>;
     }),
   toggleHighRisk: (value) =>
-    set((s) => ({ includeHighRisk: value ?? !s.includeHighRisk })),
+    set((s: PlannerState) => ({ includeHighRisk: value ?? !s.includeHighRisk })),
   setRecoItems: (items) => set({ lastRecoItems: items }),
 
   // Scenario
   add: (item) =>
-    set((s) =>
-      s.selected.some((i) => i.code === item.code)
+    set((s: PlannerState) =>
+      s.selected.some((i: ScenarioItem) => i.code === item.code)
         ? s
         : { selected: [...s.selected, item] }
     ),
   remove: (code) =>
-    set((s) => ({ selected: s.selected.filter((i) => i.code !== code) })),
+    set((s: PlannerState) => ({ selected: s.selected.filter((i: ScenarioItem) => i.code !== code) })),
   reorder: (from, to) =>
-    set((s) => {
+    set((s: PlannerState) => {
       const arr = [...s.selected];
       const [item] = arr.splice(from, 1);
       arr.splice(to, 0, item);
@@ -79,7 +81,6 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     }),
   clear: () => set({ selected: [] }),
 
-  total: () => get().selected.reduce((sum, i) => sum + (i.savingsEst || 0), 0),
-  selectedStrategies: () => get().selected.map((i) => i.code),
+  total: () => get().selected.reduce((sum: number, i: ScenarioItem) => sum + (i.savingsEst || 0), 0),
+  selectedStrategies: () => get().selected.map((i: ScenarioItem) => i.code),
 }));
-
