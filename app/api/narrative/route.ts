@@ -92,7 +92,8 @@ export async function POST(req: Request) {
     const narrative = await generateNarrative({ profile: profileRow as any, scoreResult, strategies })
     return NextResponse.json(narrative)
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'failed' }, { status: 500 })
+    const msg = e?.message || 'failed'
+    const isRateLimit = /RATE_LIMIT/i.test(msg)
+    return NextResponse.json({ error: msg }, { status: isRateLimit ? 429 : 500 })
   }
 }
-

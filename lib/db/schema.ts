@@ -71,6 +71,14 @@ export const reports = pgTable("reports", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+export const aiNarrativeCache = pgTable("ai_narrative_cache", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  profileId: uuid("profile_id").notNull(),
+  inputHash: text("input_hash").notNull(),
+  narrative: jsonb("narrative").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 // Household (new canonical table; safe to generate later)
 export const household = pgTable("household", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -323,6 +331,7 @@ export type Database = {
       usage_daily: typeof usageDaily;
       billing: typeof subscription;
       reports: typeof reports;
+      ai_narrative_cache: typeof aiNarrativeCache;
       recommendations: typeof plan;
       recommendation_items: typeof planItem;
       tax_profiles: typeof taxProfiles;
@@ -336,4 +345,3 @@ export type Database = {
     Enums: { [key: string]: never };
   };
 };
-

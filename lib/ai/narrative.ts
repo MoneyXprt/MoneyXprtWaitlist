@@ -1,5 +1,9 @@
 import OpenAI from 'openai'
 import { env, assertEnv } from '@/lib/config/env'
+import { sha256Hex } from '@/lib/crypto'
+import { getDb } from '@/lib/db/index'
+import { aiNarrativeCache } from '@/lib/db/schema'
+import { and, desc, eq, gte } from 'drizzle-orm'
 
 export interface NarrativeAction {
   label: string
@@ -77,6 +81,45 @@ export async function generateNarrative(input: NarrativeInput): Promise<Narrativ
   const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
 
   const { system, user } = buildNarrativePrompt(input)
+  // Optional cache/rate-limit only if we can infer a profile id
+  const profileId = (input.profile as any)?.id as string | undefined
+  const db = getDb()
+
+  // Build a stable input hash
+  const digest = {
+    filingStatus: (input.profile as any)?.filingStatus || (input.profile as any)?.filing_status || null,
+    state: (input.profile as any)?.state || (input.profile as any)?.primary_state || null,
+    entityType: (input.profile as any)?.entityType || (input.profile as any)?.entity_type || null,
+    breakdown: input.scoreResult?.breakdown || {},
+    strategies: (input.strategies || []).map((s) => s.code).sort(),
+  }
+  const inputHash = sha256Hex(JSON.stringify(digest))
+
+  if (profileId) {
+    // Fresh cache (<7d)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    const cached = await db
+      .select()
+      .from(aiNarrativeCache)
+      .where(and(eq(aiNarrativeCache.profileId, profileId), eq(aiNarrativeCache.inputHash, inputHash), gte(aiNarrativeCache.createdAt, sevenDaysAgo)))
+      .orderBy(desc(aiNarrativeCache.createdAt))
+      .limit(1)
+    if (cached[0]?.narrative) {
+      return cached[0].narrative as unknown as Narrative
+    }
+
+    // Rate limit: 10 per day per profile
+    const startOfDay = new Date()
+    startOfDay.setHours(0, 0, 0, 0)
+    const recent = await db
+      .select()
+      .from(aiNarrativeCache)
+      .where(and(eq(aiNarrativeCache.profileId, profileId), gte(aiNarrativeCache.createdAt, startOfDay)))
+    if (recent.length >= 10) {
+      throw new Error('RATE_LIMIT: Too many narratives today; please try tomorrow.')
+    }
+  }
+
   const completion = await client.chat.completions.create({
     model,
     temperature: 0.2,
@@ -94,11 +137,19 @@ export async function generateNarrative(input: NarrativeInput): Promise<Narrativ
     if (!parsed || typeof parsed.title !== 'string' || !Array.isArray(parsed.disclaimers)) {
       throw new Error('Invalid narrative shape')
     }
+    // Upsert cache if possible
+    if (profileId) {
+      await db.insert(aiNarrativeCache).values({
+        profileId,
+        inputHash,
+        narrative: parsed as any,
+      })
+    }
     return parsed
   } catch {
     const year = input.year ?? new Date().getFullYear()
     // Safe fallback
-    return {
+    const fallback: Narrative = {
       title: `How to Keep More in ${year}`,
       summary: 'Educational overview of actions to reduce taxes and improve after‑tax wealth. Data was insufficient for a tailored narrative; recommendations are generic.',
       key_actions: [
@@ -117,8 +168,11 @@ export async function generateNarrative(input: NarrativeInput): Promise<Narrativ
         'This content is educational only and not legal, tax, or investment advice. Consult a qualified professional before acting.'
       ],
     }
+    if (profileId) {
+      await db.insert(aiNarrativeCache).values({ profileId, inputHash, narrative: fallback as any })
+    }
+    return fallback
   }
 }
 
 export default generateNarrative
-
