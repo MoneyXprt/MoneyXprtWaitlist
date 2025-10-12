@@ -7,7 +7,11 @@ export interface ScoreInput {
   stateTaxRate?: number; // 0–0.15
   contributions?: { k401?: number; hsa?: number; ira?: number; megaBackdoor?: boolean };
   entity?: { type?: "none" | "llc" | "scorp"; reasonableSalary?: number };
-  investmentHygiene?: { taxLossHarvestReady?: boolean; assetLocationOK?: boolean };
+  investmentHygiene?: { taxLossHarvestReady?: boolean; assetLocationOK?: boolean } & {
+    // optional extras if present
+    withholdingsOK?: boolean;
+    estimatesOK?: boolean;
+  };
   strategies?: Array<{ code: string }>;
 }
 
@@ -26,149 +30,195 @@ export interface ScoreResult {
   notes: string[];
 }
 
-const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+export const clamp = (n: number, min = 0, max = 100) => Math.max(min, Math.min(max, n));
+export const nz = (n?: number) => (Number.isFinite(n ?? NaN) ? Number(n) : 0);
+export const bool = (v?: boolean) => v === true;
 
-function stdDeduction(status: ScoreInput["filingStatus"]): number {
+export function incomeBand(w2: number, se: number): "low" | "mid" | "high" {
+  const total = nz(w2) + nz(se);
+  if (total < 120_000) return "low";
+  if (total < 350_000) return "mid";
+  return "high";
+}
+
+function retirementPoints(
+  band: "low" | "mid" | "high",
+  { k401 = 0, hsa = 0, ira = 0, megaBackdoor = false }: Required<Required<ScoreInput>["contributions"]>
+): { points: number; notes: string[] } {
+  const notes: string[] = [];
+  const targets = {
+    low: { k401: 10_000, hsa: 3_300, ira: 6_500 },
+    mid: { k401: 19_000, hsa: 3_300, ira: 6_500 },
+    high: { k401: 23_000, hsa: 3_300, ira: 6_500 },
+  }[band];
+
+  const k401Pct = clamp(k401 / targets.k401, 0, 1);
+  const hsaPct = clamp(hsa / targets.hsa, 0, 1);
+  const iraPct = clamp(ira / targets.ira, 0, 1);
+
+  let pts = 12 * k401Pct + 6 * hsaPct + 2 * iraPct;
+  if (megaBackdoor) {
+    pts += 2;
+    notes.push("Mega backdoor Roth in place");
+  }
+  if (k401Pct < 0.5 && (band === "mid" || band === "high")) notes.push("401(k) below target for income band");
+  return { points: clamp(pts, 0, 20), notes };
+}
+
+function entityPoints(se: number, type?: string, rs?: number): { points: number; notes: string[] } {
+  const notes: string[] = [];
+  let pts = 0;
+  if (se < 60_000) {
+    pts = 8; // small effect baseline <=10
+  } else {
+    if (type === "scorp") {
+      pts = 18;
+      const pct = se > 0 ? nz(rs) / se : 0;
+      if (pct >= 0.35 && pct <= 0.6) {
+        pts += 2;
+        notes.push("S‑Corp with reasonable salary");
+      } else {
+        notes.push("Review S‑Corp reasonable compensation");
+      }
+    } else {
+      pts = 6;
+      notes.push("High SE income without S‑Corp optimization");
+    }
+  }
+  return { points: clamp(pts, 0, 20), notes };
+}
+
+function stdHeuristic(status: ScoreInput["filingStatus"]): number {
   switch (status) {
     case "mfj":
-      return 29200;
+      return 27_000;
     case "hoh":
-      return 21900;
+      return 20_000;
     case "mfs":
+      return 13_500;
     case "single":
     default:
-      return 14600;
+      return 13_000;
   }
 }
 
-export function calculateKeepMoreScore(input: ScoreInput): ScoreResult {
+function deductionPoints(
+  filingStatus: ScoreInput["filingStatus"],
+  itemized: number,
+  stateTaxRate: number
+): { points: number; notes: string[] } {
   const notes: string[] = [];
-  const agi = (input.w2Income || 0) + (input.selfEmploymentIncome || 0) + (input.capitalGains || 0);
-
-  // 1) Retirement (max 20)
-  const c = input.contributions || {};
-  const k401Max = 23000; // baseline employee deferral
-  const hsaBase = (input.filingStatus === "mfj" ? 8300 : 4150); // rough
-  const iraBase = 6500; // rough
-  let retireScore = 0;
-  const k401Ratio = clamp((c.k401 || 0) / k401Max, 0, 1);
-  retireScore += 12 * k401Ratio;
-  if (k401Ratio < 0.5 && agi > 120000) notes.push("Consider increasing 401(k) deferrals toward the annual limit");
-  const hsaRatio = clamp((c.hsa || 0) / hsaBase, 0, 1);
-  retireScore += 4 * hsaRatio;
-  const iraRatio = clamp((c.ira || 0) / iraBase, 0, 1);
-  retireScore += 4 * iraRatio;
-  if (c.megaBackdoor) retireScore += 2;
-  retireScore = clamp(retireScore, 0, 20);
-
-  // 2) Entity optimization (max 20)
-  const se = input.selfEmploymentIncome || 0;
-  const ent = input.entity || { type: "none" as const };
-  let entityScore = 0;
-  if (se <= 20000) {
-    entityScore = 5; // likely not worth entity complexity
-  } else if (se <= 60000) {
-    entityScore = ent.type === "llc" ? 8 : ent.type === "scorp" ? 10 : 6;
-  } else {
-    if (ent.type === "scorp") {
-      // Reasonable salary heuristic 30–60% of profit
-      const rs = ent.reasonableSalary || 0;
-      const pct = se > 0 ? rs / se : 0;
-      if (pct >= 0.3 && pct <= 0.6) entityScore = 18;
-      else if (rs > 0) entityScore = 14;
-      else entityScore = 12;
-      if (entityScore < 18) notes.push("Review reasonable compensation for S‑Corp salary");
-    } else if (ent.type === "llc") {
-      entityScore = 10;
-      notes.push("Consider S‑Corp election to optimize SE tax on profits");
-    } else {
-      entityScore = 6;
-      notes.push("High self‑employment income without entity optimization");
-    }
+  const std = stdHeuristic(filingStatus);
+  let pts = 0;
+  if (itemized > std) pts = 12;
+  else if (itemized >= std * 0.9) pts = 8;
+  else {
+    pts = 4;
+    notes.push("Itemized likely below standard deduction");
   }
-  entityScore = clamp(entityScore, 0, 20);
-
-  // 3) Deductions use (max 15)
-  const itemized = input.itemizedDeductions || 0;
-  const std = stdDeduction(input.filingStatus);
-  let deductionsScore = 0;
-  if (itemized <= 0) {
-    deductionsScore = 5;
-  } else if (itemized < std) {
-    deductionsScore = input.stateTaxRate && input.stateTaxRate > 0.09 ? 4 : 5;
-    notes.push("Standard deduction may beat itemizing — consider bunching/DAF");
-  } else if (itemized >= std * 1.1) {
-    deductionsScore = 15;
-  } else {
-    // proportional between std..1.1*std => 8..15
-    const ratio = (itemized - std) / (0.1 * std);
-    deductionsScore = 8 + clamp(ratio, 0, 1) * 7;
+  if (stateTaxRate > 0.10) {
+    pts -= 2; // SALT headwind
+    notes.push("SALT headwind in high‑tax state");
   }
+  return { points: clamp(pts, 0, 15), notes };
+}
 
-  // 4) Investments tax-efficiency (max 15)
-  const inv = input.investmentHygiene || {};
-  let investScore = 0;
-  investScore += inv.taxLossHarvestReady ? 7 : 3;
-  investScore += inv.assetLocationOK ? 8 : 3;
-  investScore = clamp(investScore, 0, 15);
-  if (!inv.assetLocationOK) notes.push("Improve asset location between tax‑deferred and taxable accounts");
+function investmentPoints(inv: NonNullable<ScoreInput["investmentHygiene"]>): { points: number; notes: string[] } {
+  const notes: string[] = [];
+  const loc = bool(inv.assetLocationOK) ? 9 : 4;
+  const tlh = bool(inv.taxLossHarvestReady) ? 6 : 2;
+  if (!bool(inv.assetLocationOK)) notes.push("Improve asset location");
+  return { points: clamp(loc + tlh, 0, 15), notes };
+}
 
-  // 5) Hygiene (max 10)
-  let hygieneScore = 0;
-  // Proxy signals
-  hygieneScore += input.w2Income ? 3 : 2; // assume payroll withholding
-  hygieneScore += se ? 1 : 0; // SE requires est taxes; low default unless strategy present
-  if (ent.reasonableSalary) hygieneScore += 2;
-  if ((c.k401 || 0) + (c.hsa || 0) + (c.ira || 0) > 0) hygieneScore += 2;
-  hygieneScore = clamp(hygieneScore, 0, 10);
+function hygienePoints(inv?: NonNullable<ScoreInput["investmentHygiene"]>): { points: number; notes: string[] } {
+  const notes: string[] = [];
+  const withhold = inv?.withholdingsOK === true;
+  const est = inv?.estimatesOK === true;
+  let pts = 3;
+  if (withhold && est) pts = 10;
+  else if (withhold || est) pts = 6;
+  return { points: clamp(pts, 0, 10), notes };
+}
 
-  // 6) Advanced strategies (max 20)
-  const codes = new Set((input.strategies || []).map((s) => s.code));
-  const advancedSet = [
-    "augusta_280a",
-    "cost_seg_bonus",
-    "qsbs_awareness",
-    "daf_bunching",
-    "ptet_state",
-    "backdoor_roth",
-  ];
-  let advancedHits = 0;
-  for (const code of advancedSet) if (codes.has(code)) advancedHits++;
-  let advancedScore = 0;
-  if (advancedHits > 0) {
-    const weights = [8, 6, 4];
-    for (let i = 0; i < Math.min(advancedHits, weights.length); i++) advancedScore += weights[i];
-    if (advancedHits > weights.length) advancedScore += (advancedHits - weights.length) * 2;
+function advancedPoints(strategies: Array<{ code: string }>): { points: number; notes: string[] } {
+  const notes: string[] = [];
+  const map: Record<string, number> = {
+    augusta: 4,
+    augusta_280a: 4,
+    cost_seg: 8,
+    cost_seg_bonus: 8,
+    qsbs_awareness: 4,
+    daf: 4,
+    daf_bunching: 4,
+    rep_status: 6,
+    backdoor_roth: 2,
+    mega_backdoor_roth: 4,
+  };
+  let pts = 0;
+  const seen = new Set<string>();
+  for (const s of strategies || []) {
+    const k = String(s.code || "").toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    if (k in map) pts += map[k];
   }
-  advancedScore = clamp(advancedScore, 0, 20);
+  return { points: clamp(pts, 0, 20), notes };
+}
+
+export function calculateKeepMoreScore(input: ScoreInput): ScoreResult {
+  const {
+    filingStatus = "single",
+    w2Income = 0,
+    selfEmploymentIncome = 0,
+    capitalGains = 0,
+    itemizedDeductions = 0,
+    stateTaxRate = 0,
+    contributions = {},
+    entity = {},
+    investmentHygiene = {},
+    strategies = [],
+  } = input;
+
+  const band = incomeBand(w2Income, selfEmploymentIncome);
+  const notes: string[] = [];
+
+  const r = retirementPoints(band, {
+    k401: nz(contributions.k401),
+    hsa: nz(contributions.hsa),
+    ira: nz(contributions.ira),
+    megaBackdoor: bool(contributions.megaBackdoor),
+  });
+  notes.push(...r.notes);
+
+  const e = entityPoints(nz(selfEmploymentIncome), entity.type, entity.reasonableSalary);
+  notes.push(...e.notes);
+
+  const d = deductionPoints(filingStatus, nz(itemizedDeductions), nz(stateTaxRate));
+  notes.push(...d.notes);
+
+  const inv = investmentPoints(investmentHygiene || {});
+  notes.push(...inv.notes);
+
+  const h = hygienePoints(investmentHygiene);
+  notes.push(...h.notes);
+
+  const a = advancedPoints(strategies);
+  notes.push(...a.notes);
 
   const breakdown: ScoreBreakdown = {
-    retirement: Math.round(retireScore),
-    entity: Math.round(entityScore),
-    deductions: Math.round(deductionsScore),
-    investments: Math.round(investScore),
-    hygiene: Math.round(hygieneScore),
-    advanced: Math.round(advancedScore),
+    retirement: Math.round(r.points),
+    entity: Math.round(e.points),
+    deductions: Math.round(d.points),
+    investments: Math.round(inv.points),
+    hygiene: Math.round(h.points),
+    advanced: Math.round(a.points),
   };
 
-  const score = clamp(
-    breakdown.retirement +
-      breakdown.entity +
-      breakdown.deductions +
-      breakdown.investments +
-      breakdown.hygiene +
-      breakdown.advanced,
-    0,
-    100
-  );
-
-  // Nudge: if essentially no data, provide a modest baseline ~30
-  if (agi === 0 && !input.entity && !input.contributions && !input.investmentHygiene && (!input.strategies || input.strategies.length === 0)) {
-    return { score: 30, breakdown: { retirement: 4, entity: 6, deductions: 6, investments: 6, hygiene: 8, advanced: 0 }, notes };
-  }
+  const total = breakdown.retirement + breakdown.entity + breakdown.deductions + breakdown.investments + breakdown.hygiene + breakdown.advanced;
+  const score = clamp(total, 0, 100);
 
   return { score, breakdown, notes };
 }
 
 export default calculateKeepMoreScore;
-
