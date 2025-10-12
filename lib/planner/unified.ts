@@ -61,6 +61,19 @@ function breakdownToRecord(b: ScoreBreakdown): Record<string, number> {
   }
 }
 
+function recordToBreakdown(r: Record<string, number> | undefined): ScoreBreakdown {
+  const z = (n?: number) => (Number.isFinite(n ?? NaN) ? Number(n) : 0)
+  const src = r ?? {}
+  return {
+    retirement: z((src as any).retirement),
+    entity: z((src as any).entity),
+    deductions: z((src as any).deductions),
+    investments: z((src as any).investments),
+    hygiene: z((src as any).hygiene),
+    advanced: z((src as any).advanced),
+  }
+}
+
 export async function runUnifiedPlanner({
   userId,
   planId,
@@ -93,7 +106,14 @@ export async function runUnifiedPlanner({
   })
 
   // Compute delta vs previous
-  const delta = computeDelta(prevPayload, scoreResult)
+  const prevForDelta: ScoreResult | undefined = prevPayload
+    ? {
+        score: prevPayload.score ?? 0,
+        breakdown: recordToBreakdown(prevPayload.breakdown as Record<string, number> | undefined),
+        notes: Array.isArray((prevPayload as any).notes) ? ((prevPayload as any).notes as string[]) : [],
+      }
+    : undefined
+  const delta = computeDelta(prevForDelta, scoreResult)
 
   // Store snapshot with narrative JSON
   const payload = {
