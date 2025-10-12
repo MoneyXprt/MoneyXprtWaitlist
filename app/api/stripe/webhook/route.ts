@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     assertEnv(["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"]);
 
     const stripe = new Stripe(env.server.STRIPE_SECRET_KEY!, {
-      apiVersion: "2024-06-20",
+      apiVersion: "2023-10-16",
     });
 
     const sig = headers().get('stripe-signature') ?? '';
