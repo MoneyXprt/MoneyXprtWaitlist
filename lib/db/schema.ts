@@ -119,6 +119,24 @@ export const calcSnapshot = pgTable("calc_snapshot", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+// User plans + versions
+export const plans = pgTable("plans", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: uuid("user_id").notNull(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const planVersions = pgTable("plan_versions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  planId: uuid("plan_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  scoreTotal: numeric("score_total", { precision: 6, scale: 2 }).default("0"),
+  scoreBreakdown: jsonb("score_breakdown").notNull(),
+  strategies: jsonb("strategies").notNull(),
+  narrative: jsonb("narrative"),
+});
+
 // ========== Strategy engine params (enums + tables) ==========
 
 export const filingStatusEnum = pgEnum("filing_status", [
@@ -321,6 +339,11 @@ export type InsertPlanItem = InferInsertModel<typeof planItem>;
 export type CalcSnapshot = InferSelectModel<typeof calcSnapshot>;
 export type InsertCalcSnapshot = InferInsertModel<typeof calcSnapshot>;
 
+export type PlanRow = InferSelectModel<typeof plans>;
+export type InsertPlanRow = InferInsertModel<typeof plans>;
+export type PlanVersionRow = InferSelectModel<typeof planVersions>;
+export type InsertPlanVersionRow = InferInsertModel<typeof planVersions>;
+
 // Supabase Database typing (preserve existing consumer expectations)
 export type Database = {
   public: {
@@ -334,6 +357,8 @@ export type Database = {
       ai_narrative_cache: typeof aiNarrativeCache;
       recommendations: typeof plan;
       recommendation_items: typeof planItem;
+      plans: typeof plans;
+      plan_versions: typeof planVersions;
       tax_profiles: typeof taxProfiles;
       income_streams: typeof incomeStreams;
       properties: typeof propertiesTable;
