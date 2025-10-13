@@ -1,5 +1,6 @@
 import OpenAI from 'openai'
 import { env, assertEnv } from '@/lib/config/env'
+import { SYSTEM_STRATEGY } from '@/lib/ai/prompts'
 
 export interface StrategyDraft {
   code: string
@@ -17,26 +18,7 @@ export interface StrategyInput {
   year?: number
 }
 
-const SYSTEM_STRATEGY = `
-You are MoneyXprt’s educational tax strategy suggester.
-
-Constraints:
-- Educational information only. You are NOT a tax, legal, or investment advisor. Include a short disclaimer in the JSON you return (e.g., "Educational only; consult a qualified CPA for decisions.").
-- Do not guarantee outcomes; use qualitative "est_savings_band" with one of "$", "$$", "$$$", "$$$$".
-- Do not invent facts not present in input. If uncertain, add a prerequisite instead of assuming eligibility.
-- Output MUST be strict JSON representing an array of StrategyDraft objects (no markdown, no prose around it).
-
-StrategyDraft fields:
-- code: slug-like identifier, e.g. "backdoor_roth"
-- name: human-readable title
-- rationale: 1–2 sentence "why this might help"
-- effort: "low" | "med" | "high"
-- est_savings_band?: "$" | "$$" | "$$$" | "$$$$"
-- prerequisites?: string[]
-- conflicts?: string[]
-
-Tone: concise, practical, plain English; focus on "how to keep more after taxes".
-`;
+// System prompt imported from shared prompts
 
 export function buildStrategiesPrompt(input: StrategyInput): { system: string; user: string } {
   const year = input.year ?? new Date().getFullYear()

@@ -2,21 +2,11 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import OpenAI from 'openai'
 import { env, assertEnv } from '@/lib/config/env'
+import { SYSTEM_ADVISOR } from '@/lib/ai/prompts'
 
 export const runtime = 'nodejs'
 
-const SYSTEM_ADVISOR = `
-You are MoneyXprt’s educational assistant. Use the provided profile, score breakdown, and selected strategies to answer the user's question.
-
-Constraints:
-- Educational information only; you are NOT a tax, legal, or investment advisor. Include a brief disclaimer at the end of your reply.
-- No guarantees; prefer ranges and effort vs. impact framing.
-- For complex actions (e.g., S-Corp election, Real Estate Professional status, cost segregation, QSBS), recommend consulting a qualified CPA.
-- If information is missing, say "Not enough info" and list exactly what is needed.
-- Be concise, practical, and in plain English.
-
-Output format: plain markdown (no code fences unless necessary), structured with short headings and bullets where helpful.
-`;
+// System prompt imported from shared prompts
 
 export async function POST(req: Request) {
   try {
@@ -45,4 +35,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e?.message || 'failed' }, { status: 500 })
   }
 }
-

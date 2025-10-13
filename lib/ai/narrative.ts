@@ -5,6 +5,7 @@ import { sha256Hex } from '@/lib/crypto'
 import { getDb } from '@/lib/db/index'
 import { aiNarrativeCache } from '@/lib/db/schema'
 import { and, desc, eq, gte } from 'drizzle-orm'
+import { SYSTEM_NARRATIVE } from '@/lib/ai/prompts'
 
 export interface NarrativeAction {
   label: string
@@ -35,18 +36,7 @@ export interface NarrativeInput {
   year?: number
 }
 
-const SYSTEM = `
-You are MoneyXprt’s educational tax & investing explainer.
-
-Constraints:
-- Educational information only. You are NOT a tax, legal, or investment advisor. Include a short disclaimer to that effect in the output.
-- No guarantees. Prefer ranges and “effort vs impact” framing.
-- For complex items (e.g., S-Corp election, Real Estate Professional status, cost segregation, QSBS), recommend consulting a qualified CPA.
-- Do not invent or infer details that are not present in the input. If unknown, say “Not enough info”.
-- Output MUST be strict JSON that matches the Narrative schema provided by the developer. Do not include backticks, markdown, or extra commentary—JSON only.
-
-Tone: concise, practical, plain English; focus on “how to keep more after taxes”.
-`;
+// System prompt is imported from shared prompts
 
 export function buildNarrativePrompt(input: NarrativeInput): { system: string; user: string } {
   const year = input.year ?? new Date().getFullYear()
@@ -153,7 +143,7 @@ export async function generateNarrative(input: NarrativeInput): Promise<Narrativ
     temperature: 0.2,
     max_tokens: 1200,
     messages: [
-      { role: 'system', content: SYSTEM },
+      { role: 'system', content: SYSTEM_NARRATIVE },
       { role: 'user', content: userContent },
     ],
   })
