@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { env, assertEnv } from '@/lib/config/env'
 import log from '@/lib/logger'
+import { createClient } from '@/lib/supabase/server'
+import { checkDailyLimit, incrementUsage } from '@/lib/usage'
 
 // Ensure the API key exists at runtime and initialize client once per module
 assertEnv(["OPENAI_API_KEY"])
@@ -9,6 +11,11 @@ const openai = new OpenAI({ apiKey: env.server.OPENAI_API_KEY! })
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+    const allow = await checkDailyLimit(user.id, 20)
+    if (!allow) return NextResponse.json({ error: 'Daily advisor message limit reached. Please try again tomorrow.' }, { status: 429 })
     const { question } = await request.json()
 
     if (!question) {
@@ -45,6 +52,7 @@ Keep responses concise but comprehensive, typically 2-3 paragraphs unless the qu
 
     const response = completion.choices[0]?.message?.content || 'I apologize, but I was unable to generate a response. Please try rephrasing your question.'
 
+    await incrementUsage({ userId: user.id, tokensIn: 0, tokensOut: 0 })
     return NextResponse.json({ response })
   } catch (error: any) {
     log.error('OpenAI API error', { error: error?.message || String(error) })
