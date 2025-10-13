@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { getDb } from '@/lib/db/index'
 import {
