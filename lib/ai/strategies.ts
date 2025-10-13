@@ -17,14 +17,25 @@ export interface StrategyInput {
   year?: number
 }
 
-const SYSTEM = `
-You are MoneyXprt’s educational strategy generator.
+const SYSTEM_STRATEGY = `
+You are MoneyXprt’s educational tax strategy suggester.
 
 Constraints:
-- Educational output only. No guarantees. Do not provide legal, tax, or investment advice.
-- Do not invent unknowns. If information is missing, prefer conservative assumptions.
-- Output MUST be strict JSON: an array of StrategyDraft objects. No markdown, no commentary.
-- Each StrategyDraft must include: code, name, rationale (1–2 sentences), effort, optional est_savings_band, prerequisites, conflicts.
+- Educational information only. You are NOT a tax, legal, or investment advisor. Include a short disclaimer in the JSON you return (e.g., "Educational only; consult a qualified CPA for decisions.").
+- Do not guarantee outcomes; use qualitative "est_savings_band" with one of "$", "$$", "$$$", "$$$$".
+- Do not invent facts not present in input. If uncertain, add a prerequisite instead of assuming eligibility.
+- Output MUST be strict JSON representing an array of StrategyDraft objects (no markdown, no prose around it).
+
+StrategyDraft fields:
+- code: slug-like identifier, e.g. "backdoor_roth"
+- name: human-readable title
+- rationale: 1–2 sentence "why this might help"
+- effort: "low" | "med" | "high"
+- est_savings_band?: "$" | "$$" | "$$$" | "$$$$"
+- prerequisites?: string[]
+- conflicts?: string[]
+
+Tone: concise, practical, plain English; focus on "how to keep more after taxes".
 `;
 
 export function buildStrategiesPrompt(input: StrategyInput): { system: string; user: string } {
@@ -36,7 +47,7 @@ export function buildStrategiesPrompt(input: StrategyInput): { system: string; u
     year,
   }
   const user = JSON.stringify({ profileSummary, plan: input.plan || {} })
-  return { system: SYSTEM, user }
+  return { system: SYSTEM_STRATEGY, user }
 }
 
 export async function generateStrategies(input: StrategyInput): Promise<StrategyDraft[]> {
@@ -56,16 +67,22 @@ export async function generateStrategies(input: StrategyInput): Promise<Strategy
   })
 
   const content = completion.choices?.[0]?.message?.content ?? ''
+  function isStrategyDraftArray(v: any): v is StrategyDraft[] {
+    return Array.isArray(v) && v.every(x => x && typeof x.code === 'string' && typeof x.name === 'string' && typeof x.rationale === 'string' && ['low','med','high'].includes(x.effort))
+  }
   try {
-    const parsed = JSON.parse(content) as StrategyDraft[]
-    if (!Array.isArray(parsed)) throw new Error('not array')
-    // minimal shape checks
-    const out = parsed.filter((s) => typeof s?.code === 'string' && typeof s?.name === 'string' && typeof s?.rationale === 'string')
-    return out
+    const parsed = JSON.parse(content)
+    if (!isStrategyDraftArray(parsed)) throw new Error('Invalid strategy array shape')
+    return parsed
   } catch {
-    return []
+    return [{
+      code: 'disclaimer_only',
+      name: 'Disclaimer / Not Advice',
+      rationale: 'Educational only; consult a qualified CPA for decisions.',
+      effort: 'low',
+      est_savings_band: '$'
+    }]
   }
 }
 
 export default generateStrategies
-
