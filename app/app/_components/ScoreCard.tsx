@@ -2,6 +2,7 @@
 import React from 'react'
 import { recalcScore } from '@/lib/score/client'
 import ExplainDrawer from './ExplainDrawer'
+import { useEffect } from 'react'
 
 type Breakdown = { retirement: number; entity: number; deductions: number; investments: number; hygiene: number; advanced: number }
 
@@ -27,6 +28,28 @@ export default function ScoreCard() {
   const [breakdown, setBreakdown] = React.useState<Breakdown | null>(null)
   const [updatedAt, setUpdatedAt] = React.useState<string | null>(null)
   const [showExplain, setShowExplain] = React.useState(false)
+  const [weights, setWeights] = React.useState<{ [k: string]: number } | null>(null)
+  const [savingWeights, setSavingWeights] = React.useState(false)
+
+  // Load user weights
+  useEffect(() => {
+    fetch('/api/settings/weights').then(async (r) => {
+      const j = await r.json()
+      if (r.ok) setWeights(j.weights || { retirement: 20, entity: 20, deductions: 15, investments: 15, hygiene: 10, advanced: 20 })
+    })
+  }, [])
+
+  async function saveWeights(next: any) {
+    setSavingWeights(true)
+    setWeights(next)
+    try {
+      await fetch('/api/settings/weights', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ weights: next }) })
+      // Trigger a rescore so UI reflects new weights
+      await recalc()
+    } finally {
+      setSavingWeights(false)
+    }
+  }
 
   async function load() {
     setLoading(true); setError(null)
@@ -79,6 +102,29 @@ export default function ScoreCard() {
           </button>
         </div>
       </div>
+
+      {/* Weights controls */}
+      {weights && (
+        <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4 border rounded p-3">
+          {['retirement','entity','deductions','investments','hygiene','advanced'].map((k) => (
+            <label key={k} className="text-xs text-neutral-700">
+              <div className="flex items-center justify-between mb-1">
+                <span className="capitalize">{k}</span>
+                <span className="text-neutral-500">{weights[k] ?? 0}</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={40}
+                step={1}
+                value={weights[k] ?? 0}
+                onChange={(e) => saveWeights({ ...weights, [k]: Number(e.target.value) })}
+              />
+            </label>
+          ))}
+          <div className="md:col-span-3 text-right text-xs text-neutral-500">{savingWeights ? 'Saving preferences…' : 'Adjust category weights to reflect your priorities'}</div>
+        </div>
+      )}
 
       {loading ? (
         <div className="mt-4 text-sm text-neutral-600">Loading score…</div>

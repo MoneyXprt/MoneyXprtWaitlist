@@ -260,6 +260,12 @@ export const stateParameters = pgTable("state_parameters", {
   lastReviewed: date("last_reviewed"),
 });
 
+export const userSettings = pgTable("user_settings", {
+  userId: uuid("user_id").primaryKey(),
+  weights: jsonb("weights"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
 // ========== Zod insert schemas and exported types ==========
 
 export const insertWaitlistSchema = z.object({
@@ -364,6 +370,7 @@ export type Database = {
       properties: typeof propertiesTable;
       law_parameters: typeof lawParameters;
       state_parameters: typeof stateParameters;
+      user_settings: typeof userSettings;
     };
     Views: { [key: string]: never };
     Functions: { [key: string]: never };

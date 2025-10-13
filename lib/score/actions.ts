@@ -11,7 +11,8 @@ import {
 } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { mapToScoreInput } from "./map";
-import { calculateKeepMoreScore } from "./index";
+import { calculateKeepMoreScore, type ScoreWeights } from "./index";
+import { userSettings } from "@/lib/db/schema";
 
 export async function recalculateKeepMoreScore(): Promise<{
   score: number;
@@ -54,7 +55,11 @@ export async function recalculateKeepMoreScore(): Promise<{
   }
 
   const scoreInput = mapToScoreInput({ profile: profileRow, household: householdRow, planItems: items });
-  const result = calculateKeepMoreScore(scoreInput);
+  // Load weights if present
+  let weights: ScoreWeights | undefined = undefined;
+  const [settings] = await db.select().from(userSettings).where(eq(userSettings.userId, user.id)).limit(1);
+  if (settings?.weights) weights = settings.weights as ScoreWeights;
+  const result = calculateKeepMoreScore(scoreInput, weights);
 
   const payload = {
     year: new Date().getFullYear(),
@@ -71,4 +76,3 @@ export async function recalculateKeepMoreScore(): Promise<{
 
   return { score: result.score, breakdown: result.breakdown };
 }
-

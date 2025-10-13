@@ -41,6 +41,39 @@ export function incomeBand(w2: number, se: number): "low" | "mid" | "high" {
   return "high";
 }
 
+export interface ScoreWeights {
+  retirement?: number;
+  entity?: number;
+  deductions?: number;
+  investments?: number;
+  hygiene?: number;
+  advanced?: number;
+}
+
+const MAX: ScoreBreakdown = {
+  retirement: 20,
+  entity: 20,
+  deductions: 15,
+  investments: 15,
+  hygiene: 10,
+  advanced: 20,
+}
+
+function normalizeWeights(w?: ScoreWeights): Required<ScoreWeights> {
+  const defaults: Required<ScoreWeights> = { ...MAX }
+  const base = { ...defaults, ...(w || {}) }
+  const sum = Object.values(base).reduce((a, b) => a + (Number.isFinite(b as number) ? (b as number) : 0), 0) || 100
+  const factor = 100 / sum
+  return {
+    retirement: (base.retirement as number) * factor,
+    entity: (base.entity as number) * factor,
+    deductions: (base.deductions as number) * factor,
+    investments: (base.investments as number) * factor,
+    hygiene: (base.hygiene as number) * factor,
+    advanced: (base.advanced as number) * factor,
+  }
+}
+
 function retirementPoints(
   band: "low" | "mid" | "high",
   { k401 = 0, hsa = 0, ira = 0, megaBackdoor = false }: Required<Required<ScoreInput>["contributions"]>
@@ -166,7 +199,7 @@ function advancedPoints(strategies: Array<{ code: string }>): { points: number; 
   return { points: clamp(pts, 0, 20), notes };
 }
 
-export function calculateKeepMoreScore(input: ScoreInput): ScoreResult {
+export function calculateKeepMoreScore(input: ScoreInput, weights?: ScoreWeights): ScoreResult {
   const {
     filingStatus = "single",
     w2Income = 0,
@@ -215,8 +248,16 @@ export function calculateKeepMoreScore(input: ScoreInput): ScoreResult {
     advanced: Math.round(a.points),
   };
 
-  const total = breakdown.retirement + breakdown.entity + breakdown.deductions + breakdown.investments + breakdown.hygiene + breakdown.advanced;
-  const score = clamp(total, 0, 100);
+  // Weighted scoring: map each category to [0,1] by its max, then scale by normalized weights summing to 100
+  const w = normalizeWeights(weights);
+  const total =
+    (breakdown.retirement / MAX.retirement) * w.retirement +
+    (breakdown.entity / MAX.entity) * w.entity +
+    (breakdown.deductions / MAX.deductions) * w.deductions +
+    (breakdown.investments / MAX.investments) * w.investments +
+    (breakdown.hygiene / MAX.hygiene) * w.hygiene +
+    (breakdown.advanced / MAX.advanced) * w.advanced;
+  const score = clamp(Math.round(total));
 
   return { score, breakdown, notes };
 }
