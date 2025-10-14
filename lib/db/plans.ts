@@ -39,6 +39,9 @@ export async function getLatestPlanVersion(planId: string) {
   return rows[0]
 }
 
+// Alias for API ergonomics
+export const getLatestPlanVersionById = getLatestPlanVersion
+
 export async function listPlanVersions(planId: string, limit = 10) {
   const db = getDb()
   return db
@@ -48,4 +51,3 @@ export async function listPlanVersions(planId: string, limit = 10) {
     .orderBy(desc(planVersions.createdAt))
     .limit(limit)
 }
-

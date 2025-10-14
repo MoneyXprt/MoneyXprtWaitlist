@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { getDb } from '@/lib/db/index'
 import { plans, profiles } from '@/lib/db/schema'
 import { eq, and, desc } from 'drizzle-orm'
 import { planVersions } from '@/lib/db/schema'
-import { generatePlaybookPdf } from '@/lib/pdf/playbook'
+import { buildPlaybookPDF } from '@/lib/pdf/playbook'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 async function getLatestVersion(db: ReturnType<typeof getDb>, planId: string) {
   const rows = await db
@@ -59,23 +61,27 @@ async function handle(req: Request) {
     const profileRows = await db.select().from(profiles).where(eq(profiles.id, user.id)).limit(1)
     const profile = profileRows[0] || null
 
-    const bytes = await generatePlaybookPdf({
-      profile: profile as any,
-      version: version as any,
-      planName: plan.name,
-      brand: { title: 'MoneyXprt — Tax Strategy Playbook' },
+    const bytes = await buildPlaybookPDF({
+      plan: {
+        plan_name: plan.name,
+        user_name: profile?.fullName || undefined,
+        created_at: String(version.createdAt || ''),
+        score_total: Number(version.scoreTotal ?? 0),
+        score_breakdown: (version as any).scoreBreakdown || {},
+        strategies: version.strategies as any,
+        narrative: version.narrative,
+      },
     })
 
     const fname = (plan.name ? `${plan.name}-playbook.pdf` : 'playbook.pdf').replace(/\s+/g, '-').toLowerCase()
-    return new NextResponse(Buffer.from(bytes), {
-      status: 200,
+    return new Response(bytes, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${fname}"`,
+        'Cache-Control': 'no-store, max-age=0',
       },
     })
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'failed' }, { status: 500 })
   }
 }
-

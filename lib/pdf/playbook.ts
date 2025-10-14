@@ -1,4 +1,5 @@
 import 'server-only'
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 
 type PlanVersionRow = {
   id: string
@@ -26,7 +27,6 @@ export async function generatePlaybookPdf(input: {
   const brandTitle = input.brand?.title ?? 'MoneyXprt Playbook'
   const footer = input.brand?.footer ?? 'Educational only — not legal, tax, or investment advice.'
 
-  const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib')
   const pdf = await PDFDocument.create()
   const font = await pdf.embedFont(StandardFonts.Helvetica)
 
@@ -202,3 +202,38 @@ export async function generatePlaybookPdf(input: {
 }
 
 export default generatePlaybookPdf
+
+// Node-safe builder wrapper matching API usage
+type ScoreBreakdown = {
+  retirement: number; entity: number; deductions: number; investments: number; hygiene: number; advanced: number;
+}
+interface Strategy {
+  code: string; name?: string; rationale?: string; effort?: 'low'|'med'|'high'; est_savings_band?: '$'|'$$'|'$$$'|'$$$$'
+}
+interface PlanVersionPayload {
+  score_total?: number;
+  score_breakdown?: ScoreBreakdown | Record<string, number>;
+  strategies?: Strategy[];
+  narrative?: any;
+  created_at?: string;
+  plan_name?: string;
+  user_name?: string;
+}
+
+export async function buildPlaybookPDF({ plan }: { plan: PlanVersionPayload }): Promise<Uint8Array> {
+  const version: PlanVersionRow = {
+    id: 'plan-version',
+    planId: 'plan',
+    createdAt: plan.created_at || new Date().toISOString(),
+    scoreTotal: plan.score_total,
+    scoreBreakdown: plan.score_breakdown as any,
+    strategies: (plan.strategies || []) as any,
+    narrative: plan.narrative,
+  }
+  const profile: ProfileRow | null = {
+    id: 'user',
+    fullName: plan.user_name || null,
+    entityType: null,
+  }
+  return generatePlaybookPdf({ profile, version, planName: plan.plan_name || 'MoneyXprt Playbook' })
+}
