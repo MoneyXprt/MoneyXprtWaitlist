@@ -1,6 +1,8 @@
 import React, { Suspense } from 'react';
 import ScenarioClient from './_components/ScenarioClient';
 
+export const dynamic = "force-dynamic";
+
 export const metadata = { title: 'Scenario • MoneyXprt' };
 
 export default async function Page() {

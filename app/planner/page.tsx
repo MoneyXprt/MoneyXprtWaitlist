@@ -2,6 +2,7 @@
 import React, { Suspense } from 'react';
 import PlannerClient from './_components/PlannerClient';
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: 'Planner • MoneyXprt' };
 
 export default async function Page() {

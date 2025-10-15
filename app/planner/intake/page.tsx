@@ -2,6 +2,7 @@
 import React, { Suspense } from 'react';
 import IntakeClient from './_components/IntakeClient';
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: 'Planner Intake • MoneyXprt' };
 
 export default async function Page() {

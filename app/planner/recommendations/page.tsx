@@ -1,6 +1,8 @@
 import React, { Suspense } from 'react';
 import RecommendationsClient from './_components/RecommendationsClient';
 
+export const dynamic = "force-dynamic";
+
 export const metadata = { title: 'Recommendations • MoneyXprt' };
 
 export default async function Page() {
