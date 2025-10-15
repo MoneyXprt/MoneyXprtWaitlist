@@ -1,5 +1,5 @@
 import 'server-only'
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
+import { PDFDocument, StandardFonts } from 'pdf-lib'
 
 type PlanVersionRow = {
   id: string
@@ -30,10 +30,7 @@ export async function generatePlaybookPdf(input: {
   const pdf = await PDFDocument.create()
   const font = await pdf.embedFont(StandardFonts.Helvetica)
 
-  // Colors
-  const NAVY = rgb(0.14, 0.23, 0.38)
-  const GOLD = rgb(0.85, 0.67, 0.29)
-  const WHITE = rgb(1, 1, 1)
+  // Monochrome fallback: current pdf-lib build has no rgb() helper
 
   // Page + layout
   const PAGE = { width: 612, height: 792 }
@@ -51,10 +48,10 @@ export async function generatePlaybookPdf(input: {
   }
 
   function drawHeader() {
-    page.drawRectangle({ x: 0, y: PAGE.height - 40, width: PAGE.width, height: 40, color: NAVY })
-    page.drawText(brandTitle, { x: MARGINS.left, y: PAGE.height - 28, size: 14, color: WHITE, font })
+    page.drawRectangle({ x: 0, y: PAGE.height - 40, width: PAGE.width, height: 40 })
+    page.drawText(brandTitle, { x: MARGINS.left, y: PAGE.height - 28, size: 14, font })
     const dateStr = new Date(version.createdAt || Date.now()).toLocaleDateString()
-    page.drawText(dateStr, { x: PAGE.width - MARGINS.right - 100, y: PAGE.height - 28, size: 10, color: WHITE, font })
+    page.drawText(dateStr, { x: PAGE.width - MARGINS.right - 100, y: PAGE.height - 28, size: 10, font })
   }
 
   function ensureSpace(linesNeeded = 1, lineHeight = 16) {
@@ -69,9 +66,9 @@ export async function generatePlaybookPdf(input: {
   function startSection(title: string) {
     if (isOverOneThirdFilled()) newPage()
     // Subheader
-    page.drawText(title, { x: MARGINS.left, y, size: 16, color: NAVY, font })
+    page.drawText(title, { x: MARGINS.left, y, size: 16, font })
     y -= 8
-    page.drawRectangle({ x: MARGINS.left, y: y - 2, width: PAGE.width - MARGINS.left - MARGINS.right, height: 2, color: GOLD })
+    page.drawRectangle({ x: MARGINS.left, y: y - 2, width: PAGE.width - MARGINS.left - MARGINS.right, height: 2 })
     y -= 14
   }
 
@@ -80,7 +77,7 @@ export async function generatePlaybookPdf(input: {
     const lines = wrapText(text, size, maxWidth)
     for (const line of lines) {
       ensureSpace(1, size + 4)
-      page.drawText(line, { x: MARGINS.left, y, size, font, color })
+      page.drawText(line, { x: MARGINS.left, y, size, font })
       y -= size + 4
     }
   }
@@ -105,7 +102,7 @@ export async function generatePlaybookPdf(input: {
 
   function drawKeyVal(label: string, value: string) {
     ensureSpace(1)
-    page.drawText(label + ': ', { x: MARGINS.left, y, size: 12, font, color: NAVY })
+    page.drawText(label + ': ', { x: MARGINS.left, y, size: 12, font })
     page.drawText(value, { x: MARGINS.left + 80, y, size: 12, font })
     y -= 18
   }
@@ -122,8 +119,8 @@ export async function generatePlaybookPdf(input: {
       // Label
       page.drawText(k, { x: MARGINS.left, y, size: 11, font })
       // Bar
-      page.drawRectangle({ x: MARGINS.left + 110, y: y - 2, width: barW, height: 10, color: GOLD })
-      page.drawText(`${Math.round(pct * 100)}%`, { x: MARGINS.left + 110 + barW + 8, y, size: 10, font, color: NAVY })
+      page.drawRectangle({ x: MARGINS.left + 110, y: y - 2, width: barW, height: 10 })
+      page.drawText(`${Math.round(pct * 100)}%`, { x: MARGINS.left + 110 + barW + 8, y, size: 10, font })
       y -= 18
     }
   }
@@ -135,12 +132,12 @@ export async function generatePlaybookPdf(input: {
 
   // ========== Cover Page ==========
   // Cover with brand band
-  page.drawRectangle({ x: 0, y: 0, width: PAGE.width, height: PAGE.height, color: WHITE })
-  page.drawRectangle({ x: 0, y: PAGE.height - 120, width: PAGE.width, height: 120, color: NAVY })
-  page.drawText('MoneyXprt Playbook', { x: MARGINS.left, y: PAGE.height - 80, size: 28, font, color: WHITE })
+  page.drawRectangle({ x: 0, y: 0, width: PAGE.width, height: PAGE.height })
+  page.drawRectangle({ x: 0, y: PAGE.height - 120, width: PAGE.width, height: 120 })
+  page.drawText('MoneyXprt Playbook', { x: MARGINS.left, y: PAGE.height - 80, size: 28, font })
   let cy = PAGE.height - 160
   const coverLine = (t: string, size = 14) => {
-    page.drawText(t, { x: MARGINS.left, y: cy, size, font, color: NAVY })
+    page.drawText(t, { x: MARGINS.left, y: cy, size, font })
     cy -= size + 10
   }
   coverLine(`Plan: ${input.planName || 'Untitled Plan'}`)
@@ -148,7 +145,7 @@ export async function generatePlaybookPdf(input: {
   coverLine(`Date: ${new Date(version.createdAt || Date.now()).toLocaleDateString()}`)
   cy -= 8
   const disclaimer = 'Educational only — not legal, tax, or investment advice.'
-  page.drawText(disclaimer, { x: MARGINS.left, y: cy, size: 11, font, color: NAVY })
+  page.drawText(disclaimer, { x: MARGINS.left, y: cy, size: 11, font })
 
   // Header for subsequent pages
   newPage(true)
@@ -161,7 +158,7 @@ export async function generatePlaybookPdf(input: {
   // Score breakdown
   if (version.scoreBreakdown && typeof version.scoreBreakdown === 'object') {
     y -= 6
-    page.drawText('Keep‑More Score Breakdown', { x: MARGINS.left, y, size: 13, font, color: NAVY })
+    page.drawText('Keep‑More Score Breakdown', { x: MARGINS.left, y, size: 13, font })
     y -= 16
     drawBarChart(version.scoreBreakdown as Record<string, number>)
   }
@@ -171,8 +168,8 @@ export async function generatePlaybookPdf(input: {
   for (const s of version.strategies || []) {
     ensureSpace(3)
     // Card title
-    page.drawRectangle({ x: MARGINS.left, y: y - 4, width: PAGE.width - MARGINS.left - MARGINS.right, height: 28, color: rgb(0.97, 0.97, 0.97) })
-    page.drawText(s.name || s.code, { x: MARGINS.left + 8, y: y + 2, size: 13, font, color: NAVY })
+    page.drawRectangle({ x: MARGINS.left, y: y - 4, width: PAGE.width - MARGINS.left - MARGINS.right, height: 28 })
+    page.drawText(s.name || s.code, { x: MARGINS.left + 8, y: y + 2, size: 13, font })
     y -= 34
     if (s.rationale) drawText(`Why: ${s.rationale}`, 11)
     const metaBits: string[] = []
@@ -192,7 +189,7 @@ export async function generatePlaybookPdf(input: {
     if (a?.reason) drawText(`  - ${a.reason}`, 11)
   }
   y -= 8
-  drawText('Disclaimer', 13, NAVY)
+  drawText('Disclaimer', 13)
   const disclaimers: string[] = Array.isArray(version?.narrative?.disclaimers) ? version.narrative.disclaimers : []
   const footerLine = footer
   if (!disclaimers.includes(footerLine)) disclaimers.push(footerLine)
