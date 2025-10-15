@@ -1,8 +1,16 @@
 "use client";
 import React from "react";
-import { useSearchParams } from "next/navigation";
-export default function HistoryClient() {
-  const sp = useSearchParams();
-  const snapshot = sp.get("snapshot") ?? undefined;
-  return <div id="history-client" />;
+
+export type HistoryClientProps = {
+  initialPlanId?: string;
+};
+
+export default function HistoryClient({ initialPlanId }: HistoryClientProps) {
+  // TODO: wire into existing UI logic (fetch history for the plan, preselect snapshot, etc.)
+  // This stub ensures typing is correct; keep the DOM stable for now.
+  return (
+    <div data-testid="history-client-root">
+      {/* placeholder to keep structure stable */}
+    </div>
+  );
 }
