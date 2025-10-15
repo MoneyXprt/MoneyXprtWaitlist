@@ -20,8 +20,8 @@ export interface ScoreBreakdown {
   entity: number;
   deductions: number;
   investments: number;
-  hygiene: number;
-  advanced: number;
+  insurance: number;
+  planning: number;
 }
 
 export interface ScoreResult {
@@ -46,8 +46,8 @@ export interface ScoreWeights {
   entity?: number;
   deductions?: number;
   investments?: number;
-  hygiene?: number;
-  advanced?: number;
+  insurance?: number;
+  planning?: number;
 }
 
 const MAX: ScoreBreakdown = {
@@ -55,8 +55,8 @@ const MAX: ScoreBreakdown = {
   entity: 20,
   deductions: 15,
   investments: 15,
-  hygiene: 10,
-  advanced: 20,
+  insurance: 10,
+  planning: 20,
 }
 
 function normalizeWeights(w?: ScoreWeights): Required<ScoreWeights> {
@@ -69,8 +69,8 @@ function normalizeWeights(w?: ScoreWeights): Required<ScoreWeights> {
     entity: (base.entity as number) * factor,
     deductions: (base.deductions as number) * factor,
     investments: (base.investments as number) * factor,
-    hygiene: (base.hygiene as number) * factor,
-    advanced: (base.advanced as number) * factor,
+    insurance: (base.insurance as number) * factor,
+    planning: (base.planning as number) * factor,
   }
 }
 
@@ -244,8 +244,8 @@ export function calculateKeepMoreScore(input: ScoreInput, weights?: ScoreWeights
     entity: Math.round(e.points),
     deductions: Math.round(d.points),
     investments: Math.round(inv.points),
-    hygiene: Math.round(h.points),
-    advanced: Math.round(a.points),
+    insurance: Math.round(h.points),
+    planning: Math.round(a.points),
   };
 
   // Weighted scoring: map each category to [0,1] by its max, then scale by normalized weights summing to 100
@@ -255,8 +255,8 @@ export function calculateKeepMoreScore(input: ScoreInput, weights?: ScoreWeights
     (breakdown.entity / MAX.entity) * w.entity +
     (breakdown.deductions / MAX.deductions) * w.deductions +
     (breakdown.investments / MAX.investments) * w.investments +
-    (breakdown.hygiene / MAX.hygiene) * w.hygiene +
-    (breakdown.advanced / MAX.advanced) * w.advanced;
+    (breakdown.insurance / MAX.insurance) * w.insurance +
+    (breakdown.planning / MAX.planning) * w.planning;
   const score = clamp(Math.round(total));
 
   return { score, breakdown, notes };

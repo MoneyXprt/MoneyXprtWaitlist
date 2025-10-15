@@ -17,6 +17,7 @@ import { recalculateKeepMoreScore } from '@/lib/score/actions'
 import type { ScoreResult, ScoreBreakdown } from '@/lib/score'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 function toScoreResult(prev?: { score?: number; breakdown?: Record<string, number> }): ScoreResult | undefined {
   if (!prev) return undefined;
@@ -26,12 +27,13 @@ function toScoreResult(prev?: { score?: number; breakdown?: Record<string, numbe
     entity: Number(b["entity"] ?? 0),
     deductions: Number(b["deductions"] ?? 0),
     investments: Number(b["investments"] ?? 0),
-    hygiene: Number(b["hygiene"] ?? 0),
-    advanced: Number(b["advanced"] ?? 0),
+    // Support legacy keys (hygiene/advanced) while preferring new ones
+    insurance: Number((b as any)["insurance"] ?? (b as any)["hygiene"] ?? 0),
+    planning: Number((b as any)["planning"] ?? (b as any)["advanced"] ?? 0),
   };
   const score = typeof prev.score === "number"
     ? prev.score
-    : (breakdown.retirement + breakdown.entity + breakdown.deductions + breakdown.investments + breakdown.hygiene + breakdown.advanced);
+    : (breakdown.retirement + breakdown.entity + breakdown.deductions + breakdown.investments + breakdown.insurance + breakdown.planning);
   return { score, breakdown, notes: [] };
 }
 

@@ -129,12 +129,18 @@ export const plans = pgTable("plans", {
 
 export const planVersions = pgTable("plan_versions", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  // Existing design (plan-scoped)
   planId: uuid("plan_id").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   scoreTotal: numeric("score_total", { precision: 6, scale: 2 }).default("0"),
   scoreBreakdown: jsonb("score_breakdown").notNull(),
   strategies: jsonb("strategies").notNull(),
   narrative: jsonb("narrative"),
+  // Additions for user-scoped planner history API
+  userId: uuid("user_id"),
+  payload: jsonb("payload"),
+  score: numeric("score", { precision: 6, scale: 2 }),
+  breakdown: jsonb("breakdown"),
 });
 
 // ========== Strategy engine params (enums + tables) ==========

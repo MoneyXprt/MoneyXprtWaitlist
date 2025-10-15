@@ -33,8 +33,9 @@ function recordToBreakdown(r: Record<string, number> | undefined): ScoreBreakdow
     entity: z((src as any).entity),
     deductions: z((src as any).deductions),
     investments: z((src as any).investments),
-    hygiene: z((src as any).hygiene),
-    advanced: z((src as any).advanced),
+    // prefer new keys; fallback to legacy keys
+    insurance: z((src as any).insurance ?? (src as any).hygiene),
+    planning: z((src as any).planning ?? (src as any).advanced),
   }
 }
 

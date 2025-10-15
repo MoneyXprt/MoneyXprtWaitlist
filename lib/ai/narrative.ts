@@ -15,7 +15,7 @@ export interface NarrativeAction {
 }
 
 export interface NarrativeSection {
-  section: 'retirement'|'entity'|'deductions'|'investments'|'hygiene'|'advanced'
+  section: 'retirement'|'entity'|'deductions'|'investments'|'insurance'|'planning'
   what_helped: string[]
   what_hurt: string[]
   suggestions: string[]
@@ -64,7 +64,7 @@ export function buildNarrativePrompt(input: NarrativeInput): { system: string; u
         { label: 'string', reason: 'string', effort: 'low|med|high', est_savings_band: '$$|$$$|$$$$ (optional)' }
       ],
       score_explainer: [
-        { section: 'retirement|entity|deductions|investments|hygiene|advanced', what_helped: ['string'], what_hurt: ['string'], suggestions: ['string'] }
+        { section: 'retirement|entity|deductions|investments|insurance|planning', what_helped: ['string'], what_hurt: ['string'], suggestions: ['string'] }
       ],
       disclaimers: ['string']
     }
@@ -187,8 +187,8 @@ export async function generateNarrative(input: NarrativeInput): Promise<Narrativ
         { section: 'entity', what_helped: [], what_hurt: [], suggestions: ['If you have SE income, assess S‑Corp fit with a CPA.'] },
         { section: 'deductions', what_helped: [], what_hurt: [], suggestions: ['Check if itemizing beats standard; consider bunching/DAF.'] },
         { section: 'investments', what_helped: [], what_hurt: [], suggestions: ['Place tax‑efficient assets in taxable; consider TLH readiness.'] },
-        { section: 'hygiene', what_helped: [], what_hurt: [], suggestions: ['Align withholdings/estimates to avoid penalties.'] },
-        { section: 'advanced', what_helped: [], what_hurt: [], suggestions: ['Evaluate advanced strategies only if appropriate.'] },
+        { section: 'insurance', what_helped: [], what_hurt: [], suggestions: ['Align withholdings/estimates and review risk coverages.'] },
+        { section: 'planning', what_helped: [], what_hurt: [], suggestions: ['Evaluate advanced strategies only if appropriate.'] },
       ],
       disclaimers: [
         'This content is educational only and not legal, tax, or investment advice. Consult a qualified professional before acting.',

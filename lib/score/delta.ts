@@ -9,7 +9,7 @@ function trendOf(delta: number): Trend {
 }
 
 function getSections(b: ScoreBreakdown): Array<keyof ScoreBreakdown> {
-  return ['retirement', 'entity', 'deductions', 'investments', 'hygiene', 'advanced']
+  return ['retirement', 'entity', 'deductions', 'investments', 'insurance', 'planning']
 }
 
 export function compareScores(prev: ScoreResult, next: ScoreResult) {
@@ -26,4 +26,3 @@ export function compareScores(prev: ScoreResult, next: ScoreResult) {
 }
 
 export type ScoreDelta = ReturnType<typeof compareScores>
-

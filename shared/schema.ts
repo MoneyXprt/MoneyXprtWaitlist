@@ -96,6 +96,17 @@ export const reports = pgTable("reports", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+// Plan versions (user-scoped snapshot history)
+export const planVersions = pgTable("plan_versions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: uuid("user_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  payload: jsonb("payload"),
+  score: numeric("score", { precision: 6, scale: 2 }),
+  breakdown: jsonb("breakdown"),
+  narrative: jsonb("narrative"),
+});
+
 // ---------------- Tax Strategy Engine schema (MVP) ----------------
 
 // Enums
@@ -311,3 +322,6 @@ export type Billing = typeof billing.$inferSelect;
 
 export type InsertReport = z.infer<typeof insertReportSchema>;
 export type Report = typeof reports.$inferSelect;
+
+export type PlanVersion = typeof planVersions.$inferSelect;
+export type InsertPlanVersion = typeof planVersions.$inferInsert;

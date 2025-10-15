@@ -5,7 +5,7 @@ describe('narrative prompt builder', () => {
   it('includes guardrails and schema hints', () => {
     const { system, user } = buildNarrativePrompt({
       profile: { filingStatus: 'single' },
-      scoreResult: { score: 72, breakdown: { retirement: 15, entity: 10, deductions: 12, investments: 14, hygiene: 8, advanced: 13 }, notes: ['test'] },
+      scoreResult: { score: 72, breakdown: { retirement: 15, entity: 10, deductions: 12, investments: 14, insurance: 8, planning: 13 }, notes: ['test'] },
       strategies: [{ code: 'cost_seg_bonus', name: 'Cost Segregation + Bonus' }],
       year: 2025,
     })
@@ -16,4 +16,3 @@ describe('narrative prompt builder', () => {
     expect(user).toMatch(/schema/)
   })
 })
-

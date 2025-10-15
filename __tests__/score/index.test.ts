@@ -29,7 +29,7 @@ describe('Keep‑More Score heuristics', () => {
   })
 
   // Case C: SE ≥ 120k, S‑Corp with reasonable salary, good investments, advanced
-  it('C) optimized S‑Corp with hygiene & advanced', () => {
+  it('C) optimized S‑Corp with insurance & planning', () => {
     const input: ScoreInput = {
       filingStatus: 'mfj',
       w2Income: 120000,
@@ -51,7 +51,7 @@ describe('Keep‑More Score heuristics', () => {
     expect(res.score).toBeLessThanOrEqual(95)
     expect(res.breakdown.entity).toBeGreaterThanOrEqual(18)
     expect(res.breakdown.investments).toBe(15)
-    expect(res.breakdown.hygiene).toBe(10)
+    expect(res.breakdown.insurance).toBe(10)
   })
 
   // Case D: near-threshold itemized with high state tax
@@ -84,7 +84,7 @@ describe('Keep‑More Score heuristics', () => {
       ],
     }
     const res = calculateKeepMoreScore(input)
-    expect(res.breakdown.advanced).toBeLessThanOrEqual(20)
+    expect(res.breakdown.planning).toBeLessThanOrEqual(20)
     // Category clamping and total bounds
     Object.values(res.breakdown).forEach((v) => expect(v).toBeGreaterThanOrEqual(0))
     expect(res.score).toBeGreaterThanOrEqual(0)
