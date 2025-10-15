@@ -1,29 +1,28 @@
 "use client";
 // app/planner/intake/_components/IntakeClient.tsx
 import { Suspense, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Wizard from '../../Wizard';
 import { usePlannerStore } from '@/lib/store/planner';
 import { buildDemoSnapshot } from '@/lib/strategy/ui/snapshots';
 import LoadDemo from '../LoadDemo';
-import type { SearchParamsObject } from '../../_components/WithSearchParams';
-
-function DemoLoader({ params }: { params: SearchParamsObject }) {
+function DemoLoader() {
+  const sp = useSearchParams();
   const setAll = usePlannerStore((s) => s.setAll);
   const once = useRef(false);
   useEffect(() => {
     if (once.current) return;
-    const demo = params['demo'];
+    const demo = sp.get('demo') || undefined;
     if (demo) {
       const data = buildDemoSnapshot(demo);
       if (data) setAll(data);
       once.current = true;
     }
-  }, [params, setAll]);
+  }, [sp, setAll]);
   return null;
 }
 
-export default function IntakeClient({ params }: { params: SearchParamsObject }) {
+export default function IntakeClient() {
   const data = usePlannerStore((s) => s.data);
   const updatePath = usePlannerStore((s) => s.updatePath);
   const router = useRouter();
@@ -70,10 +69,9 @@ export default function IntakeClient({ params }: { params: SearchParamsObject })
         </div>
       </div>
       <Suspense fallback={null}>
-        <DemoLoader params={params} />
+        <DemoLoader />
       </Suspense>
       <Wizard />
     </div>
   );
 }
-
