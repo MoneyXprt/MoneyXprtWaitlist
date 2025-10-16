@@ -1,12 +1,13 @@
 import { EMPTY_PLAN, type PlanInput, type FilingStatus as FilingStatusFull } from '@/lib/types'
-import type { PlannerData as PD } from '@/lib/planner/types'
+import type { PlannerData as PDTypes } from '@/lib/planner/types'
+import type { PlannerData } from '@/lib/store/planner'
 
 /** Narrow type guard to detect a PlanInput-shaped object */
 export function isPlanInput(x: any): x is PlanInput {
   return !!x && typeof x === 'object' && 'state' in x && 'salary' in x && 'w2BaseAnnual' in x
 }
 
-function mapFilingStatus(s?: PD['profile']['filingStatus']): FilingStatusFull {
+function mapFilingStatus(s?: PDTypes['profile']['filingStatus']): FilingStatusFull {
   switch (s) {
     case 'mfj': return 'married_joint'
     case 'mfs': return 'married_separate'
@@ -23,7 +24,7 @@ function mapFilingStatus(s?: PD['profile']['filingStatus']): FilingStatusFull {
  * - Copies overlapping fields with sane fallbacks
  * - No business logic
  */
-export function toPlanInput(input: PD | Partial<PD>): PlanInput {
+export function toPlanInput(input: PDTypes | Partial<PDTypes>): PlanInput {
   const p = input?.profile || ({} as NonNullable<PD['profile']>)
   const income = p?.income || {}
   const out: PlanInput = {
@@ -39,3 +40,19 @@ export function toPlanInput(input: PD | Partial<PD>): PlanInput {
   return out
 }
 
+/** Converts PlanInput -> PlannerData while preserving prior store fields */
+export function toPlannerData(input: PlanInput, prev?: Partial<PlannerData>): PlannerData {
+  const now = Date.now()
+  const next: PlannerData = {
+    ...(prev as any),
+    plan: input,
+    profile: (prev as any)?.profile ?? { filingStatus: 'single', state: '' },
+    strategies: (prev as any)?.strategies ?? [],
+    lastEditedAt: (prev as any)?.lastEditedAt ?? now,
+  } as PlannerData
+  return next
+}
+
+export function isPlannerData(x: any): x is PlannerData {
+  return !!x && typeof x === 'object' && 'lastEditedAt' in x
+}

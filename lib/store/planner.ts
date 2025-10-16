@@ -1,6 +1,8 @@
 // lib/store/planner.ts
 import { create } from "zustand";
 import type { PlannerData as PlannerDataNew, Snapshot as SnapshotNew, Strategy as StrategyNew } from "@/lib/planner/types";
+import type { PlanInput } from '@/lib/types'
+import { toPlannerData } from '@/lib/planner/adapters'
 
 export type ScenarioItem = {
   code: string;
@@ -10,7 +12,9 @@ export type ScenarioItem = {
   risk?: number;
 };
 
-export interface PlannerData extends PlannerDataNew {}
+export interface PlannerData extends PlannerDataNew { plan?: PlanInput }
+
+type PlannerSetInput = PlannerData | PlanInput | Partial<PlannerData>
 
 export interface PlannerState {
   // Core planner data (replaces legacy context state)
@@ -23,7 +27,7 @@ export interface PlannerState {
   selected: ScenarioItem[];
 
   // Actions: plan data
-  setAll: (input: PlannerData) => void;
+  setAll: (input: PlannerSetInput) => void;
   patch: (partial: Partial<PlannerData>) => void;
   loadDemo: () => void;
   snapshot: () => SnapshotNew;
@@ -58,8 +62,15 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   selected: [],
 
   // Plan data
-  setAll: (input) => set({ data: input }),
-  patch: (partial) => set((s: PlannerState) => ({ data: { ...s.data, ...partial } })),
+  setAll: (input) => {
+    const prev = get().data
+    const isPI = !(input as any)?.lastEditedAt && !(input as any)?.strategies
+    const next = isPI
+      ? toPlannerData(input as PlanInput, prev)
+      : ({ ...prev, ...(input as Partial<PlannerData>), lastEditedAt: (input as any)?.lastEditedAt ?? prev.lastEditedAt ?? Date.now() } as PlannerData)
+    set({ data: next })
+  },
+  patch: (partial) => set((s: PlannerState) => ({ data: { ...s.data, ...partial, lastEditedAt: partial.lastEditedAt ?? Date.now() } })),
   loadDemo: () => set({
     data: {
       profile: { state: "CA", filingStatus: "single", income: { w2: 180000, self: 40000 }, realEstate: { count: 1, avgBasis: 900000 } },
