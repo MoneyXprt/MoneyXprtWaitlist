@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import type { PlanInput } from "@/lib/types";
 import { EMPTY_PLAN } from "@/lib/types";
 import { usePlannerStore } from "@/lib/store/planner";
+import { toPlanInput } from '@/lib/planner/adapters'
 
 // Snapshot composer and helpers migrated from legacy plannerStore
 
@@ -109,7 +110,7 @@ export function toSnapshot(data: PlanInput): Snapshot {
 
 export function usePlannerSnapshot(): Snapshot {
   const data = usePlannerStore((s) => s.data);
-  return useMemo(() => toSnapshot(data), [data]);
+  return useMemo(() => toSnapshot(toPlanInput(data as any)), [data]);
 }
 
 // Demo prefill helper
@@ -143,4 +144,3 @@ export function buildDemoSnapshot(kind: string): PlanInput | null {
   };
   return p;
 }
-
