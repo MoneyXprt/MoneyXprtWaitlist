@@ -25,7 +25,7 @@ function mapFilingStatus(s?: PDTypes['profile']['filingStatus']): FilingStatusFu
  * - No business logic
  */
 export function toPlanInput(input: PDTypes | Partial<PDTypes>): PlanInput {
-  const p = input?.profile || ({} as NonNullable<PD['profile']>)
+  const p = input?.profile || ({} as NonNullable<PDTypes['profile']>)
   const income = p?.income || {}
   const out: PlanInput = {
     ...EMPTY_PLAN,
