@@ -121,9 +121,9 @@ export default function ScenarioClient({ scenarioId }: { scenarioId?: string }) 
         ))}
       </div>
 
-      {/* Sticky summary bar */}
-      <div className="sticky bottom-0 z-20 bg-white/80 dark:bg-neutral-950/70 backdrop-blur border-t">
-        <div className="container py-3 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+      {/* Sticky summary bar (desktop) */}
+      <div className="hidden sm:block sticky bottom-0 z-20 bg-white/80 dark:bg-neutral-950/70 backdrop-blur border-t">
+        <div className="container py-3 flex items-center gap-3 justify-between">
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <div><span className="text-neutral-500">Estimated total:</span> <span className="font-medium">${sumSavings.toLocaleString()}</span></div>
             <div><span className="text-neutral-500">Confidence:</span> <span className="font-medium">{confidence}</span></div>
@@ -134,6 +134,15 @@ export default function ScenarioClient({ scenarioId }: { scenarioId?: string }) 
             <button className="text-sm rounded-md border px-3 py-1" onClick={recalc}>Recalculate</button>
             <button className="text-sm rounded-md border px-3 py-1 bg-emerald-600 text-white hover:bg-emerald-700" onClick={saveSnapshot}>Save scenario</button>
           </div>
+        </div>
+      </div>
+
+      {/* Mobile floating pill summary */}
+      <div className="sm:hidden fixed bottom-3 left-1/2 -translate-x-1/2 z-30">
+        <div className="rounded-full shadow-soft border bg-white px-4 py-2 text-sm flex items-center gap-3">
+          <span className="font-medium">${sumSavings.toLocaleString()}</span>
+          <button className="rounded-full border px-3 py-1" onClick={recalc} aria-label="Recalculate">↻</button>
+          <button className="rounded-full border px-3 py-1" onClick={()=>setOpenDelta(true)} aria-label="What changed">Δ</button>
         </div>
       </div>
 
