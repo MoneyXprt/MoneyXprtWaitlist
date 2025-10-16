@@ -1,16 +1,16 @@
-export { dynamic, revalidate, fetchCache } from '@/lib/next/dynamic-config'
-import SafeSuspense from '@/components/system/SafeSuspense'
-import ErrorBoundary from '@/components/system/ErrorBoundary'
-import ScenariosClient from './_components/ScenariosClient'
+export const dynamic = "force-dynamic"
+import { getStr, type SParams } from "@/lib/utils/search"
+import ScenariosClient from "./ScenariosClient"
+import SafeSuspense from "@/components/common/SafeSuspense"
+import { ErrorBoundary } from "@/components/common/ErrorBoundary"
 
-export const metadata = { title: 'Scenarios • MoneyXprt' };
-
-export default function Page(){
+export default async function Page({ searchParams }: { searchParams: SParams }) {
+  const q = getStr(searchParams, "q")
   return (
-    <ErrorBoundary label="Scenarios">
-      <SafeSuspense fallback={<div className="p-6 text-sm text-neutral-500">Loading scenarios…</div>}>
-        <ScenariosClient />
+    <ErrorBoundary>
+      <SafeSuspense>
+        <ScenariosClient q={q || undefined} />
       </SafeSuspense>
     </ErrorBoundary>
-  );
+  )
 }
