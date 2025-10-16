@@ -1,5 +1,5 @@
+"use client";
 // app/planner/components/HelpTip.tsx
-'use client';
 import * as React from 'react';
 
 export default function HelpTip({

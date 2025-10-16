@@ -1,5 +1,5 @@
 // app/planner/steps/Compensation.tsx
-'use client';
+"use client";
 
 import * as React from 'react';
 import type { PlanInput } from '@/lib/types';

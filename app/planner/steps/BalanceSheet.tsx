@@ -1,5 +1,5 @@
+"use client";
 // app/planner/steps/BalanceSheet.tsx
-'use client';
 
 import * as React from 'react';
 import type { PlanInput, Property } from '../../../lib/types';

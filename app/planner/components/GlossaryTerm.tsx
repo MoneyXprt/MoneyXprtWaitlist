@@ -1,5 +1,5 @@
+"use client";
 // app/planner/components/GlossaryTerm.tsx
-'use client';
 import * as React from 'react';
 
 const DICT: Record<string, string> = {

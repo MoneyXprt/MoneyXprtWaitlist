@@ -1,5 +1,5 @@
-// app/planner/Wizard.tsx
 "use client";
+// app/planner/Wizard.tsx
 
 import { useEffect, useState } from 'react';
 import type { PlanInput } from '@/lib/types';

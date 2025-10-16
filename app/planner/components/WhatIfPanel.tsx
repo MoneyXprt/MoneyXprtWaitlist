@@ -1,5 +1,5 @@
+"use client";
 // app/planner/components/WhatIfPanel.tsx
-'use client';
 
 import * as React from 'react';
 import type { PlanInput } from '../../../lib/types';

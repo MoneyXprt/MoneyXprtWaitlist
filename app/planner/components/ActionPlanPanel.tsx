@@ -1,5 +1,5 @@
 // app/planner/components/ActionPlanPanel.tsx
-'use client';
+"use client";
 import * as React from 'react';
 import type { ActionPlan, Action, CalcTrace } from '@/lib/plan';
 

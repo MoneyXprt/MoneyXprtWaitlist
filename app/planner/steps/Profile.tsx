@@ -1,5 +1,5 @@
+"use client";
 // app/planner/steps/Profile.tsx
-'use client';
 
 import * as React from 'react';
 import type { PlanInput, ResidencyItem, FilingStatus } from '@/lib/types';
