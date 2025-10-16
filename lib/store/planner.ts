@@ -11,7 +11,7 @@ export type ScenarioItem = {
   risk?: number;
 };
 
-export interface PlannerData extends PlanInput {}
+export interface PlannerData extends PlanInput { lastEditedAt?: number }
 
 export interface PlannerState {
   // Core planner data (replaces legacy context state)
@@ -41,7 +41,7 @@ export interface PlannerState {
 }
 
 export const usePlannerStore = create<PlannerState>((set, get) => ({
-  data: EMPTY_PLAN,
+  data: { ...EMPTY_PLAN, lastEditedAt: undefined },
   includeHighRisk: false,
   lastRecoItems: [],
 
