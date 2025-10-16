@@ -1,16 +1,15 @@
-import React, { Suspense } from 'react'
-import HistoryClient from './_components/HistoryClient'
+export { dynamic, revalidate, fetchCache } from '@/lib/next/dynamic-config'
+import SafeSuspense from '@/components/system/SafeSuspense'
+import ErrorBoundary from '@/components/system/ErrorBoundary'
+import HistoryClient from '@/components/planner/history/HistoryClient'
 
-export const dynamic = "force-dynamic";
-
-export const metadata = { title: 'Plan History • MoneyXprt' }
-
-export default async function Page() {
-  // If you need a value, compute it on the server (cookie, headers, db) – but not via useSearchParams.
-  const initialPlanId: string | undefined = undefined;
+export default function Page({ searchParams }:{ searchParams?: Record<string,string|undefined> }){
+  const initialPlanId = searchParams?.planId
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-neutral-500">Loading history…</div>}>
-      <HistoryClient initialPlanId={initialPlanId} />
-    </Suspense>
+    <ErrorBoundary label="History">
+      <SafeSuspense fallback={<div className="p-6 text-sm text-neutral-500">Loading history…</div>}>
+        <HistoryClient initialPlanId={typeof initialPlanId === 'string' ? initialPlanId : undefined} />
+      </SafeSuspense>
+    </ErrorBoundary>
   )
 }

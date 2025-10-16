@@ -1,14 +1,16 @@
-import React, { Suspense } from 'react';
-import ScenariosClient from './_components/ScenariosClient';
-
-export const dynamic = "force-dynamic";
+export { dynamic, revalidate, fetchCache } from '@/lib/next/dynamic-config'
+import SafeSuspense from '@/components/system/SafeSuspense'
+import ErrorBoundary from '@/components/system/ErrorBoundary'
+import ScenariosClient from './_components/ScenariosClient'
 
 export const metadata = { title: 'Scenarios • MoneyXprt' };
 
-export default async function Page() {
+export default function Page(){
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-neutral-500">Loading…</div>}>
-      <ScenariosClient />
-    </Suspense>
+    <ErrorBoundary label="Scenarios">
+      <SafeSuspense fallback={<div className="p-6 text-sm text-neutral-500">Loading scenarios…</div>}>
+        <ScenariosClient />
+      </SafeSuspense>
+    </ErrorBoundary>
   );
 }
