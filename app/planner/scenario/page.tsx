@@ -1,17 +1,16 @@
-export { dynamic, revalidate, fetchCache } from '@/lib/next/dynamic-config'
-import SafeSuspense from '@/components/system/SafeSuspense'
-import ErrorBoundary from '@/components/system/ErrorBoundary'
-import ScenarioClient from './_components/ScenarioClient'
+export const dynamic = "force-dynamic"
+import { getStr, type SParams } from "@/lib/utils/search"
+import ScenarioClient from "./ScenarioClient"
+import SafeSuspense from "@/components/common/SafeSuspense"
+import { ErrorBoundary } from "@/components/common/ErrorBoundary"
 
-export const metadata = { title: 'Scenario • MoneyXprt' };
-
-export default function Page({ searchParams }:{ searchParams?: Record<string,string|undefined> }){
-  // ScenarioClient currently reads id via useSearchParams client-side; do not pass unsupported props.
+export default async function Page({ searchParams }: { searchParams: SParams }) {
+  const scenarioId = getStr(searchParams, "id")
   return (
-    <ErrorBoundary label="Scenario">
-      <SafeSuspense fallback={<div className="p-6 text-sm text-neutral-500">Loading scenario…</div>}>
-        <ScenarioClient />
+    <ErrorBoundary>
+      <SafeSuspense>
+        <ScenarioClient scenarioId={scenarioId || undefined} />
       </SafeSuspense>
     </ErrorBoundary>
-  );
+  )
 }
