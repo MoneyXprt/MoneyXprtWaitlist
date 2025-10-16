@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import type { PlanInput } from '@/lib/types';
 import { EMPTY_PLAN } from '@/lib/types';
+import { toPlanInput } from '@/lib/planner/adapters'
 import { usePlannerStore } from '@/lib/store/planner';
 
 import Profile from './steps/Profile';
@@ -19,7 +20,8 @@ import Review from './steps/Review';
 export default function Wizard() {
   const storeData = usePlannerStore((s) => s.data);
   const setAll = usePlannerStore((s) => s.setAll);
-  const [data, setData] = useState<PlanInput>(storeData ?? EMPTY_PLAN);
+  const initialPlan = toPlanInput(storeData ?? {})
+  const [data, setData] = useState<PlanInput>(initialPlan);
   const [step, setStep] = useState<number>(1);
   const [loading, setLoading] = useState(false);
   const [recs, setRecs] = useState<string[] | null>(null);
