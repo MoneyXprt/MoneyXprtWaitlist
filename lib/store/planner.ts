@@ -1,7 +1,6 @@
 // lib/store/planner.ts
 import { create } from "zustand";
-import type { PlanInput } from "@/lib/types";
-import { EMPTY_PLAN } from "@/lib/types";
+import type { PlannerData as PlannerDataNew, Snapshot as SnapshotNew, Strategy as StrategyNew } from "@/lib/planner/types";
 
 export type ScenarioItem = {
   code: string;
@@ -11,11 +10,12 @@ export type ScenarioItem = {
   risk?: number;
 };
 
-export interface PlannerData extends PlanInput { lastEditedAt?: number }
+export interface PlannerData extends PlannerDataNew {}
 
 export interface PlannerState {
   // Core planner data (replaces legacy context state)
   data: PlannerData;
+  snapshots: SnapshotNew[];
   includeHighRisk: boolean;
   lastRecoItems: any[];
 
@@ -25,6 +25,8 @@ export interface PlannerState {
   // Actions: plan data
   setAll: (input: PlannerData) => void;
   patch: (partial: Partial<PlannerData>) => void;
+  loadDemo: () => void;
+  snapshot: () => SnapshotNew;
   updatePath: (path: string, value: unknown) => void;
   toggleHighRisk: (value?: boolean) => void;
   setRecoItems: (items: any[]) => void;
@@ -40,8 +42,16 @@ export interface PlannerState {
   selectedStrategies: () => string[]; // codes in order
 }
 
+const DEFAULT_DATA: PlannerData = {
+  profile: { state: "", filingStatus: "single", income: {}, realEstate: {} },
+  strategies: [],
+  assumptions: {},
+  lastEditedAt: Date.now(),
+};
+
 export const usePlannerStore = create<PlannerState>((set, get) => ({
-  data: { ...EMPTY_PLAN, lastEditedAt: undefined },
+  data: DEFAULT_DATA,
+  snapshots: [],
   includeHighRisk: false,
   lastRecoItems: [],
 
@@ -50,6 +60,28 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   // Plan data
   setAll: (input) => set({ data: input }),
   patch: (partial) => set((s: PlannerState) => ({ data: { ...s.data, ...partial } })),
+  loadDemo: () => set({
+    data: {
+      profile: { state: "CA", filingStatus: "single", income: { w2: 180000, self: 40000 }, realEstate: { count: 1, avgBasis: 900000 } },
+      strategies: [
+        { code: "ptet_state", name: "PTET election", estSavings: 8000 },
+        { code: "qbi_199a", name: "QBI §199A", estSavings: 12000 },
+      ] as StrategyNew[],
+      assumptions: { year: new Date().getFullYear() },
+      lastEditedAt: Date.now(),
+    },
+  }),
+  snapshot: () => {
+    const s = get();
+    const snap: SnapshotNew = {
+      id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2,8)}`,
+      at: Date.now(),
+      profile: s.data.profile,
+      strategies: s.data.strategies,
+    };
+    set({ snapshots: [snap, ...s.snapshots].slice(0, 50) });
+    return snap;
+  },
   updatePath: (path, value) =>
     set((s: PlannerState) => {
       const next: any = structuredClone(s.data);
