@@ -1,16 +1,16 @@
-export { dynamic, revalidate, fetchCache } from '@/lib/next/dynamic-config'
-import SafeSuspense from '@/components/system/SafeSuspense'
-import ErrorBoundary from '@/components/system/ErrorBoundary'
-import PlaybookClient from './_components/PlaybookClient'
+export const dynamic = "force-dynamic"
+import { getStr, type SParams } from "@/lib/utils/search"
+import PlaybookClient from "./PlaybookClient"
+import SafeSuspense from "@/components/common/SafeSuspense"
+import { ErrorBoundary } from "@/components/common/ErrorBoundary"
 
-export const metadata = { title: 'Playbook • MoneyXprt' };
-
-export default function Page(){
+export default async function Page({ searchParams }: { searchParams: SParams }) {
+  const planVersionId = getStr(searchParams, "planVersionId")
   return (
-    <ErrorBoundary label="Playbook">
-      <SafeSuspense fallback={<div className="p-6 text-sm text-neutral-500">Preparing playbook…</div>}>
-        <PlaybookClient />
+    <ErrorBoundary>
+      <SafeSuspense>
+        <PlaybookClient planVersionId={planVersionId || undefined} />
       </SafeSuspense>
     </ErrorBoundary>
-  );
+  )
 }
