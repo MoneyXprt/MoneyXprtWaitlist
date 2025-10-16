@@ -7,6 +7,8 @@ import EmptyState from '@/components/ui/EmptyState'
 import HelpDrawer from '@/components/ui/HelpDrawer'
 import Glossy from '@/components/Glossy'
 import { TERMS } from '@/lib/glossary/terms'
+import LoadingBlock from '@/components/ui/LoadingBlock'
+import { motion } from 'framer-motion'
 
 type Item = { code: string; name?: string; category?: string; savingsEst?: number; risk?: number }
 
@@ -44,7 +46,11 @@ export default function RecommendationsClient({ profileId, planId }: { profileId
   }, [profileId, planId, includeHighRisk])
 
   if (err) return <div className="p-6 text-sm text-red-600">{err}</div>
-  if (!data) return <div className="p-6 text-sm text-neutral-500">Finding strategies…</div>
+  if (!data) return (
+    <div className="p-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {Array.from({length:6}).map((_,i)=>(<LoadingBlock key={i} className="h-40 rounded-2xl" radius="2xl" />))}
+    </div>
+  )
 
   const filtered = useMemo(() => {
     let items: Item[] = (data || [])
@@ -109,6 +115,7 @@ export default function RecommendationsClient({ profileId, planId }: { profileId
           {filtered.map((r: Item, i: number) => {
             const map = NAME_MAP[r.code] || { friendly: r.name || `Strategy ${i+1}`, also: r.name || '', what: r.category || '', time: 'medium' as const }
             return (
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .18 }}>
               <SectionCard
                 key={`${r.code}-${i}`}
                 title={map.friendly}
@@ -135,6 +142,7 @@ export default function RecommendationsClient({ profileId, planId }: { profileId
                   </HelpDrawer>
                 </div>
               </SectionCard>
+              </motion.div>
             )
           })}
         </div>

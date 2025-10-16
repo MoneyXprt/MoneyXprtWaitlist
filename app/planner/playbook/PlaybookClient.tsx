@@ -6,6 +6,8 @@ import PageShell from '@/components/ui/PageShell'
 import SectionCard from '@/components/ui/SectionCard'
 import Glossy from '@/components/Glossy'
 import { TERMS } from '@/lib/glossary/terms'
+import LoadingBlock from '@/components/ui/LoadingBlock'
+import { motion } from 'framer-motion'
 
 export default function PlaybookClient({ planVersionId }: { planVersionId?: string }) {
   const [data, setData] = useState<any | null>(null)
@@ -56,7 +58,11 @@ export default function PlaybookClient({ planVersionId }: { planVersionId?: stri
 
   if (!planVersionId && (!data && (!selected || selected.length === 0))) return <div className="p-6 text-sm">No plan selected yet — run Intake/Recommendations first.</div>
   if (err) return <div className="p-6 text-sm text-red-600">{err}</div>
-  if (!data) return <div className="p-6 text-sm text-neutral-500">Building playbook…</div>
+  if (!data) return (
+    <div className="p-6 space-y-3">
+      {Array.from({length:3}).map((_,i)=>(<LoadingBlock key={i} className="h-28 rounded-2xl" radius="2xl" />))}
+    </div>
+  )
 
   const prof = snapshot?.profile || {}
   const incomeBand = (() => {
@@ -84,7 +90,7 @@ export default function PlaybookClient({ planVersionId }: { planVersionId?: stri
 
       <div className="space-y-3">
         {(data.items||[]).map((it: any, idx: number) => (
-          <details key={idx} className="rounded-2xl border bg-white open:shadow-sm">
+          <motion.details key={idx} className="rounded-2xl border bg-white open:shadow-sm" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .18 }}>
             <summary className="cursor-pointer select-none px-5 py-3 flex items-center justify-between">
               <div>
                 <div className="font-medium">{it.name}</div>
@@ -115,7 +121,7 @@ export default function PlaybookClient({ planVersionId }: { planVersionId?: stri
                 </SectionCard>
               ) : null}
             </div>
-          </details>
+          </motion.details>
         ))}
       </div>
     </PageShell>

@@ -40,6 +40,7 @@ function Label({ children, tip }: { children: React.ReactNode; tip: string }){
 
 export default function IntakeClient(){
   const [preview, setPreview] = React.useState<any[] | null>(null)
+  const [estimating, setEstimating] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const [message, setMessage] = React.useState<string | null>(null)
 
@@ -49,12 +50,14 @@ export default function IntakeClient(){
   })
 
   async function onQuickEstimate(){
+    setEstimating(true)
     setPreview(null)
     const v = getValues()
     const res = await fetch('/api/plan/calculate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(v) })
     if (!res.ok) { setPreview([]); return }
     const j = await res.json()
     setPreview(j?.items ?? [])
+    setEstimating(false)
   }
 
   async function onSaveProfile(){
@@ -182,7 +185,12 @@ export default function IntakeClient(){
       </form>
 
       <div className="mt-6">
-        {!preview && <EmptyState title="No estimate yet" description="Fill in a few basics above, then select Quick estimate." />}
+        {estimating && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({length:3}).map((_,i)=>(<div key={i} className="rounded-2xl border p-4"><div className="h-4 w-2/3 bg-neutral-200 rounded mb-2 animate-pulse" /><div className="h-3 w-1/2 bg-neutral-200 rounded animate-pulse" /></div>))}
+          </div>
+        )}
+        {!estimating && !preview && <EmptyState title="No estimate yet" description="Fill in a few basics above, then select Quick estimate." />}
         {preview && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {preview.map((it, idx) => {
@@ -201,4 +209,3 @@ export default function IntakeClient(){
     </PageShell>
   )
 }
-
