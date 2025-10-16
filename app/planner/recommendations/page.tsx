@@ -1,16 +1,17 @@
-export { dynamic, revalidate, fetchCache } from '@/lib/next/dynamic-config'
-import SafeSuspense from '@/components/system/SafeSuspense'
-import ErrorBoundary from '@/components/system/ErrorBoundary'
-import RecommendationsClient from './_components/RecommendationsClient'
+export const dynamic = "force-dynamic"
+import { getStr, type SParams } from "@/lib/utils/search"
+import RecommendationsClient from "./RecommendationsClient"
+import SafeSuspense from "@/components/common/SafeSuspense"
+import { ErrorBoundary } from "@/components/common/ErrorBoundary"
 
-export const metadata = { title: 'Recommendations • MoneyXprt' };
-
-export default function Page(){
+export default async function Page({ searchParams }: { searchParams: SParams }) {
+  const profileId = getStr(searchParams, "profileId")
+  const planId = getStr(searchParams, "planId")
   return (
-    <ErrorBoundary label="Recommendations">
-      <SafeSuspense fallback={<div className="p-6 text-sm text-neutral-500">Loading recommendations…</div>}>
-        <RecommendationsClient />
+    <ErrorBoundary>
+      <SafeSuspense>
+        <RecommendationsClient profileId={profileId || undefined} planId={planId || undefined} />
       </SafeSuspense>
     </ErrorBoundary>
-  );
+  )
 }
