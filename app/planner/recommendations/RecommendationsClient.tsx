@@ -1,23 +1,23 @@
 "use client"
 import { useEffect, useState } from "react"
+import { loadSnapshot } from "@/lib/planner/snapshotStore"
+import { usePlannerStore } from "@/lib/store/planner"
 
 export default function RecommendationsClient({ profileId, planId }: { profileId?: string; planId?: string }) {
   const [data, setData] = useState<any[] | null>(null)
   const [err, setErr] = useState<string | null>(null)
+  const includeHighRisk = usePlannerStore(s => s.includeHighRisk)
 
   useEffect(() => {
     const controller = new AbortController()
     ;(async () => {
       try {
-        const res = await fetch(`/api/plan/recommend`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ profileId, planId }),
-          signal: controller.signal,
-        })
+        const snapshot = loadSnapshot() ?? {}
+        const body = { snapshot, includeHighRisk }
+        const res = await fetch(`/api/plan/recommend`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal: controller.signal })
         if (!res.ok) throw new Error(`recommend failed: ${res.status}`)
         const j = await res.json()
-        setData(j?.recommendations ?? [])
+        setData(j?.items ?? j?.recommendations ?? [])
       } catch (e: any) { setErr(e?.message ?? String(e)) }
     })()
     return () => controller.abort()
@@ -41,4 +41,3 @@ export default function RecommendationsClient({ profileId, planId }: { profileId
     </div>
   )
 }
-
