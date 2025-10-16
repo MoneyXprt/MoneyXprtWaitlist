@@ -4,6 +4,8 @@ import { loadSnapshot } from "@/lib/planner/snapshotStore"
 import { usePlannerStore } from "@/lib/store/planner"
 import PageShell from '@/components/ui/PageShell'
 import SectionCard from '@/components/ui/SectionCard'
+import Glossy from '@/components/Glossy'
+import { TERMS } from '@/lib/glossary/terms'
 
 export default function PlaybookClient({ planVersionId }: { planVersionId?: string }) {
   const [data, setData] = useState<any | null>(null)
@@ -87,11 +89,12 @@ export default function PlaybookClient({ planVersionId }: { planVersionId?: stri
               <div>
                 <div className="font-medium">{it.name}</div>
                 <div className="text-xs text-neutral-600">Estimated savings: ${Number(it.savingsEst||0).toLocaleString()}</div>
+                <div className="text-xs text-neutral-500 mt-0.5">Also called: {akaFor(it.code)} <span className="ml-2 inline-flex">{micro(it.code)}</span></div>
               </div>
               <span className="text-neutral-500">▾</span>
             </summary>
             <div className="px-5 pb-4">
-              <div className="text-sm text-neutral-700 mb-2">{explain(it.code)}</div>
+              <div className="text-sm text-neutral-700 mb-2"><Glossy>{explain(it.code)}</Glossy></div>
               <SectionCard title="Steps" subtitle="Checklist to get this done.">
                 <ol className="list-decimal pl-5 space-y-1 text-sm">
                   {(it.steps||[]).map((s:string, i:number)=>(<li key={i}>{s}</li>))}
@@ -134,4 +137,23 @@ function explain(code?: string): string {
     default:
       return 'Plain‑English summary of how this can reduce taxes for your situation.'
   }
+}
+
+function akaFor(code?: string): string {
+  switch (code) {
+    case 'ptet_state': return TERMS.ptet.label
+    case 'qbi_199a': return TERMS.qbi_199a.label
+    case 'cost_seg_bonus': return TERMS.cost_seg_bonus.label
+    case 'augusta_280a': return TERMS.augusta_280a.label
+    default: return '—'
+  }
+}
+
+function micro(code?: string) {
+  const key = code === 'ptet_state' ? 'ptet' : code === 'qbi_199a' ? 'qbi_199a' : code === 'cost_seg_bonus' ? 'cost_seg_bonus' : code === 'augusta_280a' ? 'augusta_280a' : undefined
+  if (!key) return null
+  const term = TERMS[key]
+  return <span className="text-xs underline underline-offset-2 text-emerald-700">What this means
+    <span className="sr-only">: {term.oneLiner}</span>
+  </span>
 }

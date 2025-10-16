@@ -5,6 +5,8 @@ import { usePlannerStore } from "@/lib/store/planner"
 import SectionCard from '@/components/ui/SectionCard'
 import EmptyState from '@/components/ui/EmptyState'
 import HelpDrawer from '@/components/ui/HelpDrawer'
+import Glossy from '@/components/Glossy'
+import { TERMS } from '@/lib/glossary/terms'
 
 type Item = { code: string; name?: string; category?: string; savingsEst?: number; risk?: number }
 
@@ -110,7 +112,9 @@ export default function RecommendationsClient({ profileId, planId }: { profileId
               <SectionCard
                 key={`${r.code}-${i}`}
                 title={map.friendly}
-                subtitle={<span className="text-xs text-neutral-600">Also called: {map.also}</span>}
+                subtitle={
+                  <span className="text-xs text-neutral-600">Also called: {map.also} {TERMS[map.also?.toLowerCase()?.includes('qbi')? 'qbi_199a' : map.also?.toLowerCase()?.includes('ptet')? 'ptet' : map.also?.toLowerCase()?.includes('augusta')? 'augusta_280a' : map.also?.toLowerCase()?.includes('bonus')? 'cost_seg_bonus' : map.also?.toLowerCase()?.includes('cost seg')? 'cost_seg' : undefined as any] ? <span className="ml-2 inline-flex"><HelpDrawer label="What this means" title={map.also}><div className="text-sm">{TERMS[map.also?.toLowerCase()?.includes('qbi')? 'qbi_199a' : map.also?.toLowerCase()?.includes('ptet')? 'ptet' : map.also?.toLowerCase()?.includes('augusta')? 'augusta_280a' : map.also?.toLowerCase()?.includes('bonus')? 'cost_seg_bonus' : map.also?.toLowerCase()?.includes('cost seg')? 'cost_seg' : 'qbi_199a'].oneLiner}</div></HelpDrawer></span> : null}</span>
+                }
                 footer={
                   <div className="flex items-center justify-between">
                     <div className="text-sm font-medium">${Number(r.savingsEst||0).toLocaleString()}</div>
@@ -124,7 +128,7 @@ export default function RecommendationsClient({ profileId, planId }: { profileId
                   </div>
                 }
               >
-                <div className="text-sm text-neutral-700">{map.what}</div>
+                <div className="text-sm text-neutral-700"><Glossy>{map.what}</Glossy></div>
                 <div className="mt-2">
                   <HelpDrawer label="Why this fits you" title="Why this fits you">
                     <Reason code={r.code} />
