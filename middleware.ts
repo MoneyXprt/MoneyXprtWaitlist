@@ -72,6 +72,14 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Optionally protect planner routes; allow demo when ?demo=1
+  if (request.nextUrl.pathname.startsWith('/planner')) {
+    const allowDemo = request.nextUrl.searchParams.get('demo') === '1'
+    if (!user && !allowDemo) {
+      return NextResponse.redirect(new URL('/signin', request.url))
+    }
+  }
+
   // Redirect authenticated users away from auth pages
   if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
@@ -81,5 +89,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/signup']
+  matcher: ['/dashboard/:path*', '/login', '/signup', '/planner/:path*']
 }
