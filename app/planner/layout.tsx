@@ -1,19 +1,24 @@
-// app/planner/layout.tsx
-import React, { Suspense } from 'react';
-import SubNavClient from './_components/SubNavClient';
+export const dynamic = "force-dynamic"
+import Link from "next/link"
 
 export default function PlannerLayout({ children }: { children: React.ReactNode }) {
+  const tabs = [
+    { href: "/planner", label: "Intake" },
+    { href: "/planner/recommendations", label: "Recommendations" },
+    { href: "/planner/scenario", label: "Scenario" },
+    { href: "/planner/playbook", label: "Playbook" },
+    { href: "/planner/history", label: "History" },
+  ]
   return (
-    <div className="space-y-6">
-      <Suspense fallback={<div className="p-3 text-sm text-neutral-500">Loading…</div>}>
-        <SubNavClient />
-      </Suspense>
-      <div role="note" className="bg-amber-50 border-b text-amber-900 text-sm">
-        <div className="container mx-auto p-3">
-          This Planner provides educational insights only and is not legal or tax advice. Consult a qualified CPA/attorney before implementing strategies.
-        </div>
+    <div className="w-full">
+      <div className="flex gap-4 border-b px-4 py-2 text-sm">
+        {tabs.map(t => (
+          <Link key={t.href} href={t.href} className="text-neutral-700 hover:text-black">
+            {t.label}
+          </Link>
+        ))}
       </div>
-      {children}
+      <div className="min-h-[40vh]">{children}</div>
     </div>
-  );
+  )
 }
