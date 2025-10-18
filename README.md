@@ -40,7 +40,7 @@ Copy `.env.example` to `.env.local` and fill in your credentials:
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+SUPABASE_SERVICE_ROLE=your_supabase_service_role_key
 
 # OpenAI
 OPENAI_API_KEY=your_openai_api_key
@@ -133,7 +133,7 @@ Set these in your Vercel project settings:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=your_production_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_production_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_production_service_role_key
+SUPABASE_SERVICE_ROLE=your_production_service_role_key
 OPENAI_API_KEY=your_openai_api_key
 VITE_STRIPE_PUBLIC_KEY=pk_live_your_live_publishable_key
 STRIPE_SECRET_KEY=sk_live_your_live_secret_key

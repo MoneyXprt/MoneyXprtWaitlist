@@ -59,7 +59,7 @@ Add these environment variables in Vercel project settings:
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+SUPABASE_SERVICE_ROLE=your_service_role_key
 
 # OpenAI
 OPENAI_API_KEY=sk-your-openai-api-key
@@ -124,7 +124,7 @@ Ensure all these environment variables are set in Vercel:
 
 - [ ] `NEXT_PUBLIC_SUPABASE_URL`
 - [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- [ ] `SUPABASE_SERVICE_ROLE_KEY`
+- [ ] `SUPABASE_SERVICE_ROLE`
 - [ ] `OPENAI_API_KEY`
 - [ ] `VITE_STRIPE_PUBLIC_KEY`
 - [ ] `STRIPE_SECRET_KEY`

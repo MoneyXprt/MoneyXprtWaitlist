@@ -32,7 +32,7 @@ Preferred communication style: Simple, everyday language.
 ### Data Storage
 - **Database**: Supabase (PostgreSQL) with built-in auth and real-time features
 - **Schema**: Main tables - waitlist (email, name, income, goal), conversations (prompt, response, meta), users (username, password)
-- **Logging**: Complete server-side conversation logging with dedicated admin client using SUPABASE_SERVICE_ROLE_KEY
+- **Logging**: Complete server-side conversation logging with dedicated admin client using SUPABASE_SERVICE_ROLE
 - **Security**: Row Level Security (RLS) policies for data protection
 - **Real-time**: Supabase real-time subscriptions for live updates
 
@@ -82,7 +82,7 @@ Set these in Replit Secrets and later in Vercel:
 
 - **NEXT_PUBLIC_SUPABASE_URL** - Your Supabase project URL
 - **NEXT_PUBLIC_SUPABASE_ANON_KEY** - Supabase anonymous/public key
-- **SUPABASE_SERVICE_ROLE_KEY** - Supabase service role key for admin operations
+- **SUPABASE_SERVICE_ROLE** - Supabase service role key for admin operations
 - **OPENAI_API_KEY** - OpenAI API key for GPT-4o integration
 
 ### Optional Variables

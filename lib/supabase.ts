@@ -18,10 +18,10 @@ export function sbAdmin(): SupabaseClientType {
     }) as SupabaseClientType;
   }
   if (!adminClient) {
-    if (!env.public.NEXT_PUBLIC_SUPABASE_URL || !env.server.SUPABASE_SERVICE_ROLE_KEY) {
+    if (!env.public.NEXT_PUBLIC_SUPABASE_URL || !env.server.SUPABASE_SERVICE_ROLE) {
       throw new Error('Missing Supabase URL or Service Role Key in environment variables');
     }
-    adminClient = createClient<Database>(env.public.NEXT_PUBLIC_SUPABASE_URL!, env.server.SUPABASE_SERVICE_ROLE_KEY!, {
+    adminClient = createClient<Database>(env.public.NEXT_PUBLIC_SUPABASE_URL!, env.server.SUPABASE_SERVICE_ROLE!, {
       auth: { persistSession: false },
     });
   }

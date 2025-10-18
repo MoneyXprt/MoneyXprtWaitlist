@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { env } from '@/lib/config/env'
 
-export const supabaseAdmin = env.server.SUPABASE_SERVICE_ROLE_KEY
+export const supabaseAdmin = env.server.SUPABASE_SERVICE_ROLE
   ? createClient(
       env.public.NEXT_PUBLIC_SUPABASE_URL!,
-      env.server.SUPABASE_SERVICE_ROLE_KEY!,
+      env.server.SUPABASE_SERVICE_ROLE!,
       { auth: { persistSession: false, autoRefreshToken: false } }
     )
   : null

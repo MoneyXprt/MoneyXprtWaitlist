@@ -18,7 +18,7 @@ const serverSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  SUPABASE_SERVICE_ROLE: z.string().optional(),
   PLAID_CLIENT_ID: z.string().optional(),
   PLAID_SECRET: z.string().optional(),
   // repo-specific
