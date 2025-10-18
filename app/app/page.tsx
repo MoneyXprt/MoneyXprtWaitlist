@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { sbBrowser } from '@/lib/supabase';
 import ScoreCard from './_components/ScoreCard';
+import { callStrategist } from '@/lib/callStrategist'
 
 export default function AppTools() {
   const supabase = sbBrowser();
@@ -12,6 +13,10 @@ export default function AppTools() {
   const [holdingsCsv, setHoldingsCsv] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string>("");
+  const [userMessage, setUserMessage] = useState<string>('')
+  const [mxLoading, setMxLoading] = useState(false)
+  const [mxAnswer, setMxAnswer] = useState<string>('')
+  const [mxError, setMxError] = useState<string>('')
 
   async function authHeader() {
     const { data } = await supabase.auth.getSession();
@@ -91,6 +96,36 @@ export default function AppTools() {
           <pre className="whitespace-pre-wrap text-sm">{msg}</pre>
         </section>
       )}
+
+      <section className="bg-white shadow p-4 rounded-xl">
+        <h2 className="text-xl font-semibold">4) MoneyXprt Strategist (test)</h2>
+        <textarea
+          className="mt-2 w-full border rounded p-3 text-sm"
+          rows={4}
+          placeholder="Ask a plain-English question for MoneyXprt…"
+          value={userMessage}
+          onChange={(e) => setUserMessage(e.target.value)}
+        />
+        <div className="mt-3 flex items-center gap-3">
+          <button
+            className="rounded px-4 py-2 bg-emerald-600 text-white disabled:opacity-50"
+            onClick={async () => {
+              setMxLoading(true); setMxError(''); setMxAnswer('')
+              const res = await callStrategist({ userMessage })
+              if (!res.ok) setMxError(res.error || 'Failed')
+              else setMxAnswer(res.answer || '')
+              setMxLoading(false)
+            }}
+            disabled={mxLoading || !userMessage.trim()}
+          >
+            {mxLoading ? 'Running…' : 'Run MoneyXprt'}
+          </button>
+          {mxError && <span className="text-sm text-red-600">{mxError}</span>}
+        </div>
+        {mxAnswer && (
+          <div className="mt-3 border rounded p-3 bg-neutral-50 text-sm whitespace-pre-wrap">{mxAnswer}</div>
+        )}
+      </section>
     </main>
   );
 }

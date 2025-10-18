@@ -142,6 +142,41 @@ STRIPE_PRICE_ID_STARTER=price_your_live_price_id
 NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
 ```
 
+## Strategist API Smoke Test
+
+Use these quick curl commands to verify the Strategist endpoint.
+
+Required env vars
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE`
+- `OPENAI_API_KEY`
+- `MONEYXPRT_MODEL` (optional; defaults to `gpt-5-thinking`)
+
+Local (dev)
+
+```
+curl -sS -X POST \
+  -H 'content-type: application/json' \
+  http://localhost:3000/api/strategist \
+  -d '{
+    "userMessage": "Give me a plain‑English checklist to reduce taxes as an S‑Corp owner in CA.",
+    "payload": { "state": "CA", "entity": "S-Corp" }
+  }' | jq
+```
+
+Production (template)
+
+```
+curl -sS -X POST \
+  -H 'content-type: application/json' \
+  https://<your-domain>/api/strategist \
+  -d '{
+    "userMessage": "Top 3 actions to reduce taxes for a high‑income W‑2 earner in NY?",
+    "payload": { "state": "NY", "incomeBand": "high" }
+  }' | jq
+```
+
 ## Features & Usage
 
 ### AI Financial Advisor
