@@ -16,13 +16,12 @@ export async function POST(req: Request) {
       .select('body')
       .eq('role', 'system')
       .eq('is_active', true)
-      .order('updated_at', { ascending: false })
       .limit(1)
     if (error) throw new Error(error.message)
     const systemBody = data?.[0]?.body || 'You are MoneyXprt, a calm, plain‑English financial strategist.'
 
-    const client = new OpenAI()
-    const model = process.env.MONEYXPRT_MODEL || 'gpt-5-thinking'
+    const openai = new OpenAI()
+    const model = process.env.MONEYXPRT_MODEL || 'gpt-4o-mini'
 
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
       { role: 'system', content: typeof systemBody === 'string' ? systemBody : JSON.stringify(systemBody) },
@@ -34,7 +33,7 @@ export async function POST(req: Request) {
       messages.push({ role: 'user', content: userMessage })
     }
 
-    const completion = await client.chat.completions.create({
+    const completion = await openai.chat.completions.create({
       model,
       temperature: 0.2,
       messages,
@@ -45,4 +44,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: e?.message || 'failed' }, { status: 500 })
   }
 }
-

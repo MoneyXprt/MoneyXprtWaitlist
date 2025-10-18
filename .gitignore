@@ -30,3 +30,8 @@ vite.config.ts.*
 .env
 .env.local
 .env.*.local
+
+# env files
+.env
+.env.*
+.env.local
