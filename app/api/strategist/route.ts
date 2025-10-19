@@ -8,6 +8,7 @@ import '@/lib/observability/register-server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import OpenAI from 'openai'
 import { z } from 'zod'
+import { publicId as makePublicId } from '@/lib/id'
 import type { ResultsV1 } from '@/types/results'
 
 // ---- ResultsV1 mapper (coerce LLM JSON safely) ----
@@ -261,6 +262,10 @@ export async function POST(req: Request) {
 
     const llmJson = extractJsonCandidate(answer)
     const results = mapToResultsV1(llmJson)
+    try {
+      const suggestedPid = makePublicId()
+      console.log('[strategist] results mapped; suggest save with public_id:', { suggestedPid })
+    } catch {}
     return NextResponse.json({ ok: true, answer, results })
   } catch (e: any) {
     console.error('[strategist] error:', e?.message || e)

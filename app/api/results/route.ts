@@ -1,0 +1,49 @@
+// Force Node runtime for supabase-js
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+import { NextResponse } from 'next/server'
+import { z } from 'zod'
+import { createClient } from '@supabase/supabase-js'
+import { publicId as makePublicId } from '@/lib/id'
+import type { ResultsV1 } from '@/types/results'
+import '@/lib/observability/register-server'
+
+const bodySchema = z.object({
+  results: z.any(), // minimally validated; mapper should already coerce to ResultsV1
+})
+
+export async function POST(req: Request) {
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE) as string
+    )
+    const json = await req.json().catch(() => ({}))
+    const parsed = bodySchema.safeParse(json)
+    if (!parsed.success) return NextResponse.json({ error: 'Bad payload' }, { status: 400 })
+
+    const r = parsed.data.results as ResultsV1
+    const pid = makePublicId()
+
+    const { error } = await supabase.from('results').insert({
+      public_id: pid,
+      filing_status: r.summary.filingStatus,
+      household_agi: String(r.summary.householdAGI ?? 0),
+      primary_goal: r.summary.primaryGoal,
+      payload: r as any,
+      is_public: true,
+    } as any)
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    return NextResponse.json({ id: pid, url: `/r/${pid}` })
+  } catch (e: any) {
+    try {
+      const Sentry = await import('@sentry/nextjs')
+      Sentry.captureException(e)
+    } catch {}
+    return NextResponse.json({ error: e?.message || 'failed' }, { status: 500 })
+  }
+}

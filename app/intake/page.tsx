@@ -37,6 +37,7 @@ export default function AgentPage() {
   const [answer, setAnswer] = React.useState('');
   const [err, setErr] = React.useState('');
   const [results, setResults] = React.useState<ResultsV1 | null>(null);
+  const [shareUrl, setShareUrl] = React.useState<string | null>(null);
   const { register, handleSubmit, formState: { errors, isSubmitting }, watch, setValue } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -49,7 +50,7 @@ export default function AgentPage() {
   });
 
   async function onSubmit(form: FormData) {
-    setErr(''); setAnswer(''); setResults(null);
+    setErr(''); setAnswer(''); setResults(null); setShareUrl(null);
     try {
       // Normalize currency fields on submit (round to whole dollars)
       const rounded: FormData = {
@@ -79,7 +80,19 @@ export default function AgentPage() {
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json?.ok) throw new Error(json?.error || `HTTP ${res.status}`);
       setAnswer(json.answer || '(no answer)');
-      if (json.results) setResults(json.results as ResultsV1);
+      if (json.results) {
+        setResults(json.results as ResultsV1);
+        // Save public result and capture share URL
+        try {
+          const saveRes = await fetch('/api/results', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ results: json.results }),
+          });
+          const saved = await saveRes.json().catch(() => ({}));
+          if (saveRes.ok && saved?.url) setShareUrl(saved.url as string);
+        } catch {}
+      }
     } catch (e: any) {
       setErr(e.message || 'Error');
       try {
@@ -181,6 +194,18 @@ export default function AgentPage() {
       <div className="card p-6 space-y-2 relative">
         {err && <p className="text-sm text-red-600">{err}</p>}
         {isSubmitting && <ResultSkeleton />}
+        {results && shareUrl && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="btn"
+              onClick={() => navigator.clipboard.writeText((typeof window !== 'undefined' ? window.location.origin : '') + shareUrl)}
+            >
+              Copy Share Link
+            </button>
+            <a className="btn btn-outline" href={shareUrl} target="_blank" rel="noreferrer">Open Shared View</a>
+          </div>
+        )}
         {results && <Results data={results} />}
         {!results && answer && <pre className="whitespace-pre-wrap text-sm mt-2">{answer}</pre>}
         {/* Error toast */}

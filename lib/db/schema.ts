@@ -79,6 +79,21 @@ export const aiNarrativeCache = pgTable("ai_narrative_cache", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+// Results (shared, publicly viewable via publicId when isPublic=true)
+export const results = pgTable("results", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  publicId: text("public_id").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  createdBy: uuid("created_by"),
+  isPublic: boolean("is_public").default(true).notNull(),
+
+  filingStatus: text("filing_status").notNull(),
+  householdAGI: text("household_agi").notNull(),
+  primaryGoal: text("primary_goal").notNull(),
+
+  payload: jsonb("payload").notNull(),
+});
+
 // Household (new canonical table; safe to generate later)
 export const household = pgTable("household", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -367,6 +382,7 @@ export type Database = {
       billing: typeof subscription;
       reports: typeof reports;
       ai_narrative_cache: typeof aiNarrativeCache;
+      results: typeof results;
       recommendations: typeof plan;
       recommendation_items: typeof planItem;
       plans: typeof plans;
