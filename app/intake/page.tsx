@@ -1,25 +1,27 @@
 'use client';
-
 import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import dynamic from 'next/dynamic';
-import { callStrategist } from '@/lib/callStrategist';
 import type { MoneyXprtIntake } from '@/types/moneyxprt';
 import { toStrategistPayload } from '@/types/moneyxprt';
+import { callStrategist } from '@/lib/callStrategist';
+
 const AnswerViewer = dynamic(() => import('@/components/AnswerViewer'), { ssr: false });
+
 type ProfileRow = { id: string; user_id: string | null; created_at: string };
 
 export default function Intake() {
-  const [form, setForm] = useState<MoneyXprtIntake>({
-    filingStatus: 'mfj', state: 'CA', dependents: 1,
-  } as MoneyXprtIntake);
+  const [form, setForm] = useState<MoneyXprtIntake>({ filingStatus: 'mfj', state: 'CA', dependents: 1 });
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [profileId, setProfileId] = useState<string | null>(null);
-  const [answer, setAnswer] = useState(''); 
+  const [answer, setAnswer] = useState('');
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
-  const [title, setTitle] = useState('');
 
-  // load profiles + last selection
   useEffect(() => {
     (async () => {
       try {
@@ -40,206 +42,109 @@ export default function Intake() {
     try {
       const payload = toStrategistPayload(form);
       const r = await callStrategist({
-        userMessage: 'Use this structured intake to estimate my current-year taxes and recommend strategies.',
+        userMessage: 'Use this structured intake to estimate my current-year taxes and recommend strategies with sections: Profile Snapshot, Tax Estimate, Top Strategies, Action Plan, References & Disclaimer.',
         payload,
-        profileId,
-      });
-      // Note: current callStrategist returns { ok, answer } without throwing on error
-      setAnswer((r as any).answer || '');
-    } catch (e: any) { setErr(e.message || 'Error'); }
+        profileId
+      } as any);
+      setAnswer((r as any).answer);
+    } catch (e:any) { setErr(e.message || 'Error'); }
     finally { setLoading(false); }
   }
 
-  async function saveStrategy(titleArg?: string) {
-    try {
-      const t = (titleArg ?? title)?.trim();
-      if (!t) {
-        alert('Please enter a strategy title.');
-        return;
-      }
-      const pid = typeof window !== 'undefined' ? localStorage.getItem('mx_profile_id') : null;
-      const scenarioId = null; // not available on intake page
-      const res = await fetch('/api/strategies', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profileId: pid, scenarioId, title: t, notes: '' }),
-      });
-      const json = await res.json().catch(() => ({} as any));
-      if (!res.ok || !json?.ok) throw new Error(json?.error || `HTTP ${res.status}`);
-      alert('Saved 👍');
-    } catch (e: any) {
-      alert(`Save failed: ${e?.message || 'Error'}`);
-    }
-  }
-
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-semibold">MoneyXprt — Quick Intake</h1>
+    <div className="grid md:grid-cols-5 gap-6">
+      {/* Left: Form */}
+      <div className="md:col-span-3 space-y-4">
+        <Card><CardContent className="p-5 space-y-4">
+          <h2 className="text-xl font-semibold mb-1">Profile</h2>
 
-      {/* Profile selector */}
-      <div className="border rounded p-3 space-y-2">
-        <label className="block">
-          <span className="text-sm">Attach to Profile</span>
-          <div className="flex gap-2">
-            <select
-              className="w-full border rounded p-2"
-              value={profileId || ''}
-              onChange={(e) => {
-                const val = e.target.value || null;
-                setProfileId(val);
-                if (val) localStorage.setItem('mx_profile_id', val);
-                else localStorage.removeItem('mx_profile_id');
-              }}
-            >
-              <option value="">(none)</option>
-              {profiles.map(p => (
-                <option key={p.id} value={p.id}>
-                  {p.user_id || 'profile'} — {new Date(p.created_at).toLocaleDateString()}
-                </option>
-              ))}
-            </select>
-            {profileId && (
-              <button
-                className="px-3 py-2 border rounded"
-                onClick={() => { setProfileId(null); localStorage.removeItem('mx_profile_id'); }}
-              >
-                Clear
-              </button>
-            )}
-          </div>
-        </label>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Basics */}
-        <label className="block">
-          <span className="text-sm">Filing status</span>
-          <select className="w-full border rounded p-2"
-            value={form.filingStatus || 'mfj'}
-            onChange={(e)=>up('filingStatus', e.target.value as any)}>
-            <option value="single">Single</option>
-            <option value="mfj">Married Filing Jointly</option>
-            <option value="mfs">Married Filing Separately</option>
-            <option value="hoh">Head of Household</option>
-            <option value="qw">Qualifying Widow(er)</option>
-          </select>
-        </label>
-
-        <label className="block">
-          <span className="text-sm">State</span>
-          <input className="w-full border rounded p-2" placeholder="CA"
-            value={form.state || ''} onChange={(e)=>up('state', e.target.value)} />
-        </label>
-
-        <label className="block">
-          <span className="text-sm">Dependents</span>
-          <input type="number" min={0} className="w-full border rounded p-2"
-            value={form.dependents ?? 0} onChange={(e)=>up('dependents', Number(e.target.value||0))}/>
-        </label>
-
-        {/* Income */}
-        <label className="block">
-          <span className="text-sm">W-2 wages (YTD)</span>
-          <input type="number" className="w-full border rounded p-2"
-            value={form.w2Income ?? 0} onChange={(e)=>up('w2Income', Number(e.target.value||0))}/>
-        </label>
-        <label className="block">
-          <span className="text-sm">Fed withholding (YTD)</span>
-          <input type="number" className="w-full border rounded p-2"
-            value={form.w2FedWithheld ?? 0} onChange={(e)=>up('w2FedWithheld', Number(e.target.value||0))}/>
-        </label>
-        <label className="block">
-          <span className="text-sm">State withholding (YTD)</span>
-          <input type="number" className="w-full border rounded p-2"
-            value={form.w2StateWithheld ?? 0} onChange={(e)=>up('w2StateWithheld', Number(e.target.value||0))}/>
-        </label>
-        <label className="block">
-          <span className="text-sm">Business income (SE/K-1 active)</span>
-          <input type="number" className="w-full border rounded p-2"
-            value={form.seIncome ?? 0} onChange={(e)=>up('seIncome', Number(e.target.value||0))}/>
-        </label>
-        <label className="block">
-          <span className="text-sm">Real estate net (passive)</span>
-          <input type="number" className="w-full border rounded p-2"
-            value={form.realEstateIncome ?? 0} onChange={(e)=>up('realEstateIncome', Number(e.target.value||0))}/>
-        </label>
-        <label className="block">
-          <span className="text-sm">Capital gains</span>
-          <input type="number" className="w-full border rounded p-2"
-            value={form.capitalGains ?? 0} onChange={(e)=>up('capitalGains', Number(e.target.value||0))}/>
-        </label>
-
-        {/* Deductions */}
-        <label className="block">
-          <span className="text-sm">Mortgage interest (YTD)</span>
-          <input type="number" className="w-full border rounded p-2"
-            value={form.mortgageInterest ?? 0} onChange={(e)=>up('mortgageInterest', Number(e.target.value||0))}/>
-        </label>
-        <label className="block">
-          <span className="text-sm">SALT paid (YTD)</span>
-          <input type="number" className="w-full border rounded p-2"
-            value={form.salt ?? 0} onChange={(e)=>up('salt', Number(e.target.value||0))}/>
-        </label>
-        <label className="block">
-          <span className="text-sm">Charitable giving (YTD)</span>
-          <input type="number" className="w-full border rounded p-2"
-            value={form.charity ?? 0} onChange={(e)=>up('charity', Number(e.target.value||0))}/>
-        </label>
-
-        {/* Accounts */}
-        <label className="block">
-          <span className="text-sm">401(k) pre-tax deferral (YTD)</span>
-          <input type="number" className="w-full border rounded p-2"
-            value={form.preTax401k ?? 0} onChange={(e)=>up('preTax401k', Number(e.target.value||0))}/>
-        </label>
-        <label className="block">
-          <span className="text-sm">IRA contribution (YTD)</span>
-          <input type="number" className="w-full border rounded p-2"
-            value={form.iraContribution ?? 0} onChange={(e)=>up('iraContribution', Number(e.target.value||0))}/>
-        </label>
-      </div>
-
-      <button onClick={run} disabled={loading}
-        className="px-4 py-2 rounded bg-black text-white disabled:opacity-50">
-        {loading ? 'Calculating…' : 'Get My Estimate & Strategies'}
-      </button>
-
-      {err && <div className="text-red-600">{err}</div>}
-
-      {answer && (
-        <div className="space-y-3">
-          <div className="flex gap-2">
-            <input
-              className="border rounded p-2"
-              placeholder="Strategy title…"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-            <button
-              onClick={() => saveStrategy(title)}
-              className="px-3 py-2 border rounded"
-            >
-              Save Strategy
-            </button>
-            <button
-              onClick={() => window.print()}
-              className="px-3 py-2 rounded border"
-              title="Print or Save as PDF"
-            >
-              Print / Save PDF
-            </button>
-            <button
-              onClick={() => navigator.clipboard.writeText(answer)}
-              className="px-3 py-2 rounded border"
-            >
-              Copy Text
-            </button>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label>Filing Status</Label>
+              <Select value={form.filingStatus || 'mfj'} onValueChange={(v)=>up('filingStatus', v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="single">Single</SelectItem>
+                  <SelectItem value="mfj">Married Filing Jointly</SelectItem>
+                  <SelectItem value="mfs">Married Filing Separately</SelectItem>
+                  <SelectItem value="hoh">Head of Household</SelectItem>
+                  <SelectItem value="qw">Qualifying Widow(er)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>State</Label>
+              <Input value={form.state || ''} onChange={(e)=>up('state', e.target.value)} placeholder="CA" />
+            </div>
+            <div>
+              <Label>Dependents</Label>
+              <Input type="number" value={form.dependents ?? 0} onChange={(e)=>up('dependents', Number(e.target.value||0))} />
+            </div>
           </div>
 
-          {/* Render the tidy sections */}
-          <AnswerViewer answer={answer} />
-        </div>
-      )}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label>Attach to Profile</Label>
+              <Select value={profileId || ''} onValueChange={(v)=>{ setProfileId(v || null); v ? localStorage.setItem('mx_profile_id', v) : localStorage.removeItem('mx_profile_id'); }}>
+                <SelectTrigger><SelectValue placeholder="(none)" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">(none)</SelectItem>
+                  {profiles.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.user_id || 'profile'} — {new Date(p.created_at).toLocaleDateString()}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent></Card>
+
+        <Card><CardContent className="p-5 space-y-4">
+          <h2 className="text-xl font-semibold mb-1">Income</h2>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div><Label>W-2 wages (YTD)</Label><Input type="number" value={form.w2Income ?? 0} onChange={(e)=>up('w2Income', Number(e.target.value||0))} /></div>
+            <div><Label>Fed withholding (YTD)</Label><Input type="number" value={form.w2FedWithheld ?? 0} onChange={(e)=>up('w2FedWithheld', Number(e.target.value||0))} /></div>
+            <div><Label>State withholding (YTD)</Label><Input type="number" value={form.w2StateWithheld ?? 0} onChange={(e)=>up('w2StateWithheld', Number(e.target.value||0))} /></div>
+            <div><Label>Business income (SE/K-1 active)</Label><Input type="number" value={form.seIncome ?? 0} onChange={(e)=>up('seIncome', Number(e.target.value||0))} /></div>
+            <div><Label>Real estate net (passive)</Label><Input type="number" value={form.realEstateIncome ?? 0} onChange={(e)=>up('realEstateIncome', Number(e.target.value||0))} /></div>
+            <div><Label>Capital gains</Label><Input type="number" value={form.capitalGains ?? 0} onChange={(e)=>up('capitalGains', Number(e.target.value||0))} /></div>
+          </div>
+        </CardContent></Card>
+
+        <Card><CardContent className="p-5 space-y-4">
+          <h2 className="text-xl font-semibold mb-1">Deductions & Retirement</h2>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div><Label>Mortgage interest (YTD)</Label><Input type="number" value={form.mortgageInterest ?? 0} onChange={(e)=>up('mortgageInterest', Number(e.target.value||0))} /></div>
+            <div><Label>SALT paid (YTD)</Label><Input type="number" value={form.salt ?? 0} onChange={(e)=>up('salt', Number(e.target.value||0))} /></div>
+            <div><Label>Charitable giving (YTD)</Label><Input type="number" value={form.charity ?? 0} onChange={(e)=>up('charity', Number(e.target.value||0))} /></div>
+            <div><Label>401(k) pre-tax (YTD)</Label><Input type="number" value={form.preTax401k ?? 0} onChange={(e)=>up('preTax401k', Number(e.target.value||0))} /></div>
+            <div><Label>IRA contribution (YTD)</Label><Input type="number" value={form.iraContribution ?? 0} onChange={(e)=>up('iraContribution', Number(e.target.value||0))} /></div>
+          </div>
+        </CardContent></Card>
+      </div>
+
+      {/* Right: Actions + Result */}
+      <div className="md:col-span-2 space-y-4">
+        <Card className="sticky top-24"><CardContent className="p-5 space-y-3">
+          <h2 className="text-lg font-semibold">Run Analysis</h2>
+          <p className="text-sm text-slate-600">We’ll estimate your current year (assume 2025 unless specified) and rank 3–5 compliant strategies.</p>
+          <Button onClick={run} disabled={loading} className="w-full">{loading ? 'Calculating…' : 'Get My Estimate & Strategies'}</Button>
+          {err && <div className="text-red-600 text-sm">Error: {err}</div>}
+          <div className="text-[11px] text-slate-500">
+            Educational use only. Coordinate execution with a CPA, tax attorney, or fiduciary.
+          </div>
+        </CardContent></Card>
+
+        {answer && (
+          <Card><CardContent className="p-5 space-y-3">
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={()=>window.print()}>Print / Save PDF</Button>
+              <Button variant="outline" onClick={()=>navigator.clipboard.writeText(answer)}>Copy Text</Button>
+            </div>
+            <AnswerViewer answer={answer} />
+          </CardContent></Card>
+        )}
+      </div>
     </div>
   );
 }
+

@@ -35,6 +35,7 @@
 
   --ring: hsl(45 75% 62%);                   /* focus ring uses gold for brand pop */
   --radius: 0.5rem;
+  --brand: 37 99 235; /* blue-600 */
 
   --success: hsl(157 60% 32%);
   --success-foreground: hsl(0 0% 100%);
@@ -105,6 +106,12 @@
   h2 { @apply tracking-tight; }
   h3 { @apply tracking-tight; }
 }
+
+/* Light theme typography tweaks */
+h1, h2, h3 { font-family: var(--font-serif), ui-serif, Georgia, serif; }
+
+/* cards & shadows */
+/* keep .card utility but allow simple card class usage */
 
 /* ---------- Utilities & design helpers ---------- */
 @layer utilities {
