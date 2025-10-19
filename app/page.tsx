@@ -1,42 +1,42 @@
-import React from "react";
-import Hero from "@/components/home/Hero";
-import LiveEstimator from "@/components/home/LiveEstimator";
-import FeatureGrid from "@/components/home/FeatureGrid";
-import Link from "next/link";
+import Link from 'next/link';
 
 export default function HomePage() {
   return (
-    <main className="mx-auto max-w-6xl space-y-10 p-6 md:p-10">
-      <Hero />
+    <div className="grid gap-6">
+      <section className="rounded-2xl border bg-white p-6">
+        <h1 className="text-3xl font-semibold mb-2">MoneyXprt — AI Tax & Wealth Strategist</h1>
+        <p className="text-gray-600 mb-4">
+          Get a current-year tax estimate and a ranked set of compliant strategies to keep more of what you earn.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/intake" className="px-4 py-2 rounded bg-black text-white">Start the Agent</Link>
+          <Link href="/history" className="px-4 py-2 rounded border">View History</Link>
+          <Link href="/compare" className="px-4 py-2 rounded border">Compare Scenarios</Link>
+          <Link href="/mx-test" className="px-4 py-2 rounded border">API Test</Link>
+        </div>
+      </section>
 
-      <LiveEstimator />
+      <section className="grid md:grid-cols-3 gap-4">
+        {[
+          { title: 'How it works', body: 'Fill a quick intake, we estimate your taxes, then recommend compliant strategies ranked by impact, complexity, and risk.' },
+          { title: 'What you get', body: 'Profile Snapshot • Tax Estimate • Top Strategies • Action Plan • References (IRS + books) • Compliance notes.' },
+          { title: 'Stay compliant', body: 'Education-only. We always recommend coordinating with a CPA/tax attorney/fiduciary before implementation.' },
+        ].map((c, i) => (
+          <div key={i} className="rounded-2xl border bg-white p-5">
+            <h2 className="font-semibold mb-1">{c.title}</h2>
+            <p className="text-sm text-gray-700">{c.body}</p>
+          </div>
+        ))}
+      </section>
 
-      <FeatureGrid />
-
-      <section className="rounded-2xl border bg-white/60 p-6 md:p-8">
-        <div className="mb-3 text-sm font-medium text-gray-800">What you can do today</div>
-        <ul className="grid gap-3 md:grid-cols-2">
-          <li className="rounded-lg border bg-white/70 p-4">
-            <div className="font-medium">Planner</div>
-            <p className="text-sm text-gray-600">Walk through Intake → Recommendations → Scenario → Playbook.</p>
-            <div className="mt-3">
-              <Link className="text-emerald-700 underline" href="/planner/intake">
-                Launch Planner →
-              </Link>
-            </div>
-          </li>
-          <li className="rounded-lg border bg-white/70 p-4">
-            <div className="font-medium">Labs</div>
-            <p className="text-sm text-gray-600">See the Tax Strategy Engine MVP and API docs.</p>
-            <div className="mt-3">
-              <Link className="text-emerald-700 underline" href="/labs">
-                Explore Labs →
-              </Link>
-            </div>
-          </li>
+      <section className="rounded-2xl border bg-white p-6">
+        <h2 className="text-xl font-semibold mb-2">Quick links</h2>
+        <ul className="list-disc pl-5 space-y-1 text-sm">
+          <li><Link href="/intake" className="underline">Run a new scenario</Link></li>
+          <li><Link href="/history" className="underline">See recent scenarios</Link></li>
+          <li><Link href="/compare" className="underline">Compare two scenarios</Link></li>
         </ul>
       </section>
-    </main>
+    </div>
   );
 }
-
