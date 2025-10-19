@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <style>
+      .bg { fill: #111; }
+      .tx { fill: #fff; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; font-weight: 800; }
+    </style>
+  </defs>
+  <circle class="bg" cx="256" cy="256" r="256"/>
+  <text class="tx" x="50%" y="54%" font-size="200" text-anchor="middle" dominant-baseline="middle">MX</text>
+  </svg>
+

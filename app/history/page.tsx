@@ -1,8 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import LoadingRows from '@/components/LoadingRows';
@@ -68,13 +66,12 @@ export default function HistoryPage() {
 
   return (
     <div className="grid gap-6">
-      <Card>
-        <CardContent className="p-5 space-y-4">
+      <div className="card p-5 space-y-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <h1 className="text-2xl font-semibold">Scenario History</h1>
             <div className="flex gap-2">
-              <Link href="/intake"><Button>New Scenario</Button></Link>
-              <Link href="/compare"><Button variant="outline">Compare</Button></Link>
+              <Link href="/intake" className="btn-primary">New Scenario</Link>
+              <Link href="/compare" className="btn-accent">Compare</Link>
             </div>
           </div>
 
@@ -124,7 +121,7 @@ export default function HistoryPage() {
 
               {!loading && !err && filtered.length === 0 && (
                 <div className="text-sm text-slate-600">
-                  No scenarios found. <Link href="/intake" className="underline">Create your first run</Link>.
+                  No scenarios found. <Link href="/intake" className="link">Create your first run</Link>.
                 </div>
               )}
 
@@ -136,8 +133,8 @@ export default function HistoryPage() {
                       <div className="col-span-2">{r.tax_year ?? '—'}</div>
                       <div className="col-span-3">{r.model ?? '—'}</div>
                       <div className="col-span-3 text-right flex justify-end gap-2">
-                        <Link href={`/compare?a=${r.id}`}><Button variant="outline" size="sm">Compare</Button></Link>
-                        <Link href="/intake"><Button size="sm">New</Button></Link>
+                        <Link href={`/compare?a=${r.id}`} className="btn-accent">Compare</Link>
+                        <Link href="/intake" className="btn-primary">New</Link>
                       </div>
                     </div>
                   ))}
@@ -146,8 +143,7 @@ export default function HistoryPage() {
             </div>
           </div>
 
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }

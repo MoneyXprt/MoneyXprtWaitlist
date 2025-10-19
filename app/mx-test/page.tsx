@@ -37,7 +37,7 @@ export default function MXTest() {
         placeholder="Ask the strategist or paste sample data…"
       />
       <button onClick={run} type="button" disabled={loading}
-        className="px-4 py-2 rounded bg-black text-white disabled:opacity-50">
+        className="btn-primary disabled:opacity-60">
         {loading ? 'Running…' : 'Run'}
       </button>
       {err && <div className="text-red-600">Error: {err}</div>}

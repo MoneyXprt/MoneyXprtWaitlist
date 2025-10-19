@@ -54,9 +54,7 @@ export default function ComparePage() {
           ))}
         </select>
       </div>
-      <button onClick={compare} className="px-4 py-2 rounded bg-black text-white">
-        Compare
-      </button>
+      <button onClick={compare} className="btn-primary">Compare</button>
       {err && <div className="text-red-600">{err}</div>}
 
       {result?.runs?.length === 2 && (
@@ -78,4 +76,3 @@ export default function ComparePage() {
     </div>
   );
 }
-

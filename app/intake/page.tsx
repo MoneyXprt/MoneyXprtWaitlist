@@ -1,7 +1,5 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -55,10 +53,12 @@ export default function Intake() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="space-y-6">
+      <h1>AI-Driven Tax Strategy. Built for ambitious earners.</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Left: Form */}
       <div className="lg:col-span-2 space-y-6">
-        <Card><CardContent className="p-5 space-y-4">
+        <div className="card p-5 space-y-4">
           <h2 className="text-xl font-semibold mb-1">Profile</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -107,9 +107,9 @@ export default function Intake() {
               </Select>
             </div>
           </div>
-        </CardContent></Card>
+        </div>
 
-        <Card><CardContent className="p-5 space-y-4">
+        <div className="card p-5 space-y-4">
           <h2 className="text-xl font-semibold mb-1">Income</h2>
           <div className="grid md:grid-cols-3 gap-4">
             <div><Label>W-2 wages (YTD)</Label><Input type="number" value={form.w2Income ?? 0} onChange={(e)=>up('w2Income', Number(e.target.value||0))} /></div>
@@ -119,9 +119,9 @@ export default function Intake() {
             <div><Label>Real estate net (passive)</Label><Input type="number" value={form.realEstateIncome ?? 0} onChange={(e)=>up('realEstateIncome', Number(e.target.value||0))} /></div>
             <div><Label>Capital gains</Label><Input type="number" value={form.capitalGains ?? 0} onChange={(e)=>up('capitalGains', Number(e.target.value||0))} /></div>
           </div>
-        </CardContent></Card>
+        </div>
 
-        <Card><CardContent className="p-5 space-y-4">
+        <div className="card p-5 space-y-4">
           <h2 className="text-xl font-semibold mb-1">Deductions & Retirement</h2>
           <div className="grid md:grid-cols-3 gap-4">
             <div><Label>Mortgage interest (YTD)</Label><Input type="number" value={form.mortgageInterest ?? 0} onChange={(e)=>up('mortgageInterest', Number(e.target.value||0))} /></div>
@@ -130,30 +130,31 @@ export default function Intake() {
             <div><Label>401(k) pre-tax (YTD)</Label><Input type="number" value={form.preTax401k ?? 0} onChange={(e)=>up('preTax401k', Number(e.target.value||0))} /></div>
             <div><Label>IRA contribution (YTD)</Label><Input type="number" value={form.iraContribution ?? 0} onChange={(e)=>up('iraContribution', Number(e.target.value||0))} /></div>
           </div>
-        </CardContent></Card>
+        </div>
       </div>
 
       {/* Right: Actions + Result */}
       <div className="lg:col-span-1 space-y-4">
-        <Card className="sticky top-20"><CardContent className="p-5 space-y-3">
+        <div className="card p-5 space-y-3 sticky top-20">
           <h2 className="text-lg font-semibold">Run Analysis</h2>
           <p className="text-sm text-slate-600">We’ll estimate your current year (assume 2025 unless specified) and rank 3–5 compliant strategies.</p>
-          <Button onClick={run} disabled={loading} className="w-full">{loading ? 'Calculating…' : 'Get My Estimate & Strategies'}</Button>
+          <button onClick={run} disabled={loading} className="btn-primary w-full">{loading ? 'Calculating…' : 'Get My Estimate & Strategies'}</button>
           {err && <div className="text-red-600 text-sm">Error: {err}</div>}
           <div className="text-[11px] text-slate-500">
             Educational use only. Coordinate execution with a CPA, tax attorney, or fiduciary.
           </div>
-        </CardContent></Card>
+        </div>
 
         {answer && (
-          <Card><CardContent className="p-5 space-y-3">
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={()=>window.print()}>Print / Save PDF</Button>
-              <Button variant="outline" onClick={()=>navigator.clipboard.writeText(answer)}>Copy Text</Button>
+          <div className="card p-5 space-y-3">
+            <div className="flex gap-2 flex-wrap">
+              <button className="btn-accent" onClick={()=>window.print()}>Print / Save PDF</button>
+              <button className="btn-accent" onClick={()=>navigator.clipboard.writeText(answer)}>Copy Text</button>
             </div>
             <AnswerViewer answer={answer} />
-          </CardContent></Card>
+          </div>
         )}
+      </div>
       </div>
     </div>
   );
