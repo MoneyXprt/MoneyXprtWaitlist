@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import dynamic from 'next/dynamic';
+import { Brain, FileBarChart, TrendingUp } from 'lucide-react';
 import type { MoneyXprtIntake } from '@/types/moneyxprt';
 import { toStrategistPayload } from '@/types/moneyxprt';
 import { callStrategist } from '@/lib/callStrategist';
@@ -58,8 +59,11 @@ export default function Intake() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Left: Form */}
       <div className="lg:col-span-2 space-y-6">
-        <div className="card p-5 space-y-4">
-          <h2 className="text-xl font-semibold mb-1">Profile</h2>
+        <div className="card p-5 space-y-4 animate-fadeUp">
+          <h2 className="text-xl font-semibold mb-1 relative inline-block">
+            <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-gradient-to-r from-[var(--mx-accent)] to-emerald-400"></span>
+            <span className="inline-flex items-center gap-2"><Brain className="h-5 w-5 text-[var(--mx-accent)]"/> Profile</span>
+          </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -109,8 +113,11 @@ export default function Intake() {
           </div>
         </div>
 
-        <div className="card p-5 space-y-4">
-          <h2 className="text-xl font-semibold mb-1">Income</h2>
+        <div className="card p-5 space-y-4 animate-fadeUp">
+          <h2 className="text-xl font-semibold mb-1 relative inline-block">
+            <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-gradient-to-r from-[var(--mx-accent)] to-emerald-400"></span>
+            <span className="inline-flex items-center gap-2"><FileBarChart className="h-5 w-5 text-[var(--mx-accent)]"/> Income</span>
+          </h2>
           <div className="grid md:grid-cols-3 gap-4">
             <div><Label>W-2 wages (YTD)</Label><Input type="number" value={form.w2Income ?? 0} onChange={(e)=>up('w2Income', Number(e.target.value||0))} /></div>
             <div><Label>Fed withholding (YTD)</Label><Input type="number" value={form.w2FedWithheld ?? 0} onChange={(e)=>up('w2FedWithheld', Number(e.target.value||0))} /></div>
@@ -121,8 +128,11 @@ export default function Intake() {
           </div>
         </div>
 
-        <div className="card p-5 space-y-4">
-          <h2 className="text-xl font-semibold mb-1">Deductions & Retirement</h2>
+        <div className="card p-5 space-y-4 animate-fadeUp">
+          <h2 className="text-xl font-semibold mb-1 relative inline-block">
+            <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-gradient-to-r from-[var(--mx-accent)] to-emerald-400"></span>
+            <span className="inline-flex items-center gap-2"><TrendingUp className="h-5 w-5 text-[var(--mx-accent)]"/> Deductions & Retirement</span>
+          </h2>
           <div className="grid md:grid-cols-3 gap-4">
             <div><Label>Mortgage interest (YTD)</Label><Input type="number" value={form.mortgageInterest ?? 0} onChange={(e)=>up('mortgageInterest', Number(e.target.value||0))} /></div>
             <div><Label>SALT paid (YTD)</Label><Input type="number" value={form.salt ?? 0} onChange={(e)=>up('salt', Number(e.target.value||0))} /></div>
@@ -135,10 +145,10 @@ export default function Intake() {
 
       {/* Right: Actions + Result */}
       <div className="lg:col-span-1 space-y-4">
-        <div className="card p-5 space-y-3 sticky top-20">
+        <div className="card p-5 space-y-3 sticky top-20 animate-fadeUp">
           <h2 className="text-lg font-semibold">Run Analysis</h2>
           <p className="text-sm text-slate-600">We’ll estimate your current year (assume 2025 unless specified) and rank 3–5 compliant strategies.</p>
-          <button onClick={run} disabled={loading} className="btn-primary w-full">{loading ? 'Calculating…' : 'Get My Estimate & Strategies'}</button>
+          <button onClick={run} disabled={loading} className="btn-primary w-full">{loading ? 'Calculating…' : 'Ask the AI Strategist'}</button>
           {err && <div className="text-red-600 text-sm">Error: {err}</div>}
           <div className="text-[11px] text-slate-500">
             Educational use only. Coordinate execution with a CPA, tax attorney, or fiduciary.
@@ -146,7 +156,7 @@ export default function Intake() {
         </div>
 
         {answer && (
-          <div className="card p-5 space-y-3">
+          <div className="card p-5 space-y-3 animate-fadeUp">
             <div className="flex gap-2 flex-wrap">
               <button className="btn-accent" onClick={()=>window.print()}>Print / Save PDF</button>
               <button className="btn-accent" onClick={()=>navigator.clipboard.writeText(answer)}>Copy Text</button>

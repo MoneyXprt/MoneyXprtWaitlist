@@ -33,8 +33,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
 
-        {/* Page container */}
-        <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">{children}</main>
+        {/* Page container with optional sidebar */}
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex gap-6">
+            {/* Optional Left Sidebar for dashboard feel */}
+            <aside className="hidden lg:flex flex-col w-56 border-r bg-white py-6 px-4 rounded-xl">
+              <h2 className="font-semibold text-lg mb-6">MoneyXprt</h2>
+              <nav className="flex flex-col gap-2 text-sm text-zinc-600">
+                <Link href="/intake" className="hover:text-[var(--mx-primary)]">🧠 Agent</Link>
+                <Link href="/history" className="hover:text-[var(--mx-primary)]">📜 History</Link>
+                <Link href="/compare" className="hover:text-[var(--mx-primary)]">📈 Compare</Link>
+                <Link href="/settings" className="hover:text-[var(--mx-primary)]">⚙️ Settings</Link>
+              </nav>
+            </aside>
+            <main className="flex-1">{children}</main>
+          </div>
+        </div>
 
         {/* Footer */}
         <footer className="border-t bg-white">

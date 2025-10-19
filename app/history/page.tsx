@@ -66,12 +66,28 @@ export default function HistoryPage() {
 
   return (
     <div className="grid gap-6">
-      <div className="card p-5 space-y-4">
+      <div className="card p-5 space-y-4 animate-fadeUp">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <h1 className="text-2xl font-semibold">Scenario History</h1>
             <div className="flex gap-2">
               <Link href="/intake" className="btn-primary">New Scenario</Link>
               <Link href="/compare" className="btn-accent">Compare</Link>
+            </div>
+          </div>
+
+          {/* Estimation summary (placeholder visual cues) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+            <div className="card p-4 text-center animate-fadeUp">
+              <p className="text-sm text-zinc-500">Estimated Tax</p>
+              <p className="text-2xl font-semibold text-[var(--mx-primary)]">$42,380</p>
+            </div>
+            <div className="card p-4 text-center animate-fadeUp">
+              <p className="text-sm text-zinc-500">Projected Savings</p>
+              <p className="text-2xl font-semibold text-[var(--mx-accent)]">$6,850</p>
+            </div>
+            <div className="card p-4 text-center animate-fadeUp">
+              <p className="text-sm text-zinc-500">Effective Rate</p>
+              <p className="text-2xl font-semibold text-[var(--mx-primary)]">21.3%</p>
             </div>
           </div>
 
@@ -104,7 +120,7 @@ export default function HistoryPage() {
             </div>
           </div>
 
-          <div className="border rounded-2xl overflow-hidden">
+          <div className="border rounded-2xl overflow-hidden animate-fadeUp">
             <div className="grid grid-cols-12 bg-gray-50 px-4 py-2 text-sm font-medium">
               <div className="col-span-4">Created</div>
               <div className="col-span-2">Tax Year</div>
@@ -121,7 +137,8 @@ export default function HistoryPage() {
 
               {!loading && !err && filtered.length === 0 && (
                 <div className="text-sm text-slate-600">
-                  No scenarios found. <Link href="/intake" className="link">Create your first run</Link>.
+                  No runs yet — AI loves data. Let’s feed it your first profile.{' '}
+                  <Link href="/intake" className="link">Create your first run</Link>.
                 </div>
               )}
 
