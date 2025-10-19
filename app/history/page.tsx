@@ -10,6 +10,10 @@ import LoadingRows from '@/components/LoadingRows';
 type RunRow = { id: string; tax_year: number | null; created_at: string; model: string | null; profile_id: string | null };
 type ProfileRow = { id: string; user_id: string | null; created_at: string };
 
+async function safeJson(res: Response) {
+  try { return await res.json(); } catch { return {}; }
+}
+
 export default function HistoryPage() {
   const [runs, setRuns] = useState<RunRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
@@ -18,17 +22,19 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
-  // load profiles + remembered choice
+  // load profiles + remembered profile
   useEffect(() => {
     (async () => {
       try {
-        const p = await fetch('/api/profiles/recent').then(r => r.json());
-        if (p.ok) {
-          setProfiles(p.profiles || []);
-          const saved = localStorage.getItem('mx_profile_id');
-          if (saved) setProfileId(saved);
-        }
-      } catch {}
+        const res = await fetch('/api/profiles/recent', { cache: 'no-store' });
+        const json: any = await safeJson(res);
+        if (res.ok && json?.ok) setProfiles(json.profiles || []);
+        const saved = localStorage.getItem('mx_profile_id');
+        if (saved) setProfileId(saved);
+      } catch (e: any) {
+        // just log; don’t crash the page
+        console.warn('[history] profiles error:', e?.message || e);
+      }
     })();
   }, []);
 
@@ -38,11 +44,12 @@ export default function HistoryPage() {
     (async () => {
       try {
         const qs = profileId ? `?profileId=${encodeURIComponent(profileId)}` : '';
-        const r = await fetch(`/api/scenarios/recent${qs}`).then(res => res.json());
-        if (!r.ok) throw new Error(r.error || 'Failed to load');
-        setRuns(r.runs || []);
-      } catch (e:any) {
-        setErr(e.message || 'Error');
+        const res = await fetch(`/api/scenarios/recent${qs}`, { cache: 'no-store' });
+        const json: any = await safeJson(res);
+        if (!res.ok || !json?.ok) throw new Error(json?.error || `HTTP ${res.status}`);
+        setRuns(json.runs || []);
+      } catch (e: any) {
+        setErr(e.message || 'Failed to load scenarios');
       } finally {
         setLoading(false);
       }
@@ -71,7 +78,6 @@ export default function HistoryPage() {
             </div>
           </div>
 
-          {/* Filters */}
           <div className="grid md:grid-cols-3 gap-3">
             <div>
               <div className="text-sm mb-1">Filter by Profile</div>
@@ -100,7 +106,6 @@ export default function HistoryPage() {
             </div>
           </div>
 
-          {/* Table */}
           <div className="border rounded-2xl overflow-hidden">
             <div className="grid grid-cols-12 bg-gray-50 px-4 py-2 text-sm font-medium">
               <div className="col-span-4">Created</div>
@@ -118,7 +123,7 @@ export default function HistoryPage() {
 
               {!loading && !err && filtered.length === 0 && (
                 <div className="text-sm text-slate-600">
-                  No scenarios yet. <Link href="/intake" className="underline">Create your first run</Link>.
+                  No scenarios found. <Link href="/intake" className="underline">Create your first run</Link>.
                 </div>
               )}
 
@@ -130,15 +135,8 @@ export default function HistoryPage() {
                       <div className="col-span-2">{r.tax_year ?? '—'}</div>
                       <div className="col-span-3">{r.model ?? '—'}</div>
                       <div className="col-span-3 text-right flex justify-end gap-2">
-                        <Link href={`/api/scenarios/${r.id}`} target="_blank">
-                          <Button variant="outline" size="sm">JSON</Button>
-                        </Link>
-                        <Link href={`/compare?a=${r.id}`}>
-                          <Button variant="outline" size="sm">Compare</Button>
-                        </Link>
-                        <Link href="/intake">
-                          <Button size="sm">New</Button>
-                        </Link>
+                        <Link href={`/compare?a=${r.id}`}><Button variant="outline" size="sm">Compare</Button></Link>
+                        <Link href="/intake"><Button size="sm">New</Button></Link>
                       </div>
                     </div>
                   ))}
@@ -152,4 +150,3 @@ export default function HistoryPage() {
     </div>
   );
 }
-
