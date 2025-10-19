@@ -17,6 +17,7 @@ export default function Intake() {
   const [answer, setAnswer] = useState(''); 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
+  const [title, setTitle] = useState('');
 
   // load profiles + last selection
   useEffect(() => {
@@ -47,6 +48,28 @@ export default function Intake() {
       setAnswer((r as any).answer || '');
     } catch (e: any) { setErr(e.message || 'Error'); }
     finally { setLoading(false); }
+  }
+
+  async function saveStrategy(titleArg?: string) {
+    try {
+      const t = (titleArg ?? title)?.trim();
+      if (!t) {
+        alert('Please enter a strategy title.');
+        return;
+      }
+      const pid = typeof window !== 'undefined' ? localStorage.getItem('mx_profile_id') : null;
+      const scenarioId = null; // not available on intake page
+      const res = await fetch('/api/strategies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileId: pid, scenarioId, title: t, notes: '' }),
+      });
+      const json = await res.json().catch(() => ({} as any));
+      if (!res.ok || !json?.ok) throw new Error(json?.error || `HTTP ${res.status}`);
+      alert('Saved 👍');
+    } catch (e: any) {
+      alert(`Save failed: ${e?.message || 'Error'}`);
+    }
   }
 
   return (
@@ -186,6 +209,18 @@ export default function Intake() {
       {answer && (
         <div className="space-y-3">
           <div className="flex gap-2">
+            <input
+              className="border rounded p-2"
+              placeholder="Strategy title…"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+            <button
+              onClick={() => saveStrategy(title)}
+              className="px-3 py-2 border rounded"
+            >
+              Save Strategy
+            </button>
             <button
               onClick={() => window.print()}
               className="px-3 py-2 rounded border"
