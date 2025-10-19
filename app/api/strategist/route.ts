@@ -47,19 +47,32 @@ export async function POST(req: Request) {
 
     const answer = completion.choices[0]?.message?.content ?? ''
 
-    // 5) Save the run to Supabase (non-fatal on failure)
+    // 5) Save the run to Supabase (typed insert, non-fatal on failure)
+    type ScenarioSimInsert = {
+      profile_id: string | null
+      tax_year: number
+      scenario_data: any
+      user_message: string
+      model: string
+      answer: string
+    }
+
     try {
-      const taxYear = (payload as any)?.meta?.taxYear ?? new Date().getFullYear()
-      await sb.from('scenario_simulations').insert({
+      const sb2 = supabaseAdmin()
+      const taxYear: number = (payload as any)?.meta?.taxYear ?? new Date().getFullYear()
+
+      const row: ScenarioSimInsert = {
         profile_id: null,
         tax_year: taxYear,
         scenario_data: (payload as any) ?? {},
         user_message: userMessage ?? '',
         model,
         answer,
-      })
-    } catch (saveErr: any) {
-      console.error('Error saving scenario run:', saveErr?.message || saveErr)
+      }
+
+      await sb2.from('scenario_simulations').insert<ScenarioSimInsert>(row)
+    } catch (e: any) {
+      console.error('Error saving scenario run:', e?.message || e)
     }
 
     return NextResponse.json({ ok: true, answer })
