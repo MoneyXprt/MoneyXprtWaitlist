@@ -55,9 +55,9 @@ export default function Intake() {
   }
 
   return (
-    <div className="grid md:grid-cols-5 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Left: Form */}
-      <div className="md:col-span-3 space-y-4">
+      <div className="lg:col-span-2 space-y-6">
         <Card><CardContent className="p-5 space-y-4">
           <h2 className="text-xl font-semibold mb-1">Profile</h2>
 
@@ -134,8 +134,8 @@ export default function Intake() {
       </div>
 
       {/* Right: Actions + Result */}
-      <div className="md:col-span-2 space-y-4">
-        <Card className="sticky top-24"><CardContent className="p-5 space-y-3">
+      <div className="lg:col-span-1 space-y-4">
+        <Card className="sticky top-20"><CardContent className="p-5 space-y-3">
           <h2 className="text-lg font-semibold">Run Analysis</h2>
           <p className="text-sm text-slate-600">We’ll estimate your current year (assume 2025 unless specified) and rank 3–5 compliant strategies.</p>
           <Button onClick={run} disabled={loading} className="w-full">{loading ? 'Calculating…' : 'Get My Estimate & Strategies'}</Button>

@@ -34,7 +34,7 @@
   --destructive-foreground: hsl(0 0% 100%);
 
   --ring: hsl(45 75% 62%);                   /* focus ring uses gold for brand pop */
-  --radius: 0.5rem;
+  --radius: 14px;
   --brand: 37 99 235; /* blue-600 */
 
   --success: hsl(157 60% 32%);
@@ -102,8 +102,8 @@
     @apply underline-offset-4 decoration-[1.5px];
   }
 
-  h1 { @apply tracking-tight; }
-  h2 { @apply tracking-tight; }
+  h1 { @apply text-3xl sm:text-4xl font-semibold tracking-tight; }
+  h2 { @apply text-2xl font-semibold tracking-tight; }
   h3 { @apply tracking-tight; }
 }
 
@@ -151,7 +151,7 @@ h1, h2, h3 { font-family: var(--font-serif), ui-serif, Georgia, serif; }
 
   /* Cards & elevation */
   .card {
-    @apply bg-card text-card-foreground border rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)];
+    @apply bg-white border border-zinc-200 rounded-2xl shadow-sm;
   }
   .shadow-soft { box-shadow: 0 10px 30px rgba(0,0,0,.08); }
 
