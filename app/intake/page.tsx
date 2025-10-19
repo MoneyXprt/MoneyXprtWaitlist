@@ -194,19 +194,20 @@ export default function AgentPage() {
       <div className="card p-6 space-y-2 relative">
         {err && <p className="text-sm text-red-600">{err}</p>}
         {isSubmitting && <ResultSkeleton />}
+        {results && <Results data={results} />}
         {results && shareUrl && (
-          <div className="flex items-center gap-2">
+          <div className="mt-4 flex items-center gap-2">
             <button
-              type="button"
               className="btn"
-              onClick={() => navigator.clipboard.writeText((typeof window !== 'undefined' ? window.location.origin : '') + shareUrl)}
+              onClick={() => navigator.clipboard.writeText(`${typeof window !== 'undefined' ? window.location.origin : ''}${shareUrl}`)}
             >
               Copy Share Link
             </button>
-            <a className="btn btn-outline" href={shareUrl} target="_blank" rel="noreferrer">Open Shared View</a>
+            <a className="btn btn-outline" href={shareUrl} target="_blank" rel="noreferrer">
+              Open Shared View
+            </a>
           </div>
         )}
-        {results && <Results data={results} />}
         {!results && answer && <pre className="whitespace-pre-wrap text-sm mt-2">{answer}</pre>}
         {/* Error toast */}
         {err && <Toast message={err} onClose={() => setErr('')} />}
