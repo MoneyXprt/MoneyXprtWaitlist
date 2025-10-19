@@ -1,53 +1,57 @@
-export type FilingStatus = 'single' | 'mfj' | 'mfs' | 'hoh'
+export type FilingStatus = 'single' | 'mfj' | 'mfs' | 'hoh' | 'qw'
 
-export type MoneyXprtIntake = {
+export interface MoneyXprtIntake {
+  taxYear?: number
   filingStatus?: FilingStatus
-  residence?: { state?: string; fullYearResident?: boolean }
-  employment?: Array<{ w2?: number; self?: number; entity?: string }>
-  itemized?: boolean
-  goals?: string[]
+  state?: string
+  dependents?: number
+
+  // incomes
+  w2Income?: number
+  w2FedWithheld?: number
+  w2StateWithheld?: number
+  seIncome?: number // Schedule C or K-1 active
+  realEstateIncome?: number // net passive (can be negative)
+  capitalGains?: number
+
+  // deductions (itemized)
+  mortgageInterest?: number
+  salt?: number // state+local tax you plan to claim
+  charity?: number
+
+  // accounts
+  preTax401k?: number // employee deferral
+  iraContribution?: number
+
+  notes?: string
 }
 
-function compact<T = any>(obj: T): T {
-  if (Array.isArray(obj)) {
-    const arr = obj.map(compact).filter((v) =>
-      !(v === undefined || v === null || (typeof v === 'string' && v.trim() === '') || (Array.isArray(v) && v.length === 0) || (typeof v === 'object' && v && Object.keys(v as any).length === 0))
-    ) as any
-    return arr as T
-  }
-  if (obj && typeof obj === 'object') {
-    const out: Record<string, any> = {}
-    for (const [k, v] of Object.entries(obj as any)) {
-      const c = compact(v)
-      const isEmptyObj = typeof c === 'object' && c && !Array.isArray(c) && Object.keys(c).length === 0
-      const isEmptyArr = Array.isArray(c) && c.length === 0
-      const isEmptyStr = typeof c === 'string' && c.trim() === ''
-      if (c !== undefined && c !== null && !isEmptyObj && !isEmptyArr && !isEmptyStr) out[k] = c
-    }
-    return out as any
-  }
-  return obj
-}
-
-/**
- * Convert arbitrary form state into a compact JSON payload for /api/strategist.
- * This is intentionally lenient; it preserves known keys and removes empty values.
- */
-export function toStrategistPayload(formState: any): any {
-  const fx: MoneyXprtIntake = {
-    filingStatus: formState?.filingStatus,
-    residence: {
-      state: formState?.state || formState?.residence?.state,
-      fullYearResident: formState?.residence?.fullYearResident,
+export function toStrategistPayload(f: MoneyXprtIntake) {
+  const year = f.taxYear ?? new Date().getFullYear()
+  return {
+    meta: { taxYear: year, source: 'web-intake-v0' },
+    profile: {
+      filingStatus: f.filingStatus ?? 'mfj',
+      state: (f.state || 'CA').toUpperCase(),
+      dependents: f.dependents ?? 1,
     },
-    employment: formState?.employment || (
-      formState?.w2 != null || formState?.self != null || formState?.entity
-        ? [{ w2: formState?.w2, self: formState?.self, entity: formState?.entity }]
-        : undefined
-    ),
-    itemized: formState?.itemized,
-    goals: formState?.goals,
+    income: {
+      w2: { wages: f.w2Income ?? 0, fedWithheld: f.w2FedWithheld ?? 0, stateWithheld: f.w2StateWithheld ?? 0 },
+      business: { seIncome: f.seIncome ?? 0 },
+      realEstate: { net: f.realEstateIncome ?? 0 },
+      capitalGains: f.capitalGains ?? 0,
+    },
+    deductions: {
+      itemized: {
+        mortgageInterest: f.mortgageInterest ?? 0,
+        salt: f.salt ?? 0,
+        charity: f.charity ?? 0,
+      },
+      retirement: {
+        preTax401k: f.preTax401k ?? 0,
+        iraContribution: f.iraContribution ?? 0,
+      },
+    },
+    notes: f.notes ?? '',
   }
-  return compact(fx)
 }
-
