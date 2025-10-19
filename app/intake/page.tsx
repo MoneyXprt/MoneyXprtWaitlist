@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Play, Info } from 'lucide-react';
 import Hint from '@/components/Hint';
 import ResultSkeleton from '@/components/ResultSkeleton';
+import NumericInput from '@/components/forms/fields/NumericInput';
 
 // ---------------- Schema ----------------
 const schema = z.object({
@@ -68,12 +69,6 @@ export default function AgentPage() {
 
   // Currency formatter
   const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
-  const numField = (name: keyof FormData) => ({
-    ...register(name, {
-      valueAsNumber: true,
-      setValueAs: (v) => (v === '' || v === null ? undefined : Number(v)),
-    }),
-  });
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -109,7 +104,7 @@ export default function AgentPage() {
           </div>
           <div>
             <label className="text-sm font-medium">Dependents</label>
-            <input type="number" {...register('dependents', { valueAsNumber: true })} className="input" />
+            <NumericInput register={register as any} name="dependents" className="input" />
             {errors.dependents && <p className="text-xs text-red-600">{errors.dependents.message}</p>}
           </div>
         </div>
@@ -127,7 +122,7 @@ export default function AgentPage() {
           ].map(([key, label]) => (
             <div key={key}>
               <label className="text-sm font-medium">{label}</label>
-              <input type="number" className="input" {...numField(key as keyof FormData)} />
+              <NumericInput register={register as any} name={key as any} className="input" />
               <p className="text-xs text-zinc-500">{fmt.format((watch(key as keyof FormData) ?? 0) as number)}</p>
               {(errors as any)[key] && (
                 <p className="text-xs text-red-600">{(errors as any)[key]?.message}</p>
