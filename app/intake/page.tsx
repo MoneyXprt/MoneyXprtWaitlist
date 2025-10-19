@@ -46,7 +46,10 @@ export default function Intake() {
         payload,
         profileId
       } as any);
-      setAnswer((r as any).answer);
+      if ((r as any)?.meta?.fallback) {
+        setErr('AI capacity limit hit. Showing a quick fallback plan. Try again in a minute for the full analysis.');
+      }
+      setAnswer((r as any).answer || '(empty)');
     } catch (e:any) { setErr(e.message || 'Error'); }
     finally { setLoading(false); }
   }
