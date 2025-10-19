@@ -11,6 +11,7 @@ import OpenAI from 'openai'
 type PromptRow = { body: string }
 
 export async function POST(req: Request) {
+  console.log('[strategist] POST hit')
   try {
     const sb = supabaseAdmin()
 
@@ -32,6 +33,11 @@ export async function POST(req: Request) {
       payload?: unknown
       profileId?: string | null
     }
+    console.log('[strategist] body:', {
+      hasUserMessage: Boolean(userMessage && String(userMessage).length > 0),
+      hasPayload: payload != null,
+      profileId,
+    })
 
     const messages: Array<{ role: 'system' | 'user'; content: string }> = [
       { role: 'system', content: systemBody },
@@ -49,6 +55,7 @@ export async function POST(req: Request) {
     })
 
     const answer = completion.choices[0]?.message?.content ?? ''
+    console.log('[strategist] openai answer length:', answer?.length || 0)
 
     // 5) Save the run to Supabase (typed insert, non-fatal on failure)
     type ScenarioSimInsert = {
@@ -62,6 +69,7 @@ export async function POST(req: Request) {
 
     try {
       const sb2 = supabaseAdmin()
+      console.log('[strategist] saving row to scenario_simulations')
       const taxYear: number = (payload as any)?.meta?.taxYear ?? new Date().getFullYear()
 
       const row: ScenarioSimInsert = {
@@ -80,6 +88,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, answer })
   } catch (e: any) {
+    console.error('[strategist] error:', e?.message || e)
     return NextResponse.json({ ok: false, error: e?.message || 'failed' }, { status: 500 })
   }
 }
