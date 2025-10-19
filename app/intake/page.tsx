@@ -68,9 +68,11 @@ export default function AgentPage() {
 
   // Currency formatter
   const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
-  const numField = (field: keyof FormData) => ({
-    value: watch(field) || 0,
-    onChange: (e: any) => setValue(field, Number(e.target.value.replace(/[^\d.]/g, ''))),
+  const numField = (name: keyof FormData) => ({
+    ...register(name, {
+      valueAsNumber: true,
+      setValueAs: (v) => (v === '' || v === null ? undefined : Number(v)),
+    }),
   });
 
   return (
@@ -126,7 +128,7 @@ export default function AgentPage() {
             <div key={key}>
               <label className="text-sm font-medium">{label}</label>
               <input type="number" className="input" {...numField(key as keyof FormData)} />
-              <p className="text-xs text-zinc-500">{fmt.format(watch(key as keyof FormData) || 0)}</p>
+              <p className="text-xs text-zinc-500">{fmt.format((watch(key as keyof FormData) ?? 0) as number)}</p>
               {(errors as any)[key] && (
                 <p className="text-xs text-red-600">{(errors as any)[key]?.message}</p>
               )}
@@ -156,4 +158,3 @@ export default function AgentPage() {
     </form>
   );
 }
-
