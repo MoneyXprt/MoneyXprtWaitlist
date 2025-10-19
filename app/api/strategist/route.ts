@@ -174,7 +174,6 @@ export async function POST(req: Request) {
     console.error('[strategist] error:', e?.message || e)
     // Capture API failure in Sentry if available
     try {
-      // @ts-expect-error optional dependency may be missing in local dev
       const Sentry = await import('@sentry/nextjs')
       Sentry.captureException(e)
     } catch {}

@@ -8,10 +8,8 @@ import { Play, Info } from 'lucide-react';
 import Hint from '@/components/Hint';
 import ResultSkeleton from '@/components/ResultSkeleton';
 import NumericInput from '@/components/forms/fields/NumericInput';
-// Vercel Analytics and Speed Insights (optional; no-op if packages missing locally)
-// @ts-expect-error optional dependency
+// Vercel Analytics and Speed Insights
 import { Analytics } from '@vercel/analytics/react';
-// @ts-expect-error optional dependency
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
 // ---------------- Schema ----------------
@@ -80,7 +78,6 @@ export default function AgentPage() {
     } catch (e: any) {
       setErr(e.message || 'Error');
       try {
-        // @ts-expect-error optional dependency may be missing in local dev
         const Sentry = await import('@sentry/nextjs');
         Sentry.captureException(e);
       } catch {}
@@ -185,9 +182,7 @@ export default function AgentPage() {
       {typeof window !== 'undefined' && (
         <>
           {/* Render only on this route as requested */}
-          {/* @ts-expect-error optional dependency at build time */}
           <Analytics />
-          {/* @ts-expect-error optional dependency at build time */}
           <SpeedInsights />
         </>
       )}

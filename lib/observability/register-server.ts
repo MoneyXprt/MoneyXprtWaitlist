@@ -1,5 +1,6 @@
 // Register Node.js-level error handlers for API routes.
 // This file is safe to import multiple times; it guards against double registration.
+export {};
 
 declare global {
   // eslint-disable-next-line no-var
@@ -11,7 +12,6 @@ if (!global.__mx_obs_registered) {
 
   const capture = async (err: unknown) => {
     try {
-      // @ts-expect-error optional dependency may be missing in local dev
       const Sentry = await import('@sentry/nextjs');
       try {
         Sentry.captureException(err);
@@ -26,4 +26,3 @@ if (!global.__mx_obs_registered) {
     void capture(err);
   });
 }
-
