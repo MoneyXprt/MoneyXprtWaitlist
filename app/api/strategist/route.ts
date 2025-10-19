@@ -1,5 +1,7 @@
 // ✅ Force Node runtime so supabase-js works (avoids Edge warnings)
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
