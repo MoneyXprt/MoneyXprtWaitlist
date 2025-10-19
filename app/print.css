@@ -1,0 +1,6 @@
+@media print {
+  /* Hide the page chrome, show only the answer blocks */
+  header, nav, footer, form, textarea, button { display: none !important; }
+  .print-visible { display: block !important; }
+  body { background: #fff !important; }
+}

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./print.css";
 import SiteHeader from "@/components/nav/SiteHeader";
 
 // (Optional) If you want guaranteed Inter loading regardless of OS fonts,

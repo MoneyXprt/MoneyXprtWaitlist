@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { callStrategist } from '@/lib/callStrategist';
 import type { MoneyXprtIntake } from '@/types/moneyxprt';
 import { toStrategistPayload } from '@/types/moneyxprt';
+const AnswerViewer = dynamic(() => import('@/components/AnswerViewer'), { ssr: false });
 type ProfileRow = { id: string; user_id: string | null; created_at: string };
 
 export default function Intake() {
@@ -179,11 +181,28 @@ export default function Intake() {
         {loading ? 'Calculating…' : 'Get My Estimate & Strategies'}
       </button>
 
-      {err && <div className="text-red-600">Error: {err}</div>}
+      {err && <div className="text-red-600">{err}</div>}
 
       {answer && (
-        <div className="border rounded p-4 whitespace-pre-wrap">
-          {answer}
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <button
+              onClick={() => window.print()}
+              className="px-3 py-2 rounded border"
+              title="Print or Save as PDF"
+            >
+              Print / Save PDF
+            </button>
+            <button
+              onClick={() => navigator.clipboard.writeText(answer)}
+              className="px-3 py-2 rounded border"
+            >
+              Copy Text
+            </button>
+          </div>
+
+          {/* Render the tidy sections */}
+          <AnswerViewer answer={answer} />
         </div>
       )}
     </div>
