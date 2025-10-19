@@ -10,6 +10,58 @@ import OpenAI from 'openai'
 import { z } from 'zod'
 import { publicId as makePublicId } from '@/lib/id'
 import type { ResultsV1 } from '@/types/results'
+import { createClient } from '@supabase/supabase-js'
+import { startOfDay, endOfDay, startOfMonth, endOfMonth } from 'date-fns'
+
+// ---- Usage guard (quota) helpers ----
+const sbUsage = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE) as string
+)
+
+async function getBillingProfileByEmail(email: string) {
+  const { data } = await sbUsage
+    .from('billing_profiles')
+    .select('*')
+    .eq('email', email)
+    .single()
+  return data as any
+}
+
+async function canRunAndLog(userId: string, opts: { dryRun?: boolean } = {}) {
+  const now = new Date()
+  // entitlements (fallbacks if record not created yet)
+  const { data: ent } = await sbUsage
+    .from('entitlements')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle()
+  const daily = (ent as any)?.daily_allowance ?? 1
+  const monthly = ((ent as any)?.monthly_allowance ?? 0) + ((ent as any)?.monthly_bonus ?? 0)
+
+  const today = await sbUsage
+    .from('usage_events')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('occurred_at', startOfDay(now).toISOString())
+    .lte('occurred_at', endOfDay(now).toISOString())
+
+  const month = await sbUsage
+    .from('usage_events')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('occurred_at', startOfMonth(now).toISOString())
+    .lte('occurred_at', endOfMonth(now).toISOString())
+
+  const todayUsed = (today as any).count ?? 0
+  const monthUsed = (month as any).count ?? 0
+
+  if (daily > 0 && todayUsed >= daily) return { ok: false as const, reason: 'daily' as const }
+  if (monthly > 0 && monthUsed >= monthly) return { ok: false as const, reason: 'monthly' as const }
+
+  if (!opts.dryRun) await sbUsage.from('usage_events').insert({ user_id: userId, kind: 'strategist_run' } as any)
+  return { ok: true as const }
+}
 
 // ---- ResultsV1 mapper (coerce LLM JSON safely) ----
 const topActionSchema = z.object({
@@ -119,10 +171,31 @@ async function withRetries<T>(fn: () => Promise<T>, attempts = 3) {
 export async function POST(req: Request) {
   console.log('[strategist] POST hit')
   try {
-    const sb = supabaseAdmin()
+    // Parse body once for guard + regular payload
+    const body = (await req.json().catch(() => ({} as any))) as {
+      email?: string
+      userMessage?: string
+      payload?: unknown
+      profileId?: string | null
+    }
+
+    // Guard: require identity and enforce quotas
+    const email = body?.email
+    if (!email) return NextResponse.json({ error: 'email required' }, { status: 401 })
+    const bp = await getBillingProfileByEmail(email)
+    if (!(bp as any)?.user_id) return NextResponse.json({ error: 'profile missing' }, { status: 401 })
+    const authz = await canRunAndLog((bp as any).user_id as string)
+    if (!authz.ok) {
+      return NextResponse.json(
+        { error: 'quota_exceeded', reason: authz.reason, upgrade: { pro: true, topup50: true } },
+        { status: 402 }
+      )
+    }
+
+    const admin = supabaseAdmin()
 
     // ✅ Ask Supabase for a single row with typing
-    const { data, error } = await sb
+    const { data, error } = await admin
       .from('agent_prompts')
       .select('body')
       .eq('role', 'system')
@@ -139,11 +212,7 @@ export async function POST(req: Request) {
       `type TopAction = {\n  title: string; whyItMatters: string; estTaxImpact: number; cashNeeded: number;\n  difficulty: \"Low\"|\"Med\"|\"High\"; timeToImplement: \"Now\"|\"30–60d\"|\"90d+\"; risks: string[];\n};\n` +
       `type ResultsV1 = {\n  summary: { householdAGI: number; filingStatus: string; primaryGoal: string; };\n  top3Actions: [TopAction, TopAction, TopAction];\n  taxImpact: { thisYear: number; nextYear: number; _5Year: number; };\n  cashPlan: { upfront: number; monthlyCarry: number; };\n  riskFlags: string[]; assumptions: string[]; confidence: 0|0.25|0.5|0.75|1; disclaimers: string[];\n};`
 
-    const { userMessage, payload, profileId } = (await req.json().catch(() => ({} as any))) as {
-      userMessage?: string
-      payload?: unknown
-      profileId?: string | null
-    }
+    const { userMessage, payload, profileId } = body
     console.log('[strategist] body:', {
       hasUserMessage: Boolean(userMessage && String(userMessage).length > 0),
       hasPayload: payload != null,

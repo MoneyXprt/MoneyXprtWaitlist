@@ -14,6 +14,7 @@ import NumericInput from '@/components/forms/fields/NumericInput';
 // Vercel Analytics and Speed Insights
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { useSession } from '@/lib/useSession';
 
 // ---------------- Schema ----------------
 const schema = z.object({
@@ -34,10 +35,12 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function AgentPage() {
+  const session = useSession();
   const [answer, setAnswer] = React.useState('');
   const [err, setErr] = React.useState('');
   const [results, setResults] = React.useState<ResultsV1 | null>(null);
   const [shareUrl, setShareUrl] = React.useState<string | null>(null);
+  const [showPaywall, setShowPaywall] = React.useState<{ open: boolean; reason: 'daily' | 'monthly' | null }>({ open: false, reason: null });
   const { register, handleSubmit, formState: { errors, isSubmitting }, watch, setValue } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -71,12 +74,22 @@ export default function AgentPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          email: session.user?.email ?? null,
           userMessage:
             'Use this structured intake to estimate my taxes and recommend 3–5 strategies with IRS references and action steps.',
           payload,
-          profileId: null
+          profileId: null,
         }),
       });
+      if (res.status === 402) {
+        const data = await res.json().catch(() => ({}));
+        setShowPaywall({ open: true, reason: (data?.reason === 'daily' || data?.reason === 'monthly') ? data.reason : 'daily' });
+        return;
+      }
+      if (res.status === 401) {
+        setErr('Please log in to continue.');
+        return;
+      }
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json?.ok) throw new Error(json?.error || `HTTP ${res.status}`);
       setAnswer(json.answer || '(no answer)');
@@ -104,6 +117,33 @@ export default function AgentPage() {
 
   // Currency formatter
   const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+
+  async function goCheckout(kind: 'pro' | 'topup') {
+    try {
+      const priceId = kind === 'pro'
+        ? (process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY as string | undefined)
+        : (process.env.NEXT_PUBLIC_STRIPE_PRICE_TOPUP_50 as string | undefined);
+
+      if (!priceId) {
+        alert('Pricing is not configured.');
+        return;
+      }
+
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          priceId,
+          success_url: `${window.location.origin}/billing/success`,
+          cancel_url: `${window.location.origin}/intake`,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data?.url) window.location.href = data.url as string;
+      else if (!res.ok) throw new Error(data?.error || 'Failed to start checkout');
+    } catch (e: any) {
+      alert(e?.message || 'Checkout failed');
+    }
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -219,6 +259,24 @@ export default function AgentPage() {
           <Analytics />
           <SpeedInsights />
         </>
+      )}
+      {/* Paywall Modal */}
+      {showPaywall.open && (
+        <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Upgrade Required">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowPaywall({ open: false, reason: null })} />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-neutral-900 rounded-2xl border shadow-soft max-w-md w-[92vw] p-5">
+            <h3 className="text-lg font-semibold">
+              {showPaywall.reason === 'monthly' ? 'Monthly limit reached' : 'Daily limit reached'}
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Upgrade to Pro or buy a Top-Up to continue.
+            </p>
+            <div className="flex gap-2 mt-4">
+              <button type="button" className="btn" onClick={() => goCheckout('pro')}>Upgrade to Pro</button>
+              <button type="button" className="btn btn-outline" onClick={() => goCheckout('topup')}>Top-Up 50</button>
+            </div>
+          </div>
+        </div>
       )}
     </form>
   );
