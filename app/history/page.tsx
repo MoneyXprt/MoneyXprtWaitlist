@@ -82,16 +82,17 @@ export default function HistoryPage() {
             <div>
               <div className="text-sm mb-1">Filter by Profile</div>
               <Select
-                value={profileId}
+                value={profileId || 'all'}
                 onValueChange={(v) => {
-                  setProfileId(v);
-                  if (v) localStorage.setItem('mx_profile_id', v);
+                  const next = v === 'all' ? '' : v;
+                  setProfileId(next);
+                  if (next) localStorage.setItem('mx_profile_id', next);
                   else localStorage.removeItem('mx_profile_id');
                 }}
               >
                 <SelectTrigger><SelectValue placeholder="All profiles" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All profiles</SelectItem>
+                  <SelectItem value="all">All profiles</SelectItem>
                   {profiles.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
                       {(p.user_id || 'profile')} — {new Date(p.created_at).toLocaleDateString()}

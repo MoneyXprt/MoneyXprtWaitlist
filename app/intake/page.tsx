@@ -85,10 +85,18 @@ export default function Intake() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label>Attach to Profile</Label>
-              <Select value={profileId || ''} onValueChange={(v)=>{ setProfileId(v || null); v ? localStorage.setItem('mx_profile_id', v) : localStorage.removeItem('mx_profile_id'); }}>
+              <Select
+                value={profileId ?? 'none'}
+                onValueChange={(v) => {
+                  const next = v === 'none' ? null : v
+                  setProfileId(next)
+                  if (next) localStorage.setItem('mx_profile_id', next)
+                  else localStorage.removeItem('mx_profile_id')
+                }}
+              >
                 <SelectTrigger><SelectValue placeholder="(none)" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">(none)</SelectItem>
+                  <SelectItem value="none">(none)</SelectItem>
                   {profiles.map(p => (
                     <SelectItem key={p.id} value={p.id}>{p.user_id || 'profile'} — {new Date(p.created_at).toLocaleDateString()}</SelectItem>
                   ))}
@@ -147,4 +155,3 @@ export default function Intake() {
     </div>
   );
 }
-
