@@ -46,6 +46,22 @@ export async function POST(req: Request) {
     })
 
     const answer = completion.choices[0]?.message?.content ?? ''
+
+    // 5) Save the run to Supabase (non-fatal on failure)
+    try {
+      const taxYear = (payload as any)?.meta?.taxYear ?? new Date().getFullYear()
+      await sb.from('scenario_simulations').insert({
+        profile_id: null,
+        tax_year: taxYear,
+        scenario_data: (payload as any) ?? {},
+        user_message: userMessage ?? '',
+        model,
+        answer,
+      })
+    } catch (saveErr: any) {
+      console.error('Error saving scenario run:', saveErr?.message || saveErr)
+    }
+
     return NextResponse.json({ ok: true, answer })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'failed' }, { status: 500 })
