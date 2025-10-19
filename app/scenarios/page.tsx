@@ -10,11 +10,19 @@ export default function HistoryPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [profileId, setProfileId] = useState<string | null>(null);
+
+  // load saved profileId from localStorage
+  useEffect(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('mx_profile_id') : null;
+    if (saved) setProfileId(saved);
+  }, []);
 
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch('/api/scenarios/recent').then(res => res.json());
+        const qs = profileId ? `?profileId=${encodeURIComponent(profileId)}` : '';
+        const r = await fetch(`/api/scenarios/recent${qs}`).then(res => res.json());
         if (!r.ok) throw new Error(r.error || 'Failed to load');
         setRuns(r.runs || []);
       } catch (e: any) {
@@ -23,7 +31,7 @@ export default function HistoryPage() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [profileId]);
 
   async function openDetail(id: string) {
     setSelectedId(id);
@@ -130,4 +138,3 @@ export default function HistoryPage() {
     </div>
   );
 }
-

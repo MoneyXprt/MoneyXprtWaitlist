@@ -18,6 +18,7 @@ type Conversation = {
 };
 
 export default function HistoryPage() {
+  const [profileId, setProfileId] = useState<string | null>(null)
   const { user, loading } = useSession()
   const router = useRouter()
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -25,6 +26,9 @@ export default function HistoryPage() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
 
   useEffect(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('mx_profile_id') : null
+    if (saved) setProfileId(saved)
+
     if (!loading && !user) {
       router.replace('/login')
       return
