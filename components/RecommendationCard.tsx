@@ -15,7 +15,7 @@ type Item = {
   notes?: string[];
 };
 
-export default function RecommendationCard({ item }: { item: Item }) {
+export default function RecommendationCard({ item, onAdd }: { item: Item; onAdd?: () => void }) {
   const add = usePlannerStore((s) => s.add);
   const glossary = pickGlossary(item.code);
   const riskLabel = item.risk && item.risk >= 3 ? "High" : item.risk === 2 ? "Medium" : "Low";
@@ -48,15 +48,16 @@ export default function RecommendationCard({ item }: { item: Item }) {
         <ExplainButton item={item} />
         <button
           className="rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50"
-          onClick={() =>
+          onClick={() => {
+            if (onAdd) return onAdd();
             add({
               code: item.code,
               name: plainTitle,
               savingsEst: item.savingsEst,
               states: item.states,
               risk: item.risk,
-            })
-          }
+            });
+          }}
         >
           Add to Scenario
         </button>
@@ -100,4 +101,3 @@ function DynamicExplain({ open, onClose, item }: any) {
     />
   );
 }
-
