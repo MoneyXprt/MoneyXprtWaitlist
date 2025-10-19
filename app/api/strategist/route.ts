@@ -70,7 +70,7 @@ export async function POST(req: Request) {
         answer,
       }
 
-      await sb2.from('scenario_simulations').insert<ScenarioSimInsert>(row)
+      await sb2.from('scenario_simulations').insert(row as any)
     } catch (e: any) {
       console.error('Error saving scenario run:', e?.message || e)
     }
