@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 import { NextResponse } from 'next/server'
+import '@/lib/observability/register-server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import OpenAI from 'openai'
 import { z } from 'zod'
@@ -171,6 +172,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, answer })
   } catch (e: any) {
     console.error('[strategist] error:', e?.message || e)
+    // Capture API failure in Sentry if available
+    try {
+      // @ts-expect-error optional dependency may be missing in local dev
+      const Sentry = await import('@sentry/nextjs')
+      Sentry.captureException(e)
+    } catch {}
     return NextResponse.json({ ok: false, error: e?.message || 'failed' }, { status: 500 })
   }
 }

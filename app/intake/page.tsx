@@ -8,6 +8,11 @@ import { Play, Info } from 'lucide-react';
 import Hint from '@/components/Hint';
 import ResultSkeleton from '@/components/ResultSkeleton';
 import NumericInput from '@/components/forms/fields/NumericInput';
+// Vercel Analytics and Speed Insights (optional; no-op if packages missing locally)
+// @ts-expect-error optional dependency
+import { Analytics } from '@vercel/analytics/react';
+// @ts-expect-error optional dependency
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 // ---------------- Schema ----------------
 const schema = z.object({
@@ -30,9 +35,7 @@ type FormData = z.infer<typeof schema>;
 export default function AgentPage() {
   const [answer, setAnswer] = React.useState('');
   const [err, setErr] = React.useState('');
-  const [loading, setLoading] = React.useState(false);
-
-  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors, isSubmitting }, watch, setValue } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       filingStatus: 'mfj',
@@ -44,9 +47,23 @@ export default function AgentPage() {
   });
 
   async function onSubmit(form: FormData) {
-    setLoading(true); setErr(''); setAnswer('');
+    setErr(''); setAnswer('');
     try {
-      const payload = { meta: { taxYear: new Date().getFullYear() }, intake: form };
+      // Normalize currency fields on submit (round to whole dollars)
+      const rounded: FormData = {
+        ...form,
+        w2Income: Math.round(form.w2Income || 0),
+        seIncome: Math.round(form.seIncome || 0),
+        realEstateIncome: Math.round(form.realEstateIncome || 0),
+        capitalGains: Math.round(form.capitalGains || 0),
+        mortgageInterest: Math.round(form.mortgageInterest || 0),
+        salt: Math.round(form.salt || 0),
+        charity: Math.round(form.charity || 0),
+        preTax401k: Math.round(form.preTax401k || 0),
+        iraContribution: Math.round(form.iraContribution || 0),
+      };
+
+      const payload = { meta: { taxYear: new Date().getFullYear() }, intake: rounded };
       const res = await fetch('/api/strategist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -62,8 +79,11 @@ export default function AgentPage() {
       setAnswer(json.answer || '(no answer)');
     } catch (e: any) {
       setErr(e.message || 'Error');
-    } finally {
-      setLoading(false);
+      try {
+        // @ts-expect-error optional dependency may be missing in local dev
+        const Sentry = await import('@sentry/nextjs');
+        Sentry.captureException(e);
+      } catch {}
     }
   }
 
@@ -122,7 +142,18 @@ export default function AgentPage() {
           ].map(([key, label]) => (
             <div key={key}>
               <label className="text-sm font-medium">{label}</label>
-              <NumericInput register={register as any} name={key as any} className="input" />
+              <NumericInput
+                register={register as any}
+                name={key as any}
+                className="input"
+                onBlur={(e) => {
+                  const raw = e.currentTarget.value;
+                  const num = raw === '' ? 0 : Number(raw);
+                  const rounded = isNaN(num) ? 0 : Math.round(num);
+                  setValue(key as any, rounded, { shouldValidate: true, shouldDirty: true });
+                  e.currentTarget.value = String(rounded);
+                }}
+              />
               <p className="text-xs text-zinc-500">{fmt.format((watch(key as keyof FormData) ?? 0) as number)}</p>
               {(errors as any)[key] && (
                 <p className="text-xs text-red-600">{(errors as any)[key]?.message}</p>
@@ -138,18 +169,28 @@ export default function AgentPage() {
           <div className="font-medium">Run Analysis</div>
           <Hint>We’ll model the current year unless you specify otherwise.</Hint>
         </div>
-        <button type="submit" disabled={loading} className="btn-primary flex items-center gap-2">
+        <button type="submit" disabled={isSubmitting} className="btn-primary flex items-center gap-2">
           <Play className="h-4 w-4" />
-          {loading ? 'Analyzing…' : 'Get Strategies'}
+          {isSubmitting ? 'Analyzing…' : 'Get Strategies'}
         </button>
       </div>
 
       {/* Results */}
       <div className="card p-6">
         {err && <p className="text-sm text-red-600">{err}</p>}
-        {loading && <ResultSkeleton />}
+        {isSubmitting && <ResultSkeleton />}
         {answer && <pre className="whitespace-pre-wrap text-sm mt-2">{answer}</pre>}
       </div>
+      {/* Observability for this page */}
+      {typeof window !== 'undefined' && (
+        <>
+          {/* Render only on this route as requested */}
+          {/* @ts-expect-error optional dependency at build time */}
+          <Analytics />
+          {/* @ts-expect-error optional dependency at build time */}
+          <SpeedInsights />
+        </>
+      )}
     </form>
   );
 }

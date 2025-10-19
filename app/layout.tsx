@@ -1,5 +1,6 @@
 import './globals.css';
 import Link from 'next/link';
+import ClientErrorListeners from '@/components/ClientErrorListeners';
 
 export const metadata = { title: 'MoneyXprt', description: 'AI Tax & Wealth Strategist' };
 
@@ -58,6 +59,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </footer>
       </body>
+      {/* Client-side error listeners + optional Sentry init */}
+      <ClientErrorListeners />
     </html>
   );
 }
