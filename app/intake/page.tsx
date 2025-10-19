@@ -7,6 +7,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Play, Info } from 'lucide-react';
 import Hint from '@/components/Hint';
 import ResultSkeleton from '@/components/ResultSkeleton';
+import Results from '@/components/Results';
+import type { ResultsV1 } from '@/types/results';
+import Toast from '@/components/Toast';
 import NumericInput from '@/components/forms/fields/NumericInput';
 // Vercel Analytics and Speed Insights
 import { Analytics } from '@vercel/analytics/react';
@@ -33,6 +36,7 @@ type FormData = z.infer<typeof schema>;
 export default function AgentPage() {
   const [answer, setAnswer] = React.useState('');
   const [err, setErr] = React.useState('');
+  const [results, setResults] = React.useState<ResultsV1 | null>(null);
   const { register, handleSubmit, formState: { errors, isSubmitting }, watch, setValue } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -45,7 +49,7 @@ export default function AgentPage() {
   });
 
   async function onSubmit(form: FormData) {
-    setErr(''); setAnswer('');
+    setErr(''); setAnswer(''); setResults(null);
     try {
       // Normalize currency fields on submit (round to whole dollars)
       const rounded: FormData = {
@@ -75,6 +79,7 @@ export default function AgentPage() {
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json?.ok) throw new Error(json?.error || `HTTP ${res.status}`);
       setAnswer(json.answer || '(no answer)');
+      if (json.results) setResults(json.results as ResultsV1);
     } catch (e: any) {
       setErr(e.message || 'Error');
       try {
@@ -173,10 +178,13 @@ export default function AgentPage() {
       </div>
 
       {/* Results */}
-      <div className="card p-6">
+      <div className="card p-6 space-y-2 relative">
         {err && <p className="text-sm text-red-600">{err}</p>}
         {isSubmitting && <ResultSkeleton />}
-        {answer && <pre className="whitespace-pre-wrap text-sm mt-2">{answer}</pre>}
+        {results && <Results data={results} />}
+        {!results && answer && <pre className="whitespace-pre-wrap text-sm mt-2">{answer}</pre>}
+        {/* Error toast */}
+        {err && <Toast message={err} onClose={() => setErr('')} />}
       </div>
       {/* Observability for this page */}
       {typeof window !== 'undefined' && (

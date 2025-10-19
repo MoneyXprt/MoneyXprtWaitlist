@@ -8,6 +8,87 @@ import '@/lib/observability/register-server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import OpenAI from 'openai'
 import { z } from 'zod'
+import type { ResultsV1 } from '@/types/results'
+
+// ---- ResultsV1 mapper (coerce LLM JSON safely) ----
+const topActionSchema = z.object({
+  title: z.string(),
+  whyItMatters: z.string(),
+  estTaxImpact: z.coerce.number(),
+  cashNeeded: z.coerce.number(),
+  difficulty: z.enum(["Low","Med","High"]),
+  timeToImplement: z.enum(["Now","30–60d","90d+"]),
+  risks: z.array(z.string()).default([]),
+})
+
+const resultsSchema = z.object({
+  summary: z.object({
+    householdAGI: z.coerce.number(),
+    filingStatus: z.string(),
+    primaryGoal: z.string(),
+  }),
+  top3Actions: z.array(topActionSchema).length(3),
+  taxImpact: z.object({
+    thisYear: z.coerce.number(),
+    nextYear: z.coerce.number(),
+    _5Year: z.coerce.number().transform(v => v),
+  }),
+  cashPlan: z.object({
+    upfront: z.coerce.number(),
+    monthlyCarry: z.coerce.number(),
+  }),
+  riskFlags: z.array(z.string()),
+  assumptions: z.array(z.string()),
+  confidence: z.union([z.literal(0), z.literal(0.25), z.literal(0.5), z.literal(0.75), z.literal(1)]),
+  disclaimers: z.array(z.string()).default(["This is educational, not tax advice."]),
+}).transform(v => ({
+  ...v,
+  taxImpact: { thisYear: v.taxImpact.thisYear, nextYear: v.taxImpact.nextYear, ['5Year']: v.taxImpact._5Year },
+})) as unknown as z.ZodType<ResultsV1>
+
+function mapToResultsV1(llmJson: unknown): ResultsV1 {
+  const parsed = resultsSchema.safeParse(llmJson)
+  if (!parsed.success) {
+    return {
+      summary: { householdAGI: 0, filingStatus: 'Unknown', primaryGoal: 'Lower taxes' },
+      top3Actions: Array.from({ length: 3 }).map((_, i) => ({
+        title: `Action ${i + 1}`,
+        whyItMatters: 'TBD',
+        estTaxImpact: 0,
+        cashNeeded: 0,
+        difficulty: 'Med',
+        timeToImplement: '30–60d',
+        risks: [],
+      })),
+      taxImpact: { thisYear: 0, nextYear: 0, ['5Year']: 0 },
+      cashPlan: { upfront: 0, monthlyCarry: 0 },
+      riskFlags: ['Could not parse strategist output'],
+      assumptions: [],
+      confidence: 0.25,
+      disclaimers: ['Parsing fallback. Not tax advice.'],
+    }
+  }
+  return parsed.data
+}
+
+function extractJsonCandidate(text: string): unknown | null {
+  if (!text) return null
+  // try direct JSON
+  try { return JSON.parse(text) } catch {}
+  // fenced code blocks ```json ... ``` or ``` ... ```
+  const fence = /```(?:json)?\n([\s\S]*?)```/i.exec(text)
+  if (fence?.[1]) {
+    try { return JSON.parse(fence[1]) } catch {}
+  }
+  // find first { ... }
+  const firstBrace = text.indexOf('{')
+  const lastBrace = text.lastIndexOf('}')
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    const slice = text.slice(firstBrace, lastBrace + 1)
+    try { return JSON.parse(slice) } catch {}
+  }
+  return null
+}
 
 // Row type for the select
 type PromptRow = { body: string }
@@ -52,6 +133,11 @@ export async function POST(req: Request) {
     const systemBody =
       data?.body ?? 'You are MoneyXprt, a calm, plain-English financial strategist.'
 
+    // Encourage deterministic JSON-only output for mapper
+    const strictSystem = `You are a tax strategist. Reply ONLY with strict JSON matching this TypeScript type:\n\n` +
+      `type TopAction = {\n  title: string; whyItMatters: string; estTaxImpact: number; cashNeeded: number;\n  difficulty: \"Low\"|\"Med\"|\"High\"; timeToImplement: \"Now\"|\"30–60d\"|\"90d+\"; risks: string[];\n};\n` +
+      `type ResultsV1 = {\n  summary: { householdAGI: number; filingStatus: string; primaryGoal: string; };\n  top3Actions: [TopAction, TopAction, TopAction];\n  taxImpact: { thisYear: number; nextYear: number; _5Year: number; };\n  cashPlan: { upfront: number; monthlyCarry: number; };\n  riskFlags: string[]; assumptions: string[]; confidence: 0|0.25|0.5|0.75|1; disclaimers: string[];\n};`
+
     const { userMessage, payload, profileId } = (await req.json().catch(() => ({} as any))) as {
       userMessage?: string
       payload?: unknown
@@ -90,6 +176,7 @@ export async function POST(req: Request) {
     }
 
     const messages: Array<{ role: 'system' | 'user'; content: string }> = [
+      { role: 'system', content: strictSystem },
       { role: 'system', content: systemBody },
     ]
     if (payload) messages.push({ role: 'user', content: JSON.stringify(payload) })
@@ -125,7 +212,9 @@ export async function POST(req: Request) {
         } catch (e: any) {
           console.error('[strategist] error saving (fallback):', e?.message || e)
         }
-        return NextResponse.json({ ok: true, answer, meta: { fallback: true, error: e1?.message } })
+        const llmJson = extractJsonCandidate(answer)
+        const results = mapToResultsV1(llmJson)
+        return NextResponse.json({ ok: true, answer, results, meta: { fallback: true, error: e1?.message } })
       } catch (e2: any) {
         console.error('[strategist] fallback model also failed:', e2?.message || e2)
         const fallbackAnswer =
@@ -136,7 +225,8 @@ export async function POST(req: Request) {
           '• Charitable “bundle” year with DAF to exceed standard deduction.\n' +
           '• If renting a business use of home (Augusta Rule), document FMV and meetings.\n' +
           'Talk to a CPA/attorney to implement. (App temporarily in fallback mode.)'
-        return NextResponse.json({ ok: true, answer: fallbackAnswer, meta: { fallback: true, error: e2?.message || e1?.message } })
+        const results = mapToResultsV1(null)
+        return NextResponse.json({ ok: true, answer: fallbackAnswer, results, meta: { fallback: true, error: e2?.message || e1?.message } })
       }
     }
 
@@ -169,7 +259,9 @@ export async function POST(req: Request) {
       console.error('Error saving scenario run:', e?.message || e)
     }
 
-    return NextResponse.json({ ok: true, answer })
+    const llmJson = extractJsonCandidate(answer)
+    const results = mapToResultsV1(llmJson)
+    return NextResponse.json({ ok: true, answer, results })
   } catch (e: any) {
     console.error('[strategist] error:', e?.message || e)
     // Capture API failure in Sentry if available
