@@ -1,171 +1,244 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import dynamic from 'next/dynamic';
-import { Brain, FileBarChart, TrendingUp } from 'lucide-react';
-import type { MoneyXprtIntake } from '@/types/moneyxprt';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { CheckCircle2, Info, Play, Upload } from 'lucide-react';
+import Hint from '@/components/Hint';
+import ResultSkeleton from '@/components/ResultSkeleton';
 import { toStrategistPayload } from '@/types/moneyxprt';
 import { callStrategist } from '@/lib/callStrategist';
 
-const AnswerViewer = dynamic(() => import('@/components/AnswerViewer'), { ssr: false });
+type Intake = {
+  filingStatus?: 'single'|'mfj'|'mfs'|'hoh'|'qw';
+  state?: string;
+  dependents?: number;
+  w2Income?: number; w2FedWithheld?: number; w2StateWithheld?: number;
+  seIncome?: number; realEstateIncome?: number; capitalGains?: number;
+  mortgageInterest?: number; salt?: number; charity?: number;
+  preTax401k?: number; iraContribution?: number;
+};
 
-type ProfileRow = { id: string; user_id: string | null; created_at: string };
-
-export default function Intake() {
-  const [form, setForm] = useState<MoneyXprtIntake>({ filingStatus: 'mfj', state: 'CA', dependents: 1 });
-  const [profiles, setProfiles] = useState<ProfileRow[]>([]);
-  const [profileId, setProfileId] = useState<string | null>(null);
+export default function AgentPage() {
+  const [form, setForm] = useState<Intake>({ filingStatus: 'mfj', state: 'CA', dependents: 1 });
   const [answer, setAnswer] = useState('');
-  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch('/api/profiles/recent').then(res => res.json());
-        if (r.ok) setProfiles(r.profiles || []);
-      } catch {}
-      const saved = localStorage.getItem('mx_profile_id');
-      if (saved) setProfileId(saved);
-    })();
-  }, []);
-
-  function up<K extends keyof MoneyXprtIntake>(k: K, v: MoneyXprtIntake[K]) {
-    setForm((f) => ({ ...f, [k]: v }));
+  function up<K extends keyof Intake>(k: K, v: Intake[K]) {
+    setForm(f => ({ ...f, [k]: v }));
   }
 
   async function run() {
     setLoading(true); setErr(''); setAnswer('');
     try {
-      const payload = toStrategistPayload(form);
+      const payload = toStrategistPayload(form as any);
       const r = await callStrategist({
-        userMessage: 'Use this structured intake to estimate my current-year taxes and recommend strategies with sections: Profile Snapshot, Tax Estimate, Top Strategies, Action Plan, References & Disclaimer.',
+        userMessage: 'Use this structured intake to estimate my current-year taxes and recommend 3–5 ranked strategies with action steps and references.',
         payload,
-        profileId
+        profileId: null,
       } as any);
-      if ((r as any)?.meta?.fallback) {
-        setErr('AI capacity limit hit. Showing a quick fallback plan. Try again in a minute for the full analysis.');
-      }
+      if ((r as any)?.meta?.fallback) setErr('AI capacity limit hit — showing a quick fallback. Try again in a minute for full analysis.');
       setAnswer((r as any).answer || '(empty)');
-    } catch (e:any) { setErr(e.message || 'Error'); }
-    finally { setLoading(false); }
+    } catch (e: any) {
+      setErr(e.message || 'Something went wrong.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <div className="space-y-6">
-      <h1>AI-Driven Tax Strategy. Built for ambitious earners.</h1>
+    <div className="space-y-8">
+      {/* Hero intro */}
+      <section className="text-center animate-fadeUp">
+        <h1 className="text-4xl font-semibold tracking-tight text-[var(--mx-primary)]">Ask the AI Strategist</h1>
+        <p className="mt-2 text-zinc-600 max-w-2xl mx-auto">
+          Enter your basics below. We’ll assume the current tax year and return an estimate and a ranked, compliance-first strategy plan.
+        </p>
+      </section>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Left: Form */}
-      <div className="lg:col-span-2 space-y-6">
-        <div className="card p-5 space-y-4 animate-fadeUp">
-          <h2 className="text-xl font-semibold mb-1 relative inline-block">
-            <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-gradient-to-r from-[var(--mx-accent)] to-emerald-400"></span>
-            <span className="inline-flex items-center gap-2"><Brain className="h-5 w-5 text-[var(--mx-accent)]"/> Profile</span>
-          </h2>
+        {/* LEFT: Form */}
+        <section className="lg:col-span-2 space-y-6">
+          {/* Profile */}
+          <div className="card p-6 animate-fadeUp">
+            <div className="flex items-center gap-2 mb-1">
+              <Info className="h-4 w-4 text-[var(--mx-accent)]" />
+              <h2 className="text-lg font-semibold">Profile</h2>
+            </div>
+            <Hint>Filing status drives thresholds, credits, and deduction phaseouts.</Hint>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium">Filing Status</label>
+                <select
+                  className="mt-1 w-full rounded-xl border border-[var(--mx-border)] bg-white px-3 py-2 text-sm"
+                  value={form.filingStatus}
+                  onChange={(e)=>up('filingStatus', e.target.value as any)}
+                >
+                  <option value="single">Single</option>
+                  <option value="mfj">Married Filing Jointly</option>
+                  <option value="mfs">Married Filing Separately</option>
+                  <option value="hoh">Head of Household</option>
+                  <option value="qw">Qualifying Widow(er)</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">State</label>
+                <input
+                  className="mt-1 w-full rounded-xl border border-[var(--mx-border)] bg-white px-3 py-2 text-sm"
+                  placeholder="CA"
+                  value={form.state || ''}
+                  onChange={(e)=>up('state', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Dependents</label>
+                <input
+                  type="number"
+                  className="mt-1 w-full rounded-xl border border-[var(--mx-border)] bg-white px-3 py-2 text-sm"
+                  value={form.dependents ?? 0}
+                  onChange={(e)=>up('dependents', Number(e.target.value || 0))}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Income */}
+          <div className="card p-6 animate-fadeUp">
+            <div className="flex items-center gap-2 mb-1">
+              <Info className="h-4 w-4 text-[var(--mx-accent)]" />
+              <h2 className="text-lg font-semibold">Income</h2>
+            </div>
+            <Hint>YTD numbers are fine. If not sure, rough estimates are okay — we’ll be conservative.</Hint>
+
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Field label="W-2 wages (YTD)">
+                <Num value={form.w2Income} onChange={(v)=>up('w2Income', v)} />
+              </Field>
+              <Field label="Fed withholding (YTD)">
+                <Num value={form.w2FedWithheld} onChange={(v)=>up('w2FedWithheld', v)} />
+              </Field>
+              <Field label="State withholding (YTD)">
+                <Num value={form.w2StateWithheld} onChange={(v)=>up('w2StateWithheld', v)} />
+              </Field>
+              <Field label="Business income (active)">
+                <Num value={form.seIncome} onChange={(v)=>up('seIncome', v)} />
+              </Field>
+              <Field label="Real estate net (passive)">
+                <Num value={form.realEstateIncome} onChange={(v)=>up('realEstateIncome', v)} />
+              </Field>
+              <Field label="Capital gains">
+                <Num value={form.capitalGains} onChange={(v)=>up('capitalGains', v)} />
+              </Field>
+            </div>
+          </div>
+
+          {/* Deductions & Retirement */}
+          <div className="card p-6 animate-fadeUp">
+            <div className="flex items-center gap-2 mb-1">
+              <Info className="h-4 w-4 text-[var(--mx-accent)]" />
+              <h2 className="text-lg font-semibold">Deductions & Retirement</h2>
+            </div>
+            <Hint>We’ll compare itemized vs. standard and flag SALT/charitable timing opportunities.</Hint>
+
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Field label="Mortgage interest (YTD)"><Num value={form.mortgageInterest} onChange={(v)=>up('mortgageInterest', v)} /></Field>
+              <Field label="SALT paid (YTD)"><Num value={form.salt} onChange={(v)=>up('salt', v)} /></Field>
+              <Field label="Charitable giving (YTD)"><Num value={form.charity} onChange={(v)=>up('charity', v)} /></Field>
+              <Field label="401(k) pre-tax (YTD)"><Num value={form.preTax401k} onChange={(v)=>up('preTax401k', v)} /></Field>
+              <Field label="IRA contribution (YTD)"><Num value={form.iraContribution} onChange={(v)=>up('iraContribution', v)} /></Field>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="card p-6 flex items-center justify-between animate-fadeUp">
             <div>
-              <Label>Filing Status</Label>
-              <Select value={form.filingStatus || 'mfj'} onValueChange={(v)=>up('filingStatus', v as any)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="single">Single</SelectItem>
-                  <SelectItem value="mfj">Married Filing Jointly</SelectItem>
-                  <SelectItem value="mfs">Married Filing Separately</SelectItem>
-                  <SelectItem value="hoh">Head of Household</SelectItem>
-                  <SelectItem value="qw">Qualifying Widow(er)</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="font-medium">Run Analysis</div>
+              <Hint>Assumes current tax year unless specified in your message.</Hint>
             </div>
-            <div>
-              <Label>State</Label>
-              <Input value={form.state || ''} onChange={(e)=>up('state', e.target.value)} placeholder="CA" />
+            <button
+              type="button"
+              onClick={run}
+              disabled={loading}
+              className="btn-primary inline-flex items-center gap-2"
+            >
+              <Play className="h-4 w-4" />
+              {loading ? 'Calculating…' : 'Get My Estimate & Strategies'}
+            </button>
+          </div>
+        </section>
+
+        {/* RIGHT: Results */}
+        <aside className="lg:col-span-1">
+          <div className="card p-6 sticky top-20 animate-fadeUp">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-[var(--mx-accent)]" />
+              <h2 className="text-lg font-semibold">Results</h2>
             </div>
-            <div>
-              <Label>Dependents</Label>
-              <Input type="number" value={form.dependents ?? 0} onChange={(e)=>up('dependents', Number(e.target.value||0))} />
+
+            {err && <div className="mt-3 text-sm text-red-600">{err}</div>}
+
+            {!answer && !err && !loading && (
+              <p className="mt-3 text-sm text-zinc-600">
+                Click <span className="font-medium">Get My Estimate & Strategies</span> to see your plan here.
+              </p>
+            )}
+
+            {loading && (
+              <div className="mt-4">
+                <ResultSkeleton />
+              </div>
+            )}
+
+            {answer && (
+              <>
+                <pre className="mt-4 text-sm whitespace-pre-wrap">{answer}</pre>
+                <div className="mt-4 flex gap-2">
+                  <button className="rounded-xl border px-3 py-2 text-sm" onClick={()=>navigator.clipboard.writeText(answer)}>Copy</button>
+                  <button className="rounded-xl border px-3 py-2 text-sm" onClick={()=>window.print()}>Print / Save PDF</button>
+                </div>
+              </>
+            )}
+
+            <div className="mt-6 text-xs text-zinc-500">
+              Educational only — coordinate execution with a CPA, tax attorney, or fiduciary.
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label>Attach to Profile</Label>
-              <Select
-                value={profileId ?? 'none'}
-                onValueChange={(v) => {
-                  const next = v === 'none' ? null : v
-                  setProfileId(next)
-                  if (next) localStorage.setItem('mx_profile_id', next)
-                  else localStorage.removeItem('mx_profile_id')
-                }}
-              >
-                <SelectTrigger><SelectValue placeholder="(none)" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">(none)</SelectItem>
-                  {profiles.map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.user_id || 'profile'} — {new Date(p.created_at).toLocaleDateString()}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Optional: import/export profile CSV */}
+          <div className="card p-6 mt-6 animate-fadeUp">
+            <div className="flex items-center gap-2 mb-1">
+              <Upload className="h-4 w-4 text-[var(--mx-accent)]" />
+              <div className="font-semibold">Bulk import (optional)</div>
+            </div>
+            <Hint>Bring in YTD wages/withholding from payroll CSVs to prefill fields faster.</Hint>
+            <div className="mt-3">
+              <button className="rounded-xl border px-3 py-2 text-sm">Upload CSV</button>
             </div>
           </div>
-        </div>
-
-        <div className="card p-5 space-y-4 animate-fadeUp">
-          <h2 className="text-xl font-semibold mb-1 relative inline-block">
-            <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-gradient-to-r from-[var(--mx-accent)] to-emerald-400"></span>
-            <span className="inline-flex items-center gap-2"><FileBarChart className="h-5 w-5 text-[var(--mx-accent)]"/> Income</span>
-          </h2>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div><Label>W-2 wages (YTD)</Label><Input type="number" value={form.w2Income ?? 0} onChange={(e)=>up('w2Income', Number(e.target.value||0))} /></div>
-            <div><Label>Fed withholding (YTD)</Label><Input type="number" value={form.w2FedWithheld ?? 0} onChange={(e)=>up('w2FedWithheld', Number(e.target.value||0))} /></div>
-            <div><Label>State withholding (YTD)</Label><Input type="number" value={form.w2StateWithheld ?? 0} onChange={(e)=>up('w2StateWithheld', Number(e.target.value||0))} /></div>
-            <div><Label>Business income (SE/K-1 active)</Label><Input type="number" value={form.seIncome ?? 0} onChange={(e)=>up('seIncome', Number(e.target.value||0))} /></div>
-            <div><Label>Real estate net (passive)</Label><Input type="number" value={form.realEstateIncome ?? 0} onChange={(e)=>up('realEstateIncome', Number(e.target.value||0))} /></div>
-            <div><Label>Capital gains</Label><Input type="number" value={form.capitalGains ?? 0} onChange={(e)=>up('capitalGains', Number(e.target.value||0))} /></div>
-          </div>
-        </div>
-
-        <div className="card p-5 space-y-4 animate-fadeUp">
-          <h2 className="text-xl font-semibold mb-1 relative inline-block">
-            <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-gradient-to-r from-[var(--mx-accent)] to-emerald-400"></span>
-            <span className="inline-flex items-center gap-2"><TrendingUp className="h-5 w-5 text-[var(--mx-accent)]"/> Deductions & Retirement</span>
-          </h2>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div><Label>Mortgage interest (YTD)</Label><Input type="number" value={form.mortgageInterest ?? 0} onChange={(e)=>up('mortgageInterest', Number(e.target.value||0))} /></div>
-            <div><Label>SALT paid (YTD)</Label><Input type="number" value={form.salt ?? 0} onChange={(e)=>up('salt', Number(e.target.value||0))} /></div>
-            <div><Label>Charitable giving (YTD)</Label><Input type="number" value={form.charity ?? 0} onChange={(e)=>up('charity', Number(e.target.value||0))} /></div>
-            <div><Label>401(k) pre-tax (YTD)</Label><Input type="number" value={form.preTax401k ?? 0} onChange={(e)=>up('preTax401k', Number(e.target.value||0))} /></div>
-            <div><Label>IRA contribution (YTD)</Label><Input type="number" value={form.iraContribution ?? 0} onChange={(e)=>up('iraContribution', Number(e.target.value||0))} /></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Right: Actions + Result */}
-      <div className="lg:col-span-1 space-y-4">
-        <div className="card p-5 space-y-3 sticky top-20 animate-fadeUp">
-          <h2 className="text-lg font-semibold">Run Analysis</h2>
-          <p className="text-sm text-slate-600">We’ll estimate your current year (assume 2025 unless specified) and rank 3–5 compliant strategies.</p>
-          <button onClick={run} disabled={loading} className="btn-primary w-full">{loading ? 'Calculating…' : 'Ask the AI Strategist'}</button>
-          {err && <div className="text-red-600 text-sm">Error: {err}</div>}
-          <div className="text-[11px] text-slate-500">
-            Educational use only. Coordinate execution with a CPA, tax attorney, or fiduciary.
-          </div>
-        </div>
-
-        {answer && (
-          <div className="card p-5 space-y-3 animate-fadeUp">
-            <div className="flex gap-2 flex-wrap">
-              <button className="btn-accent" onClick={()=>window.print()}>Print / Save PDF</button>
-              <button className="btn-accent" onClick={()=>navigator.clipboard.writeText(answer)}>Copy Text</button>
-            </div>
-            <AnswerViewer answer={answer} />
-          </div>
-        )}
-      </div>
+        </aside>
       </div>
     </div>
+  );
+}
+
+/* small presentational subcomponents */
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="text-sm font-medium">{label}</label>
+      <div className="mt-1">{children}</div>
+    </div>
+  );
+}
+function Num({ value, onChange }: { value?: number; onChange: (v:number)=>void }) {
+  return (
+    <input
+      type="number"
+      inputMode="decimal"
+      className="w-full rounded-xl border border-[var(--mx-border)] bg-white px-3 py-2 text-sm"
+      value={value ?? 0}
+      onChange={(e)=>onChange(Number(e.target.value || 0))}
+    />
   );
 }
