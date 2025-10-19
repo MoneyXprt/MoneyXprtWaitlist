@@ -25,9 +25,10 @@ export async function POST(req: Request) {
     const systemBody =
       data?.body ?? 'You are MoneyXprt, a calm, plain-English financial strategist.'
 
-    const { userMessage, payload } = (await req.json().catch(() => ({} as any))) as {
+    const { userMessage, payload, profileId } = (await req.json().catch(() => ({} as any))) as {
       userMessage?: string
       payload?: unknown
+      profileId?: string | null
     }
 
     const messages: Array<{ role: 'system' | 'user'; content: string }> = [
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
       const taxYear: number = (payload as any)?.meta?.taxYear ?? new Date().getFullYear()
 
       const row: ScenarioSimInsert = {
-        profile_id: null,
+        profile_id: profileId ?? null,
         tax_year: taxYear,
         scenario_data: (payload as any) ?? {},
         user_message: userMessage ?? '',

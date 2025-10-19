@@ -1,4 +1,4 @@
-export type StrategistInput = { userMessage?: string; payload?: any }
+export type StrategistInput = { userMessage?: string; payload?: any; profileId?: string | null }
 export type StrategistResult = { ok: boolean; answer?: string; error?: string }
 
 export async function callStrategist(input: StrategistInput): Promise<StrategistResult> {
@@ -6,7 +6,7 @@ export async function callStrategist(input: StrategistInput): Promise<Strategist
     const res = await fetch('/api/strategist', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ userMessage: input.userMessage, payload: input.payload }),
+      body: JSON.stringify({ userMessage: input.userMessage, payload: input.payload, profileId: input.profileId ?? null }),
     })
     const json = await res.json().catch(() => ({})) as any
     if (!res.ok) {
@@ -20,4 +20,3 @@ export async function callStrategist(input: StrategistInput): Promise<Strategist
 }
 
 export default callStrategist
-

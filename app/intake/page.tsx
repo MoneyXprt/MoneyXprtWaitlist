@@ -1,17 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { callStrategist } from '@/lib/callStrategist';
 import type { MoneyXprtIntake } from '@/types/moneyxprt';
 import { toStrategistPayload } from '@/types/moneyxprt';
+type ProfileRow = { id: string; user_id: string | null; created_at: string };
 
 export default function Intake() {
   const [form, setForm] = useState<MoneyXprtIntake>({
     filingStatus: 'mfj', state: 'CA', dependents: 1,
   } as MoneyXprtIntake);
+  const [profiles, setProfiles] = useState<ProfileRow[]>([]);
+  const [profileId, setProfileId] = useState<string | null>(null);
   const [answer, setAnswer] = useState(''); 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
+
+  // load profiles + last selection
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch('/api/profiles/recent').then(res => res.json());
+        if (r.ok) setProfiles(r.profiles || []);
+      } catch {}
+      const saved = localStorage.getItem('mx_profile_id');
+      if (saved) setProfileId(saved);
+    })();
+  }, []);
 
   function up<K extends keyof MoneyXprtIntake>(k: K, v: MoneyXprtIntake[K]) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -23,7 +38,8 @@ export default function Intake() {
       const payload = toStrategistPayload(form);
       const r = await callStrategist({
         userMessage: 'Use this structured intake to estimate my current-year taxes and recommend strategies.',
-        payload
+        payload,
+        profileId,
       });
       // Note: current callStrategist returns { ok, answer } without throwing on error
       setAnswer((r as any).answer || '');
@@ -34,6 +50,40 @@ export default function Intake() {
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-semibold">MoneyXprt — Quick Intake</h1>
+
+      {/* Profile selector */}
+      <div className="border rounded p-3 space-y-2">
+        <label className="block">
+          <span className="text-sm">Attach to Profile</span>
+          <div className="flex gap-2">
+            <select
+              className="w-full border rounded p-2"
+              value={profileId || ''}
+              onChange={(e) => {
+                const val = e.target.value || null;
+                setProfileId(val);
+                if (val) localStorage.setItem('mx_profile_id', val);
+                else localStorage.removeItem('mx_profile_id');
+              }}
+            >
+              <option value="">(none)</option>
+              {profiles.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.user_id || 'profile'} — {new Date(p.created_at).toLocaleDateString()}
+                </option>
+              ))}
+            </select>
+            {profileId && (
+              <button
+                className="px-3 py-2 border rounded"
+                onClick={() => { setProfileId(null); localStorage.removeItem('mx_profile_id'); }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </label>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Basics */}
@@ -139,4 +189,3 @@ export default function Intake() {
     </div>
   );
 }
-
