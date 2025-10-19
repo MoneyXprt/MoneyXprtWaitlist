@@ -16,6 +16,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check": "npm run lint && npm run typecheck && npm run build",
     "test": "vitest -c tests/strategy/vitest.config.ts",
+    "test:unit": "vitest",
+    "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
     "env:check": "tsx scripts/env-check.ts"

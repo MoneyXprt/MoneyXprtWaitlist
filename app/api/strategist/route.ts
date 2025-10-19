@@ -6,6 +6,7 @@ export const revalidate = 0
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import OpenAI from 'openai'
+import { z } from 'zod'
 
 // Row type for the select
 type PromptRow = { body: string }
@@ -60,6 +61,32 @@ export async function POST(req: Request) {
       hasPayload: payload != null,
       profileId,
     })
+
+    // Server-side payload validation (schema-first)
+    const reqId = (globalThis as any).crypto?.randomUUID?.() || `req_${Date.now().toString(36)}`
+    const intakeSchema = z.object({
+      filingStatus: z.enum(['single', 'mfj', 'mfs', 'hoh', 'qw']),
+      state: z.string().min(2),
+      dependents: z.coerce.number().int().min(0).max(10),
+      w2Income: z.coerce.number().nonnegative().default(0),
+      seIncome: z.coerce.number().nonnegative().default(0),
+      realEstateIncome: z.coerce.number().nonnegative().default(0),
+      capitalGains: z.coerce.number().nonnegative().default(0),
+      mortgageInterest: z.coerce.number().nonnegative().default(0),
+      salt: z.coerce.number().nonnegative().default(0),
+      charity: z.coerce.number().nonnegative().default(0),
+      preTax401k: z.coerce.number().nonnegative().default(0),
+      iraContribution: z.coerce.number().nonnegative().default(0),
+    })
+    const intake = (payload as any)?.intake
+    const parsed = intakeSchema.safeParse(intake)
+    if (!parsed.success) {
+      console.warn('[strategist] invalid intake payload', {
+        reqId,
+        issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), code: i.code })),
+      })
+      return NextResponse.json({ ok: false, error: 'Invalid intake payload', reqId }, { status: 400 })
+    }
 
     const messages: Array<{ role: 'system' | 'user'; content: string }> = [
       { role: 'system', content: systemBody },

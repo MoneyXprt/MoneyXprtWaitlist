@@ -13,16 +13,16 @@ import NumericInput from '@/components/forms/fields/NumericInput';
 const schema = z.object({
   filingStatus: z.enum(['single', 'mfj', 'mfs', 'hoh', 'qw'], { required_error: 'Required' }),
   state: z.string().min(2, 'Enter state code'),
-  dependents: z.number().min(0).max(10, 'Too many dependents?'),
-  w2Income: z.number().min(0),
-  seIncome: z.number().min(0),
-  realEstateIncome: z.number().min(0),
-  capitalGains: z.number().min(0),
-  mortgageInterest: z.number().min(0),
-  salt: z.number().min(0),
-  charity: z.number().min(0),
-  preTax401k: z.number().min(0),
-  iraContribution: z.number().min(0),
+  dependents: z.coerce.number().int().min(0).max(10, 'Too many dependents?'),
+  w2Income: z.coerce.number().nonnegative().default(0),
+  seIncome: z.coerce.number().nonnegative().default(0),
+  realEstateIncome: z.coerce.number().nonnegative().default(0),
+  capitalGains: z.coerce.number().nonnegative().default(0),
+  mortgageInterest: z.coerce.number().nonnegative().default(0),
+  salt: z.coerce.number().nonnegative().default(0),
+  charity: z.coerce.number().nonnegative().default(0),
+  preTax401k: z.coerce.number().nonnegative().default(0),
+  iraContribution: z.coerce.number().nonnegative().default(0),
 });
 
 type FormData = z.infer<typeof schema>;
