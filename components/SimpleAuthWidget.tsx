@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { sbBrowser } from '../lib/supabase';
+import { createSupabaseBrowser } from '@/lib/supabaseBrowser';
 
 export default function SimpleAuthWidget() {
   const [email, setEmail] = useState('');
@@ -11,7 +11,15 @@ export default function SimpleAuthWidget() {
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [showSignup, setShowSignup] = useState(false);
-  const supabase = sbBrowser();
+  const supabase = createSupabaseBrowser();
+  if (!supabase) {
+    return (
+      <div className="flex items-center gap-2">
+        <a href="/login" className="rounded px-3 py-1 bg-black text-white text-sm">Sign In</a>
+        <a href="/signup" className="rounded px-3 py-1 bg-blue-600 text-white text-sm">Sign Up</a>
+      </div>
+    );
+  }
 
   useEffect(() => {
     const checkSession = async () => {
@@ -23,7 +31,7 @@ export default function SimpleAuthWidget() {
     };
     checkSession();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event: any, session: any) => {
       if (session?.user) {
         setIsSignedIn(true);
         setUserEmail(session.user.email || '');

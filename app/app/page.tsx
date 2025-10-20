@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from 'react';
-import { sbBrowser } from '@/lib/supabase';
+import { createSupabaseBrowser } from '@/lib/supabaseBrowser';
 import ScoreCard from './_components/ScoreCard';
 import { callStrategist } from '@/lib/callStrategist'
 
 export default function AppTools() {
-  const supabase = sbBrowser();
+  const supabase = createSupabaseBrowser();
 
   const [taxPdf, setTaxPdf] = useState<File | null>(null);
   const [entityForm, setEntityForm] = useState({ w2: '', re_units: '', side_income: '' });
@@ -19,7 +19,7 @@ export default function AppTools() {
   const [mxError, setMxError] = useState<string>('')
 
   async function authHeader() {
-    const { data } = await supabase.auth.getSession();
+    const { data } = await supabase!.auth.getSession();
     const token = data.session?.access_token;
     return token ? { 'x-supabase-auth': token } : {};
   }
@@ -28,7 +28,7 @@ export default function AppTools() {
     if (!taxPdf) return;
     setBusy(true); setMsg('');
     const fd = new FormData(); fd.append('file', taxPdf);
-    const headers = await authHeader();
+    const headers = supabase ? await authHeader() : {};
     const res = await fetch('/api/tax-scan', { method: 'POST', body: fd, headers: headers as any });
     const out = await res.json(); setMsg(out.message || JSON.stringify(out));
     setBusy(false);
@@ -36,7 +36,7 @@ export default function AppTools() {
 
   async function runEntityOpt() {
     setBusy(true); setMsg('');
-    const headers = { 'Content-Type':'application/json', ...(await authHeader()) as any };
+    const headers = { 'Content-Type':'application/json', ...(supabase ? await authHeader() as any : {}) };
     const res = await fetch('/api/entity-opt', { method: 'POST', headers, body: JSON.stringify(entityForm) });
     const out = await res.json(); setMsg(out.message || JSON.stringify(out));
     setBusy(false);
@@ -46,7 +46,7 @@ export default function AppTools() {
     if (!holdingsCsv) return;
     setBusy(true); setMsg('');
     const fd = new FormData(); fd.append('file', holdingsCsv);
-    const headers = await authHeader();
+    const headers = supabase ? await authHeader() : {};
     const res = await fetch('/api/fee-check', { method: 'POST', body: fd, headers: headers as any });
     const out = await res.json(); setMsg(out.message || JSON.stringify(out));
     setBusy(false);

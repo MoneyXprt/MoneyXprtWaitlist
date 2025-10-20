@@ -1,12 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { sbBrowser } from '../../lib/supabase';
+import { createSupabaseBrowser } from '@/lib/supabaseBrowser';
 
 export default function LoginPage() {
   const [msg, setMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const supabase = sbBrowser();
+  const supabase = createSupabaseBrowser();
+  if (!supabase) {
+    return (
+      <main className="max-w-md mx-auto mt-16 p-6">
+        <div className="rounded-xl border p-6 bg-white">
+          <h1 className="text-xl font-semibold">Sign In</h1>
+          <p className="text-sm text-neutral-600 mt-2">Auth is unavailable: missing Supabase env. Configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.</p>
+          <a href="/" className="btn mt-3">Go Home</a>
+        </div>
+      </main>
+    );
+  }
 
   const handleSignIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
