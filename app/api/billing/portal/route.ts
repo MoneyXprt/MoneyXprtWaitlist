@@ -5,6 +5,11 @@ export const revalidate = 0
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-06-20',
+})
 
 export async function POST(req: Request) {
   try {
@@ -31,12 +36,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'customer not found' }, { status: 404 })
     }
 
-    const Stripe = (await import('stripe')).default
     const secret = process.env.STRIPE_SECRET_KEY
     if (!secret) {
       return NextResponse.json({ error: 'STRIPE_SECRET_KEY is not set' }, { status: 500 })
     }
-    const stripe = new Stripe(secret, { apiVersion: '2024-06-20' })
 
     const origin = new URL(req.url).origin
     const session = await stripe.billingPortal.sessions.create({
@@ -53,4 +56,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e?.message || 'failed' }, { status: 500 })
   }
 }
-
