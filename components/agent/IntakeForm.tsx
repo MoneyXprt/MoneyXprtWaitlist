@@ -1,6 +1,7 @@
 "use client";
 import * as React from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { intakeSchema, type IntakeForm as IntakeFormType } from '@/schemas/intake'
@@ -18,6 +19,8 @@ export default function AgentIntakeForm() {
   const [shareUrl, setShareUrl] = React.useState<string | null>(null)
   const [showRentals, setShowRentals] = React.useState(false)
   const [showSE, setShowSE] = React.useState(false)
+  const [showPaywall, setShowPaywall] = React.useState<{ open: boolean; reason: 'daily' | 'monthly' | null }>({ open: false, reason: null })
+  const router = useRouter()
 
   const form = useForm<IntakeFormType>({
     resolver: zodResolver(intakeSchema),
@@ -25,9 +28,16 @@ export default function AgentIntakeForm() {
       profile: { taxYear: new Date().getFullYear(), filingStatus: 'Single', state: 'CA', dependents: 0 },
       wages: { w2Wages: 0, w2Withholding: 0 },
       otherIncome: {},
-      deductions: {},
+      deductions: {
+        useSalesTaxInsteadOfIncome: false,
+        stateIncomeTaxPaid: 0,
+        stateSalesTaxPaid: 0,
+        realEstatePropertyTax: 0,
+        personalPropertyTax: 0,
+      },
       aboveLine: {},
     },
+    mode: 'onChange',
   })
   const { register, handleSubmit, formState: { isSubmitting }, setValue } = form
 
@@ -54,7 +64,8 @@ export default function AgentIntakeForm() {
       })
 
       if (res.status === 402) {
-        setErr('Quota exceeded — upgrade or top‑up to continue.')
+        const data = await res.json().catch(() => ({}))
+        setShowPaywall({ open: true, reason: (data?.reason === 'daily' || data?.reason === 'monthly') ? data.reason : 'daily' })
         return
       }
 
@@ -70,8 +81,17 @@ export default function AgentIntakeForm() {
             body: JSON.stringify({ results: json.results }),
           })
           const saved = await saveRes.json().catch(() => ({}))
-          if (saveRes.ok && saved?.url) setShareUrl(saved.url as string)
-        } catch {}
+          if (saveRes.ok && saved?.url) {
+            setShareUrl(saved.url as string)
+            // Redirect to the share page for a crisp flow
+            router.push(saved.url as string)
+          } else {
+            // fallback to history
+            router.push('/history')
+          }
+        } catch {
+          router.push('/history')
+        }
       }
     } catch (e: any) {
       setErr(e?.message || 'Failed')
@@ -291,7 +311,51 @@ export default function AgentIntakeForm() {
           )}
         </div>
       </form>
+
+      {/* Paywall Modal */}
+      {showPaywall.open && (
+        <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Upgrade Required">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowPaywall({ open: false, reason: null })} />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-neutral-900 rounded-2xl border shadow-soft max-w-md w-[92vw] p-5">
+            <h3 className="text-lg font-semibold">
+              {showPaywall.reason === 'monthly' ? 'Monthly limit reached' : 'Daily limit reached'}
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Upgrade to Pro or buy a Top‑Up to continue.
+            </p>
+            <div className="flex gap-2 mt-4">
+              <button type="button" className="btn" onClick={() => goCheckout('pro')}>Upgrade to Pro</button>
+              <button type="button" className="btn btn-outline" onClick={() => goCheckout('topup')}>Top‑Up 50</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
+function getPublicEnv(key: string): string | undefined {
+  // eslint-disable-next-line no-undef
+  return (process as any)?.env?.[key]
+}
+
+async function goToCheckout(priceId: string) {
+  const res = await fetch('/api/stripe/checkout', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      priceId,
+      success_url: `${window.location.origin}/billing/success`,
+      cancel_url: `${window.location.origin}/agent/new`,
+    }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (data?.url) window.location.href = data.url as string
+}
+
+function goCheckout(kind: 'pro' | 'topup') {
+  const priceId = kind === 'pro'
+    ? getPublicEnv('NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY')
+    : getPublicEnv('NEXT_PUBLIC_STRIPE_PRICE_TOPUP_50')
+  if (!priceId) return alert('Pricing is not configured.')
+  return goToCheckout(priceId)
+}
