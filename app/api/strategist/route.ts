@@ -14,13 +14,20 @@ import { createClient } from '@supabase/supabase-js'
 import { startOfDay, endOfDay, startOfMonth, endOfMonth } from 'date-fns'
 
 // ---- Usage guard (quota) helpers ----
-const sbUsage = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE) as string
-)
+let _sbUsage: ReturnType<typeof createClient> | null = null
+function sbUsage() {
+  if (_sbUsage) return _sbUsage
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE) as string | undefined
+  if (!url || !key) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE(SUPABASE_SERVICE_ROLE_KEY)')
+  }
+  _sbUsage = createClient(url, key)
+  return _sbUsage
+}
 
 async function getBillingProfileByEmail(email: string) {
-  const { data } = await sbUsage
+  const { data } = await sbUsage()
     .from('billing_profiles')
     .select('*')
     .eq('email', email)
@@ -31,7 +38,7 @@ async function getBillingProfileByEmail(email: string) {
 async function canRunAndLog(userId: string, opts: { dryRun?: boolean } = {}) {
   const now = new Date()
   // entitlements (fallbacks if record not created yet)
-  const { data: ent } = await sbUsage
+  const { data: ent } = await sbUsage()
     .from('entitlements')
     .select('*')
     .eq('user_id', userId)
@@ -39,14 +46,14 @@ async function canRunAndLog(userId: string, opts: { dryRun?: boolean } = {}) {
   const daily = (ent as any)?.daily_allowance ?? 1
   const monthly = ((ent as any)?.monthly_allowance ?? 0) + ((ent as any)?.monthly_bonus ?? 0)
 
-  const today = await sbUsage
+  const today = await sbUsage()
     .from('usage_events')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
     .gte('occurred_at', startOfDay(now).toISOString())
     .lte('occurred_at', endOfDay(now).toISOString())
 
-  const month = await sbUsage
+  const month = await sbUsage()
     .from('usage_events')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
@@ -59,7 +66,7 @@ async function canRunAndLog(userId: string, opts: { dryRun?: boolean } = {}) {
   if (daily > 0 && todayUsed >= daily) return { ok: false as const, reason: 'daily' as const }
   if (monthly > 0 && monthUsed >= monthly) return { ok: false as const, reason: 'monthly' as const }
 
-  if (!opts.dryRun) await sbUsage.from('usage_events').insert({ user_id: userId, kind: 'strategist_run' } as any)
+  if (!opts.dryRun) await sbUsage().from('usage_events').insert({ user_id: userId, kind: 'strategist_run' } as any)
   return { ok: true as const }
 }
 

@@ -74,7 +74,10 @@ async function handle(req: Request) {
     })
 
     const fname = (plan.name ? `${plan.name}-playbook.pdf` : 'playbook.pdf').replace(/\s+/g, '-').toLowerCase()
-    return new Response(bytes, {
+    const ab2 = new ArrayBuffer(bytes.byteLength)
+    new Uint8Array(ab2).set(bytes)
+    const blob = new Blob([ab2], { type: 'application/pdf' })
+    return new Response(blob, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${fname}"`,
