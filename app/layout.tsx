@@ -20,16 +20,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 MoneyXprt
               </Link>
               <nav className="hidden md:flex items-center gap-6 ml-8 text-sm text-zinc-600">
-                <Link href="/intake" className="hover:text-[var(--mx-primary)]">Agent</Link>
+                <Link href="/" className="hover:text-[var(--mx-primary)]">Dashboard</Link>
+                <Link href="/agent/new" className="hover:text-[var(--mx-primary)]">New Analysis</Link>
                 <Link href="/history" className="hover:text-[var(--mx-primary)]">History</Link>
                 <Link href="/compare" className="hover:text-[var(--mx-primary)]">Compare</Link>
-                <Link href="/mx-test" className="hover:text-[var(--mx-primary)]">API Test</Link>
+                <Link href="/settings" className="hover:text-[var(--mx-primary)]">Settings</Link>
               </nav>
             </div>
 
             {/* Right: CTA */}
             <div className="flex items-center gap-2">
-              <Link href="/intake" className="btn-primary">New Analysis</Link>
+              <a href="/agent/new" className="btn">New Analysis</a>
             </div>
           </div>
         </header>
@@ -41,7 +42,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <aside className="hidden lg:flex flex-col w-56 border-r bg-white py-6 px-4 rounded-xl">
               <h2 className="font-semibold text-lg mb-6">MoneyXprt</h2>
               <nav className="flex flex-col gap-2 text-sm text-zinc-600">
-                <Link href="/intake" className="hover:text-[var(--mx-primary)]">🧠 Agent</Link>
+                <Link href="/" className="hover:text-[var(--mx-primary)]">🏠 Dashboard</Link>
+                <Link href="/agent/new" className="hover:text-[var(--mx-primary)]">🧠 New Analysis</Link>
                 <Link href="/history" className="hover:text-[var(--mx-primary)]">📜 History</Link>
                 <Link href="/compare" className="hover:text-[var(--mx-primary)]">📈 Compare</Link>
                 <Link href="/settings" className="hover:text-[var(--mx-primary)]">⚙️ Settings</Link>

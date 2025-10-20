@@ -136,9 +136,11 @@ export default function HistoryPage() {
               )}
 
               {!loading && !err && filtered.length === 0 && (
-                <div className="text-sm text-slate-600">
-                  No runs yet — AI loves data. Let’s feed it your first profile.{' '}
-                  <Link href="/intake" className="link">Create your first run</Link>.
+                <div className="flex items-center justify-between gap-3 border rounded-xl p-4 bg-white">
+                  <div className="text-sm text-slate-600">
+                    No runs yet — kick off your first analysis and get ranked strategies.
+                  </div>
+                  <Link href="/agent/new" className="btn">Start a new analysis</Link>
                 </div>
               )}
 

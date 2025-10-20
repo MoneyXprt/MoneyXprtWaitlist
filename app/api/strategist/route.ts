@@ -9,6 +9,8 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import OpenAI from 'openai'
 import { z } from 'zod'
 import { publicId as makePublicId } from '@/lib/id'
+import { intakeSchema as nestedIntakeSchema } from '@/schemas/intake'
+import { computeSaltDeduction } from '@/lib/tax/salt'
 import type { ResultsV1 } from '@/types/results'
 import { createClient } from '@supabase/supabase-js'
 import { startOfDay, endOfDay, startOfMonth, endOfMonth } from 'date-fns'
@@ -220,6 +222,79 @@ export async function POST(req: Request) {
       `type ResultsV1 = {\n  summary: { householdAGI: number; filingStatus: string; primaryGoal: string; };\n  top3Actions: [TopAction, TopAction, TopAction];\n  taxImpact: { thisYear: number; nextYear: number; _5Year: number; };\n  cashPlan: { upfront: number; monthlyCarry: number; };\n  riskFlags: string[]; assumptions: string[]; confidence: 0|0.25|0.5|0.75|1; disclaimers: string[];\n};`
 
     const { userMessage, payload, profileId } = body
+
+    // If client sent a nested Intake payload, validate and compute quick deriveds for the model
+    let payloadForModel: any = payload
+    try {
+      const maybeIntake = (payload as any)?.intake
+      if (maybeIntake) {
+        const parsed = nestedIntakeSchema.safeParse(maybeIntake)
+        if (parsed.success) {
+          const intake = parsed.data
+          // --- Deriveds (very rough MVP estimates; model can refine) ---
+          const wages = intake.wages
+          const oi = intake.otherIncome || {}
+          const se = intake.selfEmployment
+          const rentals = intake.rentals || []
+          const k1s = (intake as any).k1s || []
+
+          const rentalNet = rentals.reduce((sum, r) => sum + (Number(r.income||0) - Number(r.expenses||0)), 0)
+          const k1Ord = k1s.reduce((sum: number, k: any) => sum + Number(k.ordinaryBusinessIncome||0), 0)
+          const seNet = Number(se?.seNetProfit || 0)
+          const agiEstimate =
+            Number(wages?.w2Wages || 0) +
+            Number(oi.interestIncome || 0) +
+            Number(oi.dividendsOrdinary || 0) +
+            Number(oi.dividendsQualified || 0) +
+            Number(oi.capGainsShort || 0) +
+            Number(oi.capGainsLong || 0) +
+            Number(oi.rsuTaxableComp || 0) +
+            Number(oi.otherIncome || 0) +
+            rentalNet + seNet + k1Ord
+
+          const fs = intake.profile.filingStatus
+          const age1 = (intake.profile.ages?.primary || 0)
+          const age2 = (intake.profile.ages?.spouse || 0)
+          const base = fs === 'MFJ' || fs === 'QW' ? 29200 : fs === 'HOH' ? 21900 : 14600
+          const addl = (fs === 'MFJ' ? ((age1>=65?1550:0) + (age2>=65?1550:0)) : (age1>=65?1950:0))
+          const stdDeduction = base + addl
+          const saltRes = computeSaltDeduction({
+            taxYear: intake.profile.taxYear,
+            filingStatus: fs as any,
+            useSalesTaxInsteadOfIncome: Boolean(intake.deductions.useSalesTaxInsteadOfIncome),
+            stateIncomeTaxPaid: Number(intake.deductions.stateIncomeTaxPaid || 0),
+            stateSalesTaxPaid: Number(intake.deductions.stateSalesTaxPaid || 0),
+            realEstatePropertyTax: Number(intake.deductions.realEstatePropertyTax || 0),
+            personalPropertyTax: Number(intake.deductions.personalPropertyTax || 0),
+          })
+          const mort = Number(intake.deductions.mortgageInterestPrimary || 0)
+          const charity = Number(intake.deductions.charityCash || 0) + Number(intake.deductions.charityNonCash || 0)
+          const itemizedEstimate = saltRes.allowed + mort + charity
+          const useStandard = itemizedEstimate < stdDeduction
+
+          const seTaxEstimate = Math.round(seNet * 0.9235 * 0.153)
+          const qbiLikely = (seNet > 0 || k1Ord > 0) && (se?.isQBIEligible ?? true)
+
+          payloadForModel = {
+            meta: (payload as any)?.meta || { taxYear: intake.profile.taxYear },
+            intake,
+            derived: {
+              agiEstimate,
+              stdDeduction,
+              itemizedEstimate,
+              useStandard,
+              seTaxEstimate,
+              qbiLikely,
+              itemized: {
+                saltAllowed: saltRes.allowed,
+                saltCap: saltRes.cap,
+                saltComponents: saltRes.components,
+              },
+            },
+          }
+        }
+      }
+    } catch {}
     console.log('[strategist] body:', {
       hasUserMessage: Boolean(userMessage && String(userMessage).length > 0),
       hasPayload: payload != null,
@@ -256,7 +331,7 @@ export async function POST(req: Request) {
       { role: 'system', content: strictSystem },
       { role: 'system', content: systemBody },
     ]
-    if (payload) messages.push({ role: 'user', content: JSON.stringify(payload) })
+    if (payloadForModel) messages.push({ role: 'user', content: JSON.stringify(payloadForModel) })
     if (userMessage) messages.push({ role: 'user', content: userMessage })
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! })
@@ -331,7 +406,10 @@ export async function POST(req: Request) {
         answer,
       }
 
-      await sb2.from('scenario_simulations').insert(row as any)
+      await sb2.from('scenario_simulations').insert({
+        ...row,
+        scenario_data: payloadForModel ?? (payload as any) ?? {},
+      } as any)
     } catch (e: any) {
       console.error('Error saving scenario run:', e?.message || e)
     }
