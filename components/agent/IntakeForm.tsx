@@ -49,52 +49,57 @@ export default function AgentIntakeForm() {
   async function onSubmit(intake: IntakeFormType) {
     setErr(''); setResults(null); setShareUrl(null)
     try {
+      // Normalize a couple of toggled sections for a minimal payload
       if (showRentals && (!intake.rentals || intake.rentals.length === 0)) {
-        intake.rentals = [{ type: 'LTR', income: 0, expenses: 0, considerCostSeg: false }]
+        intake.rentals = [{ type: 'LTR', income: 0, expenses: 0, considerCostSeg: false } as any]
       }
       if (!showSE) {
-        intake.selfEmployment = undefined
+        (intake as any).selfEmployment = undefined
       }
 
-      const meta = { taxYear: intake.profile.taxYear }
       const res = await fetch('/api/strategist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: session.user?.email ?? null, payload: { meta, intake } }),
+        body: JSON.stringify({ intake }),
       })
 
-      if (res.status === 402) {
-        const data = await res.json().catch(() => ({}))
-        setShowPaywall({ open: true, reason: (data?.reason === 'daily' || data?.reason === 'monthly') ? data.reason : 'daily' })
+      if (res.status === 401) {
+        alert('Please sign in to run strategies.')
+        window.location.href = '/login'
         return
       }
 
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok || !json?.ok) throw new Error(json?.error || `HTTP ${res.status}`)
-
-      if (json.results) {
-        setResults(json.results as ResultsV1)
-        try {
-          const saveRes = await fetch('/api/results', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ results: json.results }),
-          })
-          const saved = await saveRes.json().catch(() => ({}))
-          if (saveRes.ok && saved?.url) {
-            setShareUrl(saved.url as string)
-            // Redirect to the share page for a crisp flow
-            router.push(saved.url as string)
-          } else {
-            // fallback to history
-            router.push('/history')
-          }
-        } catch {
-          router.push('/history')
-        }
+      if (res.status === 402) {
+        // Quota exceeded — kick off checkout
+        const data = await res.json().catch(() => ({}))
+        alert('Quota exceeded. Opening checkout…')
+        const chk = await fetch('/api/stripe/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            // eslint-disable-next-line no-undef
+            priceId: (process as any)?.env?.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY ?? 'PRICE_ID',
+            success_url: `${window.location.origin}/history`,
+            cancel_url: window.location.href,
+          }),
+        }).then(r => r.json()).catch(() => ({}))
+        if (chk?.url) window.location.href = chk.url as string
+        return
       }
-    } catch (e: any) {
-      setErr(e?.message || 'Failed')
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '')
+        console.error('Strategist error', res.status, txt)
+        alert(`Error ${res.status}: ${txt || 'failed'}`)
+        return
+      }
+
+      const data = await res.json().catch(() => ({}))
+      const url = data?.url || '/history'
+      window.location.href = url
+    } catch (err: any) {
+      console.error(err)
+      alert(`Submit failed: ${err?.message ?? err}`)
     }
   }
 
