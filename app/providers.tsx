@@ -1,12 +1,11 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
-import { env } from '@/lib/config/env'
-import type { User } from '@supabase/supabase-js'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
+import type { User, SupabaseClient } from '@supabase/supabase-js'
 
 type SupabaseContext = {
-  supabase: ReturnType<typeof createBrowserClient>
+  supabase: SupabaseClient
   user: User | null
   loading: boolean
 }
@@ -16,10 +15,12 @@ const Context = createContext<SupabaseContext | undefined>(undefined)
 export function Providers({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createBrowserClient(
-    env.public.NEXT_PUBLIC_SUPABASE_URL!,
-    env.public.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const supabase = getSupabaseBrowser()
+
+  // If browser client can't be constructed (env missing), render children without provider
+  if (!supabase) {
+    return <>{children}</>
+  }
 
   useEffect(() => {
     const getUser = async () => {
@@ -36,7 +37,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     })
 
     return () => subscription.unsubscribe()
-  }, [supabase.auth])
+  }, [supabase])
 
   return (
     <Context.Provider value={{ supabase, user, loading }}>

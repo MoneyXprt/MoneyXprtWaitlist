@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { supabase } from './supabaseClient'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 import type { User } from '@supabase/supabase-js'
 
 export function useSession() {
@@ -9,6 +9,13 @@ export function useSession() {
 
   useEffect(() => {
     let mounted = true
+    const supabase = getSupabaseBrowser()
+
+    if (!supabase) {
+      // No client available; stop loading and leave user null
+      setLoading(false)
+      return
+    }
 
     async function getSession() {
       try {

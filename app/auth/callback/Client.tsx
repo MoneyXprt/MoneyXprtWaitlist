@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
-import { env } from '@/lib/config/env';
+import { getSupabaseBrowser } from '@/lib/supabase-browser';
 
 export default function CallbackClient() {
   const router = useRouter();
@@ -11,10 +10,11 @@ export default function CallbackClient() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const supabase = createBrowserClient(
-      env.public.NEXT_PUBLIC_SUPABASE_URL!,
-      env.public.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = getSupabaseBrowser();
+    if (!supabase) {
+      setError('Authentication unavailable. Please try again later.');
+      return;
+    }
 
     (async () => {
       const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);

@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
-import { env } from '@/lib/config/env';
+import { getSupabaseBrowser } from '@/lib/supabase-browser';
 
 export default function SimpleAuthWidget() {
   const router = useRouter();
@@ -12,10 +11,8 @@ export default function SimpleAuthWidget() {
 
   useEffect(() => {
     setMounted(true);
-    const supabase = createBrowserClient(
-      env.public.NEXT_PUBLIC_SUPABASE_URL!,
-      env.public.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = getSupabaseBrowser();
+    if (!supabase) return;
     supabase.auth.getUser().then(({ data }) => {
       setEmail(data.user?.email ?? null);
     });
@@ -29,11 +26,10 @@ export default function SimpleAuthWidget() {
   return email ? (
     <form
       action={async () => {
-        const supabase = createBrowserClient(
-          env.public.NEXT_PUBLIC_SUPABASE_URL!,
-          env.public.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
-        await supabase.auth.signOut();
+        const supabase = getSupabaseBrowser();
+        if (supabase) {
+          await supabase.auth.signOut();
+        }
         router.refresh();
       }}
     >

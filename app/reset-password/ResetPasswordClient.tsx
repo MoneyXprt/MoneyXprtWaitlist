@@ -1,18 +1,12 @@
 'use client';
 
-import { createBrowserClient } from '@supabase/ssr';
-import { env } from '@/lib/config/env';
+import { getSupabaseBrowser } from '@/lib/supabase-browser';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function ResetPasswordClient() {
   const router = useRouter();
-  const [supabase] = useState(() =>
-    createBrowserClient(
-      env.public.NEXT_PUBLIC_SUPABASE_URL!,
-      env.public.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-  );
+  const supabase = getSupabaseBrowser();
 
   const [ready, setReady] = useState(false);
   const [password, setPassword] = useState('');
@@ -23,6 +17,7 @@ export default function ResetPasswordClient() {
 
   useEffect(() => {
     (async () => {
+      if (!supabase) return;
       const { error } = await supabase.auth.exchangeCodeForSession(
         window.location.href
       );
@@ -46,6 +41,10 @@ export default function ResetPasswordClient() {
     }
 
     setSaving(true);
+    if (!supabase) {
+      setErr('Authentication unavailable. Please try again later.');
+      return;
+    }
     const { error } = await supabase.auth.updateUser({ password });
     setSaving(false);
 

@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -20,8 +20,9 @@ export default function AIBox() {
     setResponse('')
     setLoading(true)
     try {
-      // Get user session for authenticated requests
-      const { data: { session } } = await supabase.auth.getSession()
+      // Get user session for authenticated requests (if available)
+      const sb = getSupabaseBrowser()
+      const { data: { session } } = sb ? await sb.auth.getSession() : { data: { session: null } } as any
       
       const headers: Record<string, string> = {
         'Content-Type': 'application/json'
