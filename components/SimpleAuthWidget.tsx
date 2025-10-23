@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createSupabaseBrowser } from '@/lib/supabaseBrowser';
+import { getSupabaseBrowser } from '@/lib/supabase-browser';
 
 export default function SimpleAuthWidget() {
   const [email, setEmail] = useState('');
@@ -11,7 +11,7 @@ export default function SimpleAuthWidget() {
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [showSignup, setShowSignup] = useState(false);
-  const supabase = createSupabaseBrowser();
+  const supabase = getSupabaseBrowser();
   if (!supabase) {
     return (
       <div className="flex items-center gap-2">

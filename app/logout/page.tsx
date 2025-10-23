@@ -1,14 +1,15 @@
 'use client'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabaseClient'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 
 export default function LogoutPage() {
   const router = useRouter()
+  const supabase = getSupabaseBrowser()
 
   useEffect(() => {
     async function signOut() {
-      await supabase.auth.signOut()
+      if (supabase) await supabase.auth.signOut()
       router.replace('/')
     }
     signOut()

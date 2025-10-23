@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createSupabaseBrowser } from '@/lib/supabaseBrowser';
+import { getSupabaseBrowser } from '@/lib/supabase-browser';
 
 type Report = {
   id: string;
@@ -13,7 +13,7 @@ type Report = {
 };
 
 export default function ReportsPage() {
-  const supabase = createSupabaseBrowser();
+  const supabase = getSupabaseBrowser();
   if (!supabase) return <div className="p-6 text-sm text-neutral-600">Reports are unavailable (Supabase env not set).</div>;
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);

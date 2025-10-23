@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabaseClient'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 import { useSession } from '@/lib/useSession'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 export default function OnboardingPage() {
   const { user, loading } = useSession()
   const router = useRouter()
+  const supabase = getSupabaseBrowser()
   const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     fullName: '',
@@ -37,6 +38,7 @@ export default function OnboardingPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!user || submitting) return
+    if (!supabase) { alert('Auth unavailable'); return }
 
     setSubmitting(true)
     try {

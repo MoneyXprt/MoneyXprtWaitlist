@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabaseClient'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 import { useSession } from '@/lib/useSession'
 import type { UsageDaily } from '@/lib/db/schema'
 
@@ -16,6 +16,7 @@ export default function UsagePage() {
   const { user, loading } = useSession()
   const router = useRouter()
   const [usage, setUsage] = useState<UsageDaily[]>([])
+  const supabase = getSupabaseBrowser()
   const [usageLoading, setUsageLoading] = useState(true)
   const [todayUsage, setTodayUsage] = useState<UsageDaily | null>(null)
 
@@ -34,7 +35,7 @@ export default function UsagePage() {
     if (!user) return
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabase!
         .from('usage_daily')
         .select('*')
         .eq('user_id', user.id)

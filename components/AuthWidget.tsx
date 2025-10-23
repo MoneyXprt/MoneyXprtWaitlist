@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { sbBrowser } from '../lib/supabase';
+import { getSupabaseBrowser } from '@/lib/supabase-browser';
 import { AuthChangeEvent } from '@supabase/supabase-js';
 
 export default function AuthWidget() {
@@ -13,7 +13,11 @@ export default function AuthWidget() {
 
   useEffect(() => {
     try {
-      const client = sbBrowser();
+      const client = getSupabaseBrowser();
+      if (!client) {
+        setInitError('Supabase disabled: missing env');
+        return;
+      }
       setSupabase(client);
     } catch (err: any) {
       setInitError(err.message);

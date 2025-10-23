@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { supabase } from '@/lib/supabaseClient'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 import { useSession } from '@/lib/useSession'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,6 +24,7 @@ export default function PricingPage() {
 
 function PricingContent({ session, router }: { session: ReturnType<typeof useSession>; router: ReturnType<typeof useRouter> }) {
   const { user, loading } = session
+  const supabase = getSupabaseBrowser()
   const searchParams = useSearchParams()
   const [checkoutLoading, setCheckoutLoading] = useState(false)
 
@@ -37,16 +38,14 @@ function PricingContent({ session, router }: { session: ReturnType<typeof useSes
 
     setCheckoutLoading(true)
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+      const sessionRes = supabase ? await supabase.auth.getSession() : { data: { session: null } as any }
 
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       }
 
-      if (session?.user?.id) {
-        headers['x-user-id'] = session.user.id
+      if (sessionRes.data?.session?.user?.id) {
+        headers['x-user-id'] = sessionRes.data.session.user.id
       }
 
       const response = await fetch('/api/stripe/checkout', {

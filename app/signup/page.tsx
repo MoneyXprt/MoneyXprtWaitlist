@@ -1,12 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { sbBrowser } from '../../lib/supabase';
+import { getSupabaseBrowser } from '@/lib/supabase-browser';
 
 export default function SignupPage() {
   const [msg, setMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const supabase = sbBrowser();
+  const supabase = getSupabaseBrowser();
+  if (!supabase) {
+    return (
+      <main className="max-w-md mx-auto mt-16 p-6">
+        <div className="bg-white p-8 rounded-xl shadow-lg border">
+          <h1 className="text-2xl font-bold mb-2">Create Account</h1>
+          <p className="text-neutral-600">Auth unavailable. Missing Supabase env.</p>
+        </div>
+      </main>
+    );
+  }
 
   const handleSignup = async (email: string, password: string, fullName: string) => {
     const { data, error } = await supabase.auth.signUp({

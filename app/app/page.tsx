@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from 'react';
-import { createSupabaseBrowser } from '@/lib/supabaseBrowser';
+import { getSupabaseBrowser } from '@/lib/supabase-browser';
 import ScoreCard from './_components/ScoreCard';
 import { callStrategist } from '@/lib/callStrategist'
 
 export default function AppTools() {
-  const supabase = createSupabaseBrowser();
+  const supabase = getSupabaseBrowser();
 
   const [taxPdf, setTaxPdf] = useState<File | null>(null);
   const [entityForm, setEntityForm] = useState({ w2: '', re_units: '', side_income: '' });

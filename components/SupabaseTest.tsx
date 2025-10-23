@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { sbBrowser } from '../lib/supabase';
+import { getSupabaseBrowser } from '@/lib/supabase-browser';
 
 export default function SupabaseTest() {
   const [testResult, setTestResult] = useState('');
@@ -10,7 +10,8 @@ export default function SupabaseTest() {
     setTestResult('Testing...');
     
     try {
-      const supabase = sbBrowser();
+      const supabase = getSupabaseBrowser();
+      if (!supabase) { setTestResult('Supabase disabled: missing env'); return }
       
       // Test basic connection
       const { data, error } = await supabase.from('waitlist').select('count').limit(1);

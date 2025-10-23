@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabaseClient'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 import { useSession } from '@/lib/useSession'
 import AIBox from '@/app/components/AIBox'
 import type { Profile } from '@/lib/db/schema'
@@ -10,6 +10,7 @@ export default function DashboardPage() {
   const { user, loading } = useSession()
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
+  const supabase = getSupabaseBrowser()
   const [profileLoading, setProfileLoading] = useState(true)
 
   useEffect(() => {
@@ -27,7 +28,7 @@ export default function DashboardPage() {
     if (!user) return
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabase!
         .from('profiles')
         .select('*')
         .eq('id', user.id)
@@ -52,7 +53,7 @@ export default function DashboardPage() {
   }
 
   async function signOut() {
-    await supabase.auth.signOut()
+    if (supabase) await supabase.auth.signOut()
     router.replace('/login')
   }
 

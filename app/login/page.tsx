@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { createSupabaseBrowser } from '@/lib/supabaseBrowser';
+import { getSupabaseBrowser } from '@/lib/supabase-browser';
 
 export default function LoginPage() {
   const [msg, setMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const supabase = createSupabaseBrowser();
+  const supabase = getSupabaseBrowser();
   if (!supabase) {
     return (
       <main className="max-w-md mx-auto mt-16 p-6">

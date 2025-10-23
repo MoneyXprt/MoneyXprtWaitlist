@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabaseClient'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 import { useSession } from '@/lib/useSession'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,7 +38,7 @@ export default function ProfilePage() {
     if (!user) return
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabase!
         .from('profiles')
         .select('*')
         .eq('id', user.id)
@@ -75,7 +75,7 @@ export default function ProfilePage() {
     setSuccess(false)
 
     try {
-      const { error } = await supabase
+      const { error } = await supabase!
         .from('profiles')
         .upsert({
           id: user.id,
@@ -272,3 +272,4 @@ export default function ProfilePage() {
     </div>
   )
 }
+  const supabase = getSupabaseBrowser()
