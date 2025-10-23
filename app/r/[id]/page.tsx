@@ -1,3 +1,4 @@
+export const runtime = 'nodejs'
 import { createClient } from '@supabase/supabase-js';
 import Results from '@/components/Results';
 import type { ResultsV1 } from '@/types/results';
@@ -32,4 +33,3 @@ export default async function ResultPage({ params }: { params: { id: string } })
     </div>
   );
 }
-

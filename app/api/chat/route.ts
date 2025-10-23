@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+export const runtime = 'nodejs'
 import OpenAI from 'openai'
 import { env, assertEnv } from '@/lib/config/env'
 import log from '@/lib/logger'

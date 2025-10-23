@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { getSupabaseBrowser } from '@/lib/supabase-browser'
-import type { User } from '@supabase/supabase-js'
+import type { User, SupabaseClient } from '@supabase/supabase-js'
 
 export function useSession() {
   const [user, setUser] = useState<User | null>(null)
@@ -17,9 +17,11 @@ export function useSession() {
       return
     }
 
+    const client = supabase as SupabaseClient
+
     async function getSession() {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        const { data: { session } } = await client.auth.getSession()
         if (mounted) {
           setUser(session?.user ?? null)
           setLoading(false)
@@ -35,7 +37,7 @@ export function useSession() {
 
     getSession()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = client.auth.onAuthStateChange(
       (event, session) => {
         if (mounted) {
           setUser(session?.user ?? null)

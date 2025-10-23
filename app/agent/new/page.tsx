@@ -8,6 +8,9 @@ const AgentIntakeForm = dynamic(() => import('@/components/agent/IntakeForm'), {
   loading: () => <div className="p-6 text-sm text-zinc-500">Loading…</div>,
 });
 
+// Temporary sanity check — remove later
+console.log('ENV in browser', { url: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL), anon: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) });
+
 export default function NewAnalysisPage() {
   return (
     <main className="max-w-5xl mx-auto p-6 space-y-4">

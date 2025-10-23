@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+export const runtime = 'nodejs'
 import { createClient } from '@/lib/supabase/server'
 import { getDb } from '@/lib/db/index'
 import { calcSnapshot } from '@/lib/db/schema'
@@ -28,4 +29,3 @@ export async function GET() {
     return NextResponse.json({ error: e?.message || 'failed' }, { status: 500 })
   }
 }
-
