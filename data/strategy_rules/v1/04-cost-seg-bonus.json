@@ -1,0 +1,26 @@
+{
+  "code": "cost-seg-bonus",
+  "title": "Cost Segregation + Bonus Depreciation",
+  "category": "real-estate",
+  "trigger": { "interestedInSTR": true },
+  "liquidityMin": 10000,
+  "estFormula": "cost-seg",
+  "cautions": [
+    "Engineering study fee required; confirm ROI before ordering.",
+    "Bonus rates phase down; verify current-year percentage.",
+    "Recapture on sale; model exit timing.",
+    "Passive loss rules may limit benefits unless STR or RE pro status applies."
+  ],
+  "irsRefs": [
+    "IRC §168(k)",
+    "Rev. Proc. 87-56",
+    "Cost Segregation Audit Techniques Guide"
+  ],
+  "timelineHints": [
+    "Engage provider: 1–2 weeks",
+    "Study completion: 2–6 weeks",
+    "File with current-year return or via 3115"
+  ],
+  "version": 1
+}
+

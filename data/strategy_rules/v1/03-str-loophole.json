@@ -1,0 +1,27 @@
+{
+  "code": "str-loophole",
+  "title": "Short-Term Rental Material Participation (STR Loophole)",
+  "category": "real-estate",
+  "trigger": { "interestedInSTR": true },
+  "liquidityMin": 40000,
+  "debtMaxDTI": 0.45,
+  "estFormula": "str",
+  "cautions": [
+    "Must meet material participation tests; keep logs.",
+    "Local zoning/STR regulations and permits apply.",
+    "Bonus depreciation recapture on sale; plan hold period.",
+    "Daily average rental period must generally be ≤7 days (or other exceptions)."
+  ],
+  "irsRefs": [
+    "Temp. Reg. §1.469-5T",
+    "Reg. §1.469-1T(e)(3)(ii)(A)",
+    "IRC §469"
+  ],
+  "timelineHints": [
+    "Property selection and financing: 30–60 days",
+    "Furnish/setup and go-live: 2–4 weeks",
+    "Track participation hours throughout year"
+  ],
+  "version": 1
+}
+

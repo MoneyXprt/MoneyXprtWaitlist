@@ -1,0 +1,21 @@
+{
+  "code": "augusta-rule",
+  "title": "Augusta Rule: Rent Home To Business (≤14 days)",
+  "category": "business",
+  "trigger": { "ownsHome": true, "hasSideIncomeOrConsulting": true },
+  "liquidityMin": 0,
+  "estFormula": "augusta",
+  "cautions": [
+    "Charge fair-market rent; substantiate with comps/invoices.",
+    "Rental must be 14 days or fewer per year to be tax-free to owner.",
+    "Business deduction must be ordinary and necessary; document agendas and minutes."
+  ],
+  "irsRefs": ["IRC §280A(g)", "Pub 527"],
+  "timelineHints": [
+    "Set rental rate and draft agreement",
+    "Invoice and pay from business account",
+    "Keep meeting agendas/minutes and proof of FMV"
+  ],
+  "version": 1
+}
+

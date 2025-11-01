@@ -1,0 +1,21 @@
+{
+  "code": "llc-qbi",
+  "title": "Form LLC/Entity For QBI Deduction",
+  "category": "business",
+  "trigger": { "hasSideIncomeOrConsulting": true },
+  "liquidityMin": 0,
+  "estFormula": "llc-qbi",
+  "cautions": [
+    "QBI phase-outs apply at higher incomes and for specified service trades.",
+    "Requires legitimate trade or business with proper documentation and payroll if using W-2 wage limitation.",
+    "State-level entity taxes and fees may offset benefits."
+  ],
+  "irsRefs": ["IRC §199A", "Reg. §1.199A-1"],
+  "timelineHints": [
+    "Entity setup: 1–2 weeks",
+    "QBI planning before year-end",
+    "Coordinate with payroll/estimated taxes"
+  ],
+  "version": 1
+}
+

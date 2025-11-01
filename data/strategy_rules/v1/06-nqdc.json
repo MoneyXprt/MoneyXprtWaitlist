@@ -1,0 +1,21 @@
+{
+  "code": "nqdc",
+  "title": "Non-Qualified Deferred Compensation (409A)",
+  "category": "compensation",
+  "trigger": { "hasNQDC": true },
+  "liquidityMin": 0,
+  "estFormula": "nqdc",
+  "cautions": [
+    "Elections generally must be made before the service year; distribution changes have strict rules.",
+    "Company credit risk applies; not ERISA-qualified.",
+    "Coordinate with marginal tax rate projections and cash needs."
+  ],
+  "irsRefs": ["IRC §409A", "Reg. §1.409A-2"],
+  "timelineHints": [
+    "Confirm plan details and election window",
+    "Model tax brackets and cash flows",
+    "Set distribution schedule and keep records"
+  ],
+  "version": 1
+}
+

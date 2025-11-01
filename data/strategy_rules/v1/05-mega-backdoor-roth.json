@@ -1,0 +1,21 @@
+{
+  "code": "mega-backdoor-roth",
+  "title": "Mega Backdoor Roth (After-Tax 401(k) + In-Plan/IRA Roth)",
+  "category": "retirement",
+  "trigger": { "has401k": true, "planAllowsAfterTax": true },
+  "liquidityMin": 0,
+  "estFormula": "megabackdoor",
+  "cautions": [
+    "Confirm plan supports after-tax contributions and in-plan Roth or in-service rollovers.",
+    "Track IRS overall 415(c) limit (employee + employer + after-tax).",
+    "Beware ACP testing and possible refunds in non-safe-harbor plans."
+  ],
+  "irsRefs": ["IRS Notice 2014-54", "IRC §401(k)", "IRC §415(c)"],
+  "timelineHints": [
+    "Update payroll deferral elections",
+    "Schedule periodic in-plan conversion or in-service rollovers",
+    "Revisit each plan year"
+  ],
+  "version": 1
+}
+
