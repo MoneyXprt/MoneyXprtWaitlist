@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import Results from '@/components/Results'
 import type { ResultsV1 } from '@/types/results'
+import type { StrategistResult as UiStrategistResult, Strategy as UiStrategy } from '@/types/strategist'
+import { TAX_BRACKETS } from '@/lib/taxStrategies'
 import { useSession } from '@/lib/useSession'
 import { computeSaltDeduction } from '@/lib/tax/salt'
 
@@ -20,6 +22,7 @@ export default function AgentIntakeForm() {
   const [showRentals, setShowRentals] = React.useState(false)
   const [showSE, setShowSE] = React.useState(false)
   const [showPaywall, setShowPaywall] = React.useState<{ open: boolean; reason: 'daily' | 'monthly' | null }>({ open: false, reason: null })
+  const [strategist, setStrategist] = React.useState<UiStrategistResult | null>(null)
   const router = useRouter()
 
   const form = useForm<IntakeFormType>({
@@ -46,8 +49,49 @@ export default function AgentIntakeForm() {
     setValueAs: (v: any) => (v === '' || v == null ? undefined : Number(v)),
   })
 
+  function filingMap(fs: IntakeFormType['profile']['filingStatus']): 'single' | 'married' | 'head_of_household' {
+    switch (fs) {
+      case 'MFJ':
+        return 'married'
+      case 'HOH':
+        return 'head_of_household'
+      case 'MFS':
+      case 'QW':
+      case 'Single':
+      default:
+        return 'single'
+    }
+  }
+
+  function stdDeduction(fs: IntakeFormType['profile']['filingStatus'], ages?: { primary?: number; spouse?: number }) {
+    const base = (fs === 'MFJ' || fs === 'QW') ? 29200 : fs === 'HOH' ? 21900 : 14600
+    const addl = (fs === 'MFJ')
+      ? ((ages?.primary && ages.primary >= 65 ? 1550 : 0) + (ages?.spouse && ages.spouse >= 65 ? 1550 : 0))
+      : ((ages?.primary && ages.primary >= 65 ? 1950 : 0))
+    return base + (addl || 0)
+  }
+
+  function calcBracketTax(taxable: number, status: 'single' | 'married' | 'head_of_household') {
+    const brackets = TAX_BRACKETS[status]
+    let tax = 0
+    let remaining = taxable
+    let prevMax = 0
+    for (const b of brackets) {
+      const lower = Math.max(b.min, prevMax)
+      const upper = Math.min(b.max, taxable)
+      if (upper > lower) {
+        const slice = upper - lower
+        tax += slice * b.rate
+        prevMax = b.max
+      }
+      if (taxable <= b.max) break
+    }
+    return Math.max(0, Math.round(tax))
+  }
+
   async function onSubmit(intake: IntakeFormType) {
     setErr(''); setResults(null); setShareUrl(null)
+    setStrategist(null)
     try {
       // Normalize a couple of toggled sections for a minimal payload
       if (showRentals && (!intake.rentals || intake.rentals.length === 0)) {
@@ -95,8 +139,77 @@ export default function AgentIntakeForm() {
       }
 
       const data = await res.json().catch(() => ({}))
-      const url = data?.url || '/history'
-      window.location.href = url
+
+      // Build UI strategist snapshot from intake and response
+      // 1) Compute AGI-ish and deductions to estimate tax and effective rate
+      const incomes = intake.otherIncome || {}
+      const se = intake.selfEmployment || ({} as any)
+      const rentals = (intake.rentals || []).map(r => Number(r.income || 0) - Number(r.expenses || 0))
+      const totalIncome =
+        Number(intake.wages?.w2Wages || 0) +
+        Number(incomes.interestIncome || 0) +
+        Number(incomes.dividendsOrdinary || 0) +
+        Number(incomes.dividendsQualified || 0) +
+        Number(incomes.capGainsShort || 0) +
+        Number(incomes.capGainsLong || 0) +
+        Number(incomes.otherIncome || 0) +
+        Number(incomes.rsuTaxableComp || 0) +
+        Number(se.seNetProfit || 0) +
+        rentals.reduce((a,b)=>a+b, 0)
+
+      const d = intake.deductions || ({} as any)
+      const salt = computeSaltDeduction({
+        taxYear: Number(intake.profile.taxYear || new Date().getFullYear()),
+        filingStatus: intake.profile.filingStatus as any,
+        useSalesTaxInsteadOfIncome: Boolean(d.useSalesTaxInsteadOfIncome),
+        stateIncomeTaxPaid: Number(d.stateIncomeTaxPaid || 0),
+        stateSalesTaxPaid: Number(d.stateSalesTaxPaid || 0),
+        realEstatePropertyTax: Number(d.realEstatePropertyTax || 0),
+        personalPropertyTax: Number(d.personalPropertyTax || 0),
+        pteTaxPaid: 0,
+      })
+      const itemized =
+        Number(salt.allowed || 0) +
+        Number(d.charityCash || 0) +
+        Number(d.charityNonCash || 0) +
+        Number(d.mortgageInterestPrimary || 0) +
+        Number(d.medicalExpenses || 0)
+      const std = stdDeduction(intake.profile.filingStatus, intake.profile.ages)
+      const allowItemize = itemized > std
+      const deduction = allowItemize ? itemized : std
+      const agi = Math.max(0, totalIncome)
+      const taxable = Math.max(0, agi - deduction)
+      const statusKey = filingMap(intake.profile.filingStatus)
+      const estTax = calcBracketTax(taxable, statusKey)
+      const effRate = agi > 0 ? estTax / agi : 0
+
+      // 2) Map strategies from API to the simplified UI Strategy[] shape
+      const ranked: UiStrategy[] = Array.isArray(data?.strategies) ? data.strategies.map((s: any) => {
+        const savings = (s?.savings && typeof s.savings.amount === 'number') ? Number(s.savings.amount) : 0
+        const warnings = [
+          ...(Array.isArray(s?.guardrails) ? s.guardrails : []),
+          ...(Array.isArray(s?.nuance) ? s.nuance : []),
+        ]
+        const steps = Array.isArray(s?.actions) ? s.actions.map((a: any) => a?.label || '').filter(Boolean) : []
+        return {
+          code: String(s?.code || ''),
+          name: String(s?.title || s?.name || 'Strategy'),
+          why: Array.isArray(s?.why) ? String(s.why[0] || s?.plain || '') : String(s?.plain || ''),
+          savingsEst: savings,
+          risk: 'med' as const,
+          steps,
+          warnings: warnings.filter(Boolean),
+        }
+      }) : []
+
+      // Sort by savings descending if not already
+      ranked.sort((a, b) => (b.savingsEst || 0) - (a.savingsEst || 0))
+
+      setStrategist({
+        snapshot: { estTax, effRate, allowItemize },
+        ranked,
+        notes: [],
+      })
     } catch (err: any) {
       console.error(err)
       alert(`Submit failed: ${err?.message ?? err}`)
@@ -303,13 +416,44 @@ export default function AgentIntakeForm() {
             <button type="submit" disabled={isSubmitting} className="btn mt-3">{isSubmitting ? 'Analyzing…' : 'Get Strategies'}</button>
             {err && <div className="mt-2 text-sm text-red-600">{err}</div>}
           </div>
-          {results && (
-            <div className="rounded-2xl border p-6 space-y-2">
-              <Results data={results} />
-              {shareUrl && (
-                <div className="flex items-center gap-2">
-                  <button className="btn" onClick={() => navigator.clipboard.writeText(`${typeof window !== 'undefined' ? window.location.origin : ''}${shareUrl}`)}>Copy Share Link</button>
-                  <Link className="btn btn-outline" href={shareUrl}>Open Shared View</Link>
+          {strategist && (
+            <div className="rounded-2xl border p-6 space-y-4">
+              <div>
+                <div className="text-lg font-semibold mb-1">Summary</div>
+                <div className="text-sm grid grid-cols-2 gap-2">
+                  <div>Est. Tax: <b>${strategist.snapshot.estTax.toLocaleString()}</b></div>
+                  <div>Effective Rate: <b>{(strategist.snapshot.effRate * 100).toFixed(1)}%</b></div>
+                  <div>Itemize: <b>{strategist.snapshot.allowItemize ? 'Likely' : 'Standard Deduction'}</b></div>
+                  <div>
+                    Total Potential Savings: <b>${strategist.ranked.reduce((a, s) => a + (s.savingsEst || 0), 0).toLocaleString()}</b>
+                  </div>
+                </div>
+              </div>
+
+              {strategist.ranked.length > 0 && (
+                <div>
+                  <div className="text-lg font-semibold mb-2">Ranked Strategies</div>
+                  <ol className="space-y-3 list-decimal ml-5">
+                    {strategist.ranked.map((s, i) => (
+                      <li key={`${s.code}-${i}`} className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">{s.name}</div>
+                          <div className="text-sm">Savings: <b>${(s.savingsEst || 0).toLocaleString()}</b></div>
+                        </div>
+                        {s.why && <div className="text-sm text-muted-foreground">{s.why}</div>}
+                        {s.steps?.length > 0 && (
+                          <ul className="text-xs list-disc ml-5">
+                            {s.steps.map((st, j) => <li key={j}>{st}</li>)}
+                          </ul>
+                        )}
+                        {s.warnings && s.warnings.length > 0 && (
+                          <ul className="text-xs text-amber-700 list-disc ml-5">
+                            {s.warnings.map((w, j) => <li key={j}>{w}</li>)}
+                          </ul>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
                 </div>
               )}
             </div>
