@@ -52,19 +52,23 @@ export default function NewAnalysisPage() {
   async function handleSubmit() {
     setSubmitting(true); setError(''); setResult(null)
     try {
-      // Minimal valid intake for the strategist API
-      const intake = {
-        filingStatus: 'Single',
+      // Build a normalized UserProfile-like payload (demo values)
+      const profile = {
+        taxYear: new Date().getFullYear(),
+        filingStatus: 'MFJ',
         state: 'CA',
-        dependents: 0,
-        income: { w2Wages: 200000 },
-        deductions: { stateIncomeTaxPaid: 12000, realEstatePropertyTax: 8000 },
-        cashflow: { emergencyFundMonths: 6, monthlySurplus: 2000 },
+        dependents: 1,
+        income: { w2: 240000, side: 20000 },
+        deductions: { stateTax: 9000, propertyTax: 8000, mortgageInterest: 12000, charityCash: 3000 },
+        housing: { ownHome: true },
+        liquidity: { cashOnHand: 25000, monthlySurplus: 2000 },
+        debts: [{ type: 'cc', balance: 15000, apr: 0.24, minPmt: 300 }],
+        goals: ['reduce taxes', 'start LLC', 'buy STR'],
       }
 
       const res = await fetch('/api/strategist', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(intake),
+        body: JSON.stringify(profile),
       })
 
       if (!res.ok) {
@@ -74,55 +78,32 @@ export default function NewAnalysisPage() {
 
       const data = await res.json().catch(()=>({}))
 
-      // Compute snapshot values
-      const year = new Date().getFullYear()
-      const d = intake.deductions as any
+      // Compute snapshot values from simple W-2 baseline to show “see value”
+      const year = profile.taxYear
+      const d = profile.deductions as any
       const salt = computeSaltDeduction({
         taxYear: year,
-        filingStatus: intake.filingStatus as any,
+        filingStatus: profile.filingStatus as any,
         useSalesTaxInsteadOfIncome: Boolean(d?.useSalesTaxInsteadOfIncome),
-        stateIncomeTaxPaid: Number(d?.stateIncomeTaxPaid || 0),
+        stateIncomeTaxPaid: Number(d?.stateIncomeTaxPaid || d?.stateTax || 0),
         stateSalesTaxPaid: Number(d?.stateSalesTaxPaid || 0),
-        realEstatePropertyTax: Number(d?.realEstatePropertyTax || 0),
+        realEstatePropertyTax: Number(d?.realEstatePropertyTax || d?.propertyTax || 0),
         personalPropertyTax: Number(d?.personalPropertyTax || 0),
         pteTaxPaid: 0,
       })
-      const itemized = Number(salt.allowed || 0) + Number(d?.charityCash || 0) + Number(d?.charityNonCash || 0) + Number(d?.mortgageInterestPrimary || 0)
-      const std = stdDeduction(intake.filingStatus as any, undefined)
+      const itemized = Number(salt.allowed || 0) + Number(d?.charityCash || 0) + Number(d?.charityNonCash || 0) + Number(d?.mortgageInterestPrimary || profile.deductions?.mortgageInterest || 0)
+      const std = stdDeduction(profile.filingStatus as any, undefined)
       const allowItemize = itemized > std
 
-      const agi = Number(intake.income.w2Wages || 0)
+      const agi = Number(profile.income?.w2 || 0)
       const taxable = Math.max(0, agi - (allowItemize ? itemized : std))
-      const estTax = calcBracketTax(taxable, filingMap(intake.filingStatus as any))
+      const estTax = calcBracketTax(taxable, filingMap(profile.filingStatus as any))
       const effRate = agi > 0 ? estTax / agi : 0
 
-      const ranked: UiStrategy[] = Array.isArray(data?.strategies) ? data.strategies.map((s: any) => {
-        const savings = (s?.savings && typeof s.savings.amount === 'number') ? Number(s.savings.amount) : 0
-        const steps = Array.isArray(s?.actions) ? s.actions.map((a: any) => a?.label || '').filter(Boolean) : []
-        const warnings = [
-          ...(Array.isArray(s?.guardrails) ? s.guardrails : []),
-          ...(Array.isArray(s?.nuance) ? s.nuance : []),
-        ].filter(Boolean)
-        return {
-          code: String(s?.code || ''),
-          name: String(s?.title || s?.name || 'Strategy'),
-          why: Array.isArray(s?.why) ? String(s.why[0] || s?.plain || '') : String(s?.plain || ''),
-          savingsEst: savings,
-          risk: 'med',
-          steps,
-          warnings,
-        }
-      }) : []
-
-      ranked.sort((a, b) => (b.savingsEst || 0) - (a.savingsEst || 0))
-
-      const json: StrategistResult = {
-        snapshot: { estTax, effRate, allowItemize },
-        ranked,
-        notes: [],
-      }
-
-      setResult(json as StrategistResult)
+      // Build a lightweight result view using API ranked results
+      const ranked = Array.isArray(data?.ranked) ? data.ranked.slice(0, 5) : []
+      const json: any = { snapshot: { estTax, effRate, allowItemize }, ranked }
+      setResult(json as any)
     } catch (e: any) {
       setError(e?.message || 'Failed to run analysis')
     } finally {
@@ -149,31 +130,41 @@ export default function NewAnalysisPage() {
             <div className="text-sm text-gray-500">Estimated Tax</div>
             <div className="text-2xl font-semibold">${result.snapshot.estTax.toLocaleString()}</div>
             <div className="text-sm text-gray-500">Effective Rate</div>
-            <div className="text-2xl font-semibold">{result.snapshot.effRate.toFixed(1)}%</div>
+            <div className="text-2xl font-semibold">{(result.snapshot.effRate * 100).toFixed(1)}%</div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            {result.ranked.map((s) => (
-              <div key={s.code} className="rounded-lg border p-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium">{s.name}</h4>
-                  <span className="text-green-600 font-semibold">${s.savingsEst.toLocaleString()}</span>
-                </div>
-                <p className="mt-2 text-sm text-gray-600">{s.why}</p>
-                <ol className="mt-3 list-decimal pl-5 text-sm space-y-1">
-                  {s.steps.map((t,i)=><li key={i}>{t}</li>)}
-                </ol>
-                {!!s.warnings?.length && (
-                  <div className="mt-3 rounded bg-yellow-50 border border-yellow-200 p-2 text-xs text-yellow-800">
-                    <b>Warnings:</b> {s.warnings.join(' • ')}
+            {result.ranked.map((r: any) => {
+              const eligible = Boolean(r.eligible)
+              const firstReason = Array.isArray(r.reasons) && r.reasons.length > 0 ? r.reasons[0] : ''
+              const warn = Array.isArray(r.warnings) ? r.warnings.slice(0, 3) : []
+              return (
+                <div key={r.code} className="rounded-lg border p-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">{r.title}</h4>
+                    <span className={eligible ? 'text-green-600' : 'text-gray-500'}>
+                      {eligible ? 'Eligible' : 'Deferred'}
+                    </span>
                   </div>
-                )}
-              </div>
-            ))}
+                  <div className="mt-2 text-sm">
+                    <b>Est. Savings:</b> ${Number(r.savingsEst || 0).toLocaleString()}
+                  </div>
+                  {!eligible && firstReason && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      <b>Why deferred:</b> {firstReason}
+                    </div>
+                  )}
+                  {!!warn.length && (
+                    <ul className="mt-3 text-xs text-yellow-800 bg-yellow-50 border border-yellow-200 rounded p-2 list-disc pl-5">
+                      {warn.map((w: string, i: number) => (<li key={i}>{w}</li>))}
+                    </ul>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
     </main>
   )
 }
-

@@ -1,122 +1,110 @@
-import { NextResponse } from 'next/server'
-import OpenAI from 'openai'
-import { z } from 'zod'
-import { assertEnv, env } from '@/lib/config/env'
-import { evaluateDebt, gates as buildGates, rankStrategies } from '@/lib/strategy/rules'
-import { buildFiveYear } from '@/lib/plan/fiveyear'
-import { systemPrompt, userPrompt, jsonSchemaHint } from '@/lib/strategy/prompt'
+import { NextResponse } from 'next/server';
+import { loadRules } from '@/lib/strategist/rules';
+import { checkEligibility, type UserProfile } from '@/lib/strategist/gates';
+import { estimate } from '@/lib/strategist/savings';
+import { buildRoadmap } from '@/lib/strategist/roadmap';
+import { attachWarnings } from '@/lib/strategist/warnings';
+import { rankScore } from '@/lib/strategist/score';
 
-export const runtime = 'nodejs'
-export const dynamic = 'force-dynamic'
+function toNumber(x: any, d = 0): number {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : d;
+}
 
-// ----- Zod schema approximating AssessmentInput -----
-const FilingStatus = z.enum(['Single', 'MFJ', 'MFS', 'HOH', 'QW'])
-const EntityType = z.enum(['None', 'SoleProp', 'LLC', 'S-Corp', 'C-Corp', 'Partnership'])
-const DebtType = z.enum(['credit_card','student_loan','auto','mortgage','personal','heloc','medical','other'])
+function normalizeProfile(payload: any): UserProfile {
+  const intake = payload?.intake ?? payload ?? {};
 
-const DebtItem = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  kind: DebtType,
-  balance: z.number().nonnegative(),
-  aprPercent: z.number().nonnegative(),
-  minPayment: z.number().nonnegative(),
-  secured: z.boolean().optional(),
-  fixedRate: z.boolean().optional(),
-  note: z.string().optional(),
-})
+  // Derive a few hints when possible; provide safe fallbacks everywhere
+  const se = intake?.selfEmployment || {};
+  const deductions = intake?.deductions || {};
+  const incomeBlock = intake?.income || {};
+  const liquidity = intake?.liquidity || {};
+  const housing = intake?.housing || {};
 
-const AssessmentInputSchema = z.object({
-  filingStatus: FilingStatus,
-  state: z.string().min(2),
-  dependents: z.number().int().nonnegative(),
-  income: z.object({
-    w2Wages: z.number().nonnegative().default(0),
-    w2Withholding: z.number().nonnegative().optional(),
-    seNetProfit: z.number().nonnegative().optional(),
-    w2FromEntity: z.number().nonnegative().optional(),
-    isQBIEligible: z.boolean().optional(),
-    entityType: EntityType.optional(),
-    interestIncome: z.number().nonnegative().optional(),
-    dividendsOrdinary: z.number().nonnegative().optional(),
-    dividendsQualified: z.number().nonnegative().optional(),
-    capGainsShort: z.number().nonnegative().optional(),
-    capGainsLong: z.number().nonnegative().optional(),
-    rsuTaxableComp: z.number().nonnegative().optional(),
-    otherIncome: z.number().nonnegative().optional(),
-    rentals: z.array(z.object({
-      type: z.enum(['LTR', 'STR']),
-      netIncome: z.number(),
-      state: z.string().optional(),
-      materiallyParticipates: z.boolean().optional(),
-    })).optional(),
-  }),
-  deductions: z.object({
-    stateIncomeTaxPaid: z.number().nonnegative().optional(),
-    stateSalesTaxPaid: z.number().nonnegative().optional(),
-    realEstatePropertyTax: z.number().nonnegative().optional(),
-    personalPropertyTax: z.number().nonnegative().optional(),
-    charityCash: z.number().nonnegative().optional(),
-    charityNonCash: z.number().nonnegative().optional(),
-    mortgageInterestPrimary: z.number().nonnegative().optional(),
-    medicalExpenses: z.number().nonnegative().optional(),
-    useSalesTaxInsteadOfIncome: z.boolean().optional(),
-  }).optional(),
-  cashflow: z.object({
-    emergencyFundMonths: z.number().nonnegative(),
-    monthlySurplus: z.number(),
-  }),
-  preferences: z.object({
-    givingAnnual: z.number().nonnegative().optional(),
-    wantsSTR: z.boolean().optional(),
-    willingSelfManageSTR: z.boolean().optional(),
-    primaryGoal: z.string().optional(),
-    riskTolerance: z.enum(['low','medium','high']).optional(),
-  }).optional(),
-  debts: z.array(DebtItem).optional(),
-})
+  const profile: UserProfile = {
+    cashOnHand: toNumber(liquidity?.cashOnHand ?? intake?.cashOnHand ?? intake?.cash, 0),
+    monthlySurplus: Math.max(1, toNumber(liquidity?.monthlySurplus ?? intake?.monthlySurplus, 1000)),
+    debts: Array.isArray(intake?.debts)
+      ? intake.debts.map((d: any) => ({
+          name: String(d?.name || d?.type || ''),
+          minPayment: toNumber(d?.minPayment ?? d?.minPmt, 0),
+          apr: toNumber(d?.apr),
+        }))
+      : [],
+    income: { side: toNumber(se?.seNetProfit ?? incomeBlock?.side ?? intake?.income?.side, 0) },
+    housing: { ownHome: Boolean(housing?.ownHome ?? deductions?.mortgageInterestPrimary ?? deductions?.realEstatePropertyTax ?? deductions?.propertyTax) },
+    goals: Array.isArray(payload?.goals) ? payload.goals : [],
+    retirement: {
+      has401k: Boolean(intake?.retirement?.has401k),
+      planAllowsAfterTax: Boolean(intake?.retirement?.planAllowsAfterTax),
+      hasNQDC: Boolean(intake?.retirement?.hasNQDC),
+    },
+  } as any;
 
-assertEnv(['OPENAI_API_KEY'])
-const openai = new OpenAI({ apiKey: env.server.OPENAI_API_KEY! })
+  // Attach simple taxes info for SALT warning heuristic
+  (profile as any).taxes = {
+    stateIncomeTaxPaid: toNumber(deductions?.stateIncomeTaxPaid ?? deductions?.stateTax, 0),
+    realEstatePropertyTax: toNumber(deductions?.realEstatePropertyTax ?? deductions?.propertyTax, 0),
+  };
+
+  return profile;
+}
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => ({}))
-    const parsed = AssessmentInputSchema.safeParse(body?.intake ?? body)
-    if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid input', issues: parsed.error.flatten() }, { status: 400 })
-    }
-    const input = parsed.data
+    const body = await req.json().catch(() => ({}));
+    const profile = normalizeProfile(body);
 
-    // Precompute helpers
-    const debtPlan = evaluateDebt(input)
-    const gateVals = buildGates(input)
-    const fiveYear = buildFiveYear(input)
+    const rules = await loadRules();
 
-    const precomputed = { debtPlan, gates: gateVals, fiveYear }
+    const results = rules.map((rule) => {
+      const elig = checkEligibility(profile, rule);
 
-    // Call OpenAI for structured JSON response
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      temperature: 0.2,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt(input as any, precomputed) },
-        { role: 'user', content: jsonSchemaHint },
-      ],
-    })
+      const savingsEst = elig.ok ? estimate(rule.estFormula, profile) : 0;
+      const roadmap = buildRoadmap(rule);
 
-    const content = completion.choices?.[0]?.message?.content || '{}'
-    const json = JSON.parse(content)
+      const base = attachWarnings(profile, rule, { warnings: [] });
+      const warnings = base.warnings ?? [];
 
-    if (Array.isArray(json?.strategies)) {
-      json.strategies = rankStrategies(json.strategies)
-    }
+      const score = rankScore(profile, { savingsEst, eligible: elig.ok }, rule);
 
-    return NextResponse.json(json)
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'Bad request' }, { status: 400 })
+      return {
+        code: rule.code,
+        title: rule.title,
+        category: rule.category,
+        eligible: elig.ok,
+        reasons: elig.reasons,
+        savingsEst,
+        score,
+        roadmap,
+        warnings,
+      };
+    });
+
+    // Sort by score desc, then savingsEst desc
+    results.sort((a, b) => (b.score - a.score) || (b.savingsEst - a.savingsEst));
+
+    // Debug log top results (limit 2)
+    console.log('[strategist] top results', results.slice(0, 2).map(r => ({ code: r.code, savings: r.savingsEst, score: r.score, eligible: r.eligible })));
+
+    // Also map a UI-compatible array for the current client (back-compat)
+    const strategies = results.map((r) => ({
+      code: r.code,
+      title: r.title,
+      category: r.category,
+      savings: { amount: r.savingsEst },
+      guardrails: r.warnings,
+      nuance: r.reasons,
+      actions: Array.isArray(r?.roadmap?.next12mo)
+        ? r.roadmap.next12mo.map((s: any) => ({ label: `${s.month}: ${s.action}` }))
+        : [],
+      why: r.reasons,
+      plain: r.title,
+    }));
+
+    return NextResponse.json({ snapshot: {}, ranked: results, strategies }, { status: 200 });
+  } catch (err: any) {
+    console.error('[strategist] error', err);
+    return new NextResponse(err?.message || 'Failed', { status: 500 });
   }
 }
-
