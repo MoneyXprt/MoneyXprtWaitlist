@@ -30,3 +30,4 @@ vite.config.ts.*
 .env
 .env.local
 .env.*.local
+tsconfig.tsbuildinfo
