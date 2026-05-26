@@ -1,51 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { MLS_TEAMS, MLS_PLAYERS } from '@/lib/mls/data';
-import { calculateTeamFinancials, calculatePlayerValueScore, getBestValuePlayers, getOverpaidPlayers } from '@/lib/mls/analytics';
+import {
+  calculateTeamFinancials,
+  getBestValuePlayers,
+  getOverpaidPlayers,
+} from '@/lib/mls/analytics';
+import { TeamFinancials } from '@/lib/mls/types';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 type FocusArea = 'salary' | 'performance' | 'lineup' | 'efficiency';
 type Platform = 'twitter' | 'linkedin' | 'instagram';
 
+function formatCurrency(n: number): string {
+  return `$${(n / 1_000_000).toFixed(2)}M`;
+}
+
 function buildPrompt(
   focusArea: FocusArea,
   platform: Platform,
   teamName: string,
-  financials: ReturnType<typeof calculateTeamFinancials>,
-  players: ReturnType<typeof MLS_PLAYERS.filter>,
-  bestValue: ReturnType<typeof getBestValuePlayers>,
-  overpaid: ReturnType<typeof getOverpaidPlayers>
+  financials: TeamFinancials,
+  bestValueNames: string[],
+  overpaidNames: string[]
 ): string {
-  const formatCurrency = (n: number) =>
-    `$${(n / 1_000_000).toFixed(2)}M`;
-
   const platformInstructions: Record<Platform, string> = {
-    twitter: 'Write a punchy Twitter/X thread or single tweet (max 280 chars). Use short, impactful sentences. Emojis OK but sparingly.',
-    linkedin: 'Write a professional LinkedIn post (3-5 paragraphs). Use data storytelling, end with a strategic takeaway. Professional tone.',
-    instagram: 'Write an Instagram caption (2-3 short paragraphs). Hook with a bold statement. Use relevant hashtags at the end.',
+    twitter:
+      'Write a punchy Twitter/X thread or single tweet (max 280 chars). Use short, impactful sentences. Emojis OK but sparingly.',
+    linkedin:
+      'Write a professional LinkedIn post (3-5 paragraphs). Use data storytelling, end with a strategic takeaway. Professional tone.',
+    instagram:
+      'Write an Instagram caption (2-3 short paragraphs). Hook with a bold statement. Use relevant hashtags at the end.',
   };
 
   const focusPrompts: Record<FocusArea, string> = {
     salary: `Focus on payroll structure and salary allocation. Key figures:
 - Total Payroll: ${formatCurrency(financials.totalPayroll)}
-- DP Count: ${financials.dpCount} DPs costing ${formatCurrency(financials.dpCost)} combined (but only ${formatCurrency(financials.dpCount * 683_750)} hits the cap)
+- DP Count: ${financials.dpCount} DPs costing ${formatCurrency(financials.dpCost)} combined (only ${formatCurrency(financials.dpCount * 683_750)} hits the cap)
 - TAM Players: ${financials.tamPlayerCount} players, ${formatCurrency(financials.tamCost)} total
 - Payroll as % of revenue: ${financials.payrollAsRevenuePct.toFixed(1)}%
-- Payroll Rank in league: #${financials.payrollRank}`,
+- Payroll Rank in MLS: #${financials.payrollRank}`,
 
     performance: `Focus on performance vs. investment ROI. Key metrics:
 - Cost per Goal: ${financials.costPerGoal > 0 ? formatCurrency(financials.costPerGoal) : 'N/A'}
 - Cost per Standing Point: ${formatCurrency(financials.costPerPoint)}
 - Value Rating (G+A per $M): ${financials.valueRating.toFixed(2)}
-- Top performers: ${bestValue.slice(0, 3).map(p => `${p.name} (${p.stats.goals}G/${p.stats.assists}A, $${(p.budgetCharge/1000).toFixed(0)}K cap charge)`).join(', ')}`,
+- Top value players: ${bestValueNames.slice(0, 3).join(', ')}`,
 
     lineup: `Focus on lineup optimization and CFO perspective on the optimal 11.
-- Best value starters: ${bestValue.slice(0, 5).map(p => `${p.name} ($${(p.guaranteedComp/1000).toFixed(0)}K actual salary, ${p.stats.goals}G/${p.stats.assists}A)`).join(', ')}
-- Value Rating: ${financials.valueRating.toFixed(2)} G+A per $M spent`,
+- Best value starters: ${bestValueNames.slice(0, 5).join(', ')}
+- Value Rating: ${financials.valueRating.toFixed(2)} G+A per $M spent
+- Total Payroll: ${formatCurrency(financials.totalPayroll)}`,
 
     efficiency: `Focus on capital allocation efficiency. Key metrics:
-- Overpaid players: ${overpaid.slice(0, 2).map(p => `${p.player.name} (overpay est. ${formatCurrency(p.overpayCost)})`).join(', ') || 'None flagged'}
+- Overpaid players (est.): ${overpaidNames.slice(0, 2).join(', ') || 'None flagged'}
 - Value Rating: ${financials.valueRating.toFixed(2)} G+A per $M
 - Senior Budget Used: ${formatCurrency(financials.seniorBudgetUsed)} of ${formatCurrency(financials.seniorBudgetMax)} max
 - Cost per point: ${formatCurrency(financials.costPerPoint)}`,
@@ -83,7 +92,22 @@ export async function POST(request: NextRequest) {
     const bestValue = getBestValuePlayers(players, 5);
     const overpaid = getOverpaidPlayers(players);
 
-    const userPrompt = buildPrompt(focusArea, platform, team.name, financials, players, bestValue, overpaid);
+    const bestValueNames = bestValue.map(
+      p => `${p.name} (${p.stats.goals}G/${p.stats.assists}A, $${(p.budgetCharge / 1000).toFixed(0)}K cap)`
+    );
+    const overpaidNames = overpaid.map(
+      ({ player, overpayCost }) =>
+        `${player.name} (est. overpay ${formatCurrency(overpayCost)})`
+    );
+
+    const userPrompt = buildPrompt(
+      focusArea,
+      platform,
+      team.name,
+      financials,
+      bestValueNames,
+      overpaidNames
+    );
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -93,38 +117,28 @@ export async function POST(request: NextRequest) {
           content:
             'You are the CFO of an MLS team analyzing financial performance. Write sharply analytical social media content using specific dollar figures, ratios, and metrics. Be provocative but data-driven. Never use made-up data. Cite the exact figures provided to you.',
         },
-        {
-          role: 'user',
-          content: userPrompt,
-        },
+        { role: 'user', content: userPrompt },
       ],
       max_tokens: 600,
       temperature: 0.7,
     });
 
     const content = response.choices[0]?.message?.content || '';
-
-    // Extract hashtags from content or generate defaults
     const hashtagMatches = content.match(/#\w+/g) || [];
-    const hashtags = hashtagMatches.length > 0
-      ? hashtagMatches
-      : ['#MLS', '#MLSSoccer', `#${team.abbreviation}`, '#SportsBusiness', '#SportsFinance'];
+    const hashtags =
+      hashtagMatches.length > 0
+        ? hashtagMatches
+        : ['#MLS', '#MLSSoccer', `#${team.abbreviation}`, '#SportsBusiness', '#SportsFinance'];
 
-    // Extract key metrics cited
     const metrics = [
-      `Total Payroll: $${(financials.totalPayroll / 1_000_000).toFixed(2)}M`,
-      `Cost/Goal: $${(financials.costPerGoal / 1_000).toFixed(0)}K`,
+      `Total Payroll: ${formatCurrency(financials.totalPayroll)}`,
+      `Cost/Goal: ${financials.costPerGoal > 0 ? formatCurrency(financials.costPerGoal) : 'N/A'}`,
       `Value Rating: ${financials.valueRating.toFixed(2)} G+A per $M`,
       `Payroll Rank: #${financials.payrollRank} in MLS`,
     ];
 
     return NextResponse.json({
-      post: {
-        platform,
-        content,
-        hashtags,
-        metrics,
-      },
+      post: { platform, content, hashtags, metrics },
       financials,
     });
   } catch (error: any) {

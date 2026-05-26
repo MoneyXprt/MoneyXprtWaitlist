@@ -60,7 +60,7 @@ export interface TeamFinancials {
   tamPlayerCount: number;
   tamCost: number;
   seniorBudgetUsed: number;
-  seniorBudgetMax: number; // $5,255,000 in 2024
+  seniorBudgetMax: number; // $5,255,000 in 2025
   payrollRank: number; // 1 = highest payroll in league
   costPerGoal: number;
   costPerPoint: number;
@@ -76,4 +76,57 @@ export interface SocialPost {
   content: string;
   hashtags: string[];
   metrics: string[]; // key metrics cited
+}
+
+// ─── Live ESPN + MLSPA enriched types ────────────────────────────────────────
+
+export interface ESPNPlayerStats {
+  goals: number;
+  assists: number;
+  gamesPlayed: number;
+  minutesPlayed: number;
+  shots: number;
+  shotsOnTarget: number;
+  passAccuracy: number;
+}
+
+export interface EnrichedPlayer {
+  /** ESPN athlete ID */
+  espnId: string;
+  name: string;
+  /** Position abbreviation (GK, CB, LB, etc.) */
+  position: string;
+  /** Internal team slug e.g. "inter-miami" */
+  teamId: string;
+  teamName: string;
+  age?: number;
+  nationality?: string;
+  /** From MLSPA disclosure — 0 if not in salary dataset */
+  guaranteedComp: number;
+  /** MLS cap charge — 0 if not in salary dataset */
+  budgetCharge: number;
+  isDesignatedPlayer: boolean;
+  isTAM: boolean;
+  /** Live stats from ESPN roster endpoint (may be sparse) */
+  stats: ESPNPlayerStats;
+  /** Composite 0–100 value score */
+  valueScore: number;
+  /** guaranteedComp / (goals + assists), or 0 if no contributions */
+  costPerGoalContribution: number;
+}
+
+export interface LiveTeamData {
+  /** ESPN team ID string */
+  espnId: string;
+  name: string;
+  abbreviation: string;
+  wins: number;
+  losses: number;
+  draws: number;
+  points: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  /** Standing position in conference */
+  position: number;
+  conference: string;
 }

@@ -1,7 +1,6 @@
 import { MLSPlayer, MLSTeam, TeamFinancials } from './types';
 
 const SENIOR_BUDGET_MAX = 5_255_000; // 2024 MLS Senior Budget
-const DP_CAP_CHARGE = 683_750; // 2024 DP cap charge
 
 // ─── Team Financials ────────────────────────────────────────────────────────
 
@@ -21,7 +20,6 @@ export function calculateTeamFinancials(
   const tamPlayerCount = tamPlayers.length;
   const tamCost = tamPlayers.reduce((sum, p) => sum + p.guaranteedComp, 0);
 
-  // Senior budget: non-DP, non-TAM players above $65k threshold
   const seniorBudgetUsed = players
     .filter(p => !p.isDesignatedPlayer && !p.isTAM)
     .reduce((sum, p) => sum + Math.min(p.budgetCharge, SENIOR_BUDGET_MAX), 0);
@@ -32,10 +30,11 @@ export function calculateTeamFinancials(
   const costPerGoal = totalGoals > 0 ? totalPayroll / totalGoals : 0;
   const costPerPoint = team.standingsPoints > 0 ? totalPayroll / team.standingsPoints : 0;
   const costPerAssist = totalAssists > 0 ? totalPayroll / totalAssists : 0;
-  const payrollAsRevenuePct = team.estimatedRevenue > 0 ? (totalPayroll / team.estimatedRevenue) * 100 : 0;
-  const valueRating = totalPayroll > 0 ? ((totalGoals + totalAssists) / (totalPayroll / 1_000_000)) : 0;
+  const payrollAsRevenuePct =
+    team.estimatedRevenue > 0 ? (totalPayroll / team.estimatedRevenue) * 100 : 0;
+  const valueRating =
+    totalPayroll > 0 ? (totalGoals + totalAssists) / (totalPayroll / 1_000_000) : 0;
 
-  // Payroll rank among all teams (1 = highest)
   let payrollRank = 1;
   if (allTeams && allPlayers) {
     const teamPayrolls = allTeams.map(t => ({
@@ -71,26 +70,13 @@ export function calculateTeamFinancials(
 export function calculatePlayerValueScore(player: MLSPlayer): number {
   const { stats, budgetCharge } = player;
   const chargeInM = budgetCharge / 1_000_000;
-
-  // Avoid division by zero
   if (chargeInM === 0) return 0;
 
-  // Goal contribution (25 pts max)
-  const goalsPerM = stats.goals / chargeInM;
-  const goalScore = Math.min(goalsPerM * 5, 25);
-
-  // Assist contribution (20 pts max)
-  const assistsPerM = stats.assists / chargeInM;
-  const assistScore = Math.min(assistsPerM * 4, 20);
-
-  // Defensive contribution – tackles + interceptions per $M (15 pts max)
-  const defContrib = (stats.tackles + stats.interceptions) / chargeInM;
-  const defScore = Math.min(defContrib * 0.3, 15);
-
-  // Salary efficiency – (goals + assists + keyPasses*0.1) / budgetCharge (40 pts max)
+  const goalScore = Math.min((stats.goals / chargeInM) * 5, 25);
+  const assistScore = Math.min((stats.assists / chargeInM) * 4, 20);
+  const defScore = Math.min(((stats.tackles + stats.interceptions) / chargeInM) * 0.3, 15);
   const composite = stats.goals * 3 + stats.assists * 2 + stats.keyPasses * 0.5;
-  const efficiencyPerM = composite / chargeInM;
-  const effScore = Math.min(efficiencyPerM * 2, 40);
+  const effScore = Math.min((composite / chargeInM) * 2, 40);
 
   return Math.round(goalScore + assistScore + defScore + effScore);
 }
@@ -98,8 +84,8 @@ export function calculatePlayerValueScore(player: MLSPlayer): number {
 // ─── Best Value Players ──────────────────────────────────────────────────────
 
 export function getBestValuePlayers(players: MLSPlayer[], topN = 10): MLSPlayer[] {
-  const salaryPlayers = players.filter(p => p.budgetCharge > 0);
-  return salaryPlayers
+  return players
+    .filter(p => p.budgetCharge > 0)
     .map(p => ({
       player: p,
       valueRatio: (p.stats.goals + p.stats.assists) / (p.guaranteedComp / 1_000_000),
@@ -109,7 +95,7 @@ export function getBestValuePlayers(players: MLSPlayer[], topN = 10): MLSPlayer[
     .map(x => x.player);
 }
 
-// ─── Optimal Lineup ──────────────────────────────────────────────────────────
+// ─── Optimal Lineup (4-3-3) ──────────────────────────────────────────────────
 
 type FormationSlot = {
   key: string;
@@ -117,17 +103,17 @@ type FormationSlot = {
 };
 
 const FORMATION_433: FormationSlot[] = [
-  { key: 'GK', positions: ['GK'] },
-  { key: 'RB', positions: ['RB'] },
+  { key: 'GK',  positions: ['GK'] },
+  { key: 'RB',  positions: ['RB'] },
   { key: 'CB1', positions: ['CB'] },
   { key: 'CB2', positions: ['CB'] },
-  { key: 'LB', positions: ['LB'] },
+  { key: 'LB',  positions: ['LB'] },
   { key: 'CDM', positions: ['CDM'] },
   { key: 'CM1', positions: ['CM'] },
   { key: 'CM2', positions: ['CM', 'CAM'] },
-  { key: 'RW', positions: ['RW', 'RM'] },
-  { key: 'ST', positions: ['ST'] },
-  { key: 'LW', positions: ['LW', 'LM'] },
+  { key: 'RW',  positions: ['RW', 'RM'] },
+  { key: 'ST',  positions: ['ST'] },
+  { key: 'LW',  positions: ['LW', 'LM'] },
 ];
 
 function playerEfficiencyScore(player: MLSPlayer): number {
@@ -141,10 +127,7 @@ function playerEfficiencyScore(player: MLSPlayer): number {
   return composite / chargeInM;
 }
 
-export function getOptimalLineup(
-  players: MLSPlayer[],
-  _formation = '4-3-3'
-): MLSPlayer[] {
+export function getOptimalLineup(players: MLSPlayer[], _formation = '4-3-3'): MLSPlayer[] {
   const selected: MLSPlayer[] = [];
   const usedIds = new Set<string>();
 
@@ -167,20 +150,21 @@ export function getOptimalLineup(
 export function getOverpaidPlayers(
   players: MLSPlayer[]
 ): { player: MLSPlayer; overpayCost: number }[] {
-  const scored = players
-    .filter(p => p.budgetCharge > 0 && (p.stats.goals + p.stats.assists) >= 0)
+  return players
+    .filter(p => p.budgetCharge > 0)
     .map(p => {
       const valueScore = calculatePlayerValueScore(p);
-      const chargeInM = p.budgetCharge / 1_000_000;
-      const expectedSalaryForPerformance =
-        (p.stats.goals * 200_000 + p.stats.assists * 150_000 + p.stats.keyPasses * 5_000 + p.stats.tackles * 3_000);
-      const overpayCost = Math.max(0, p.guaranteedComp - expectedSalaryForPerformance);
+      const expectedSalary =
+        p.stats.goals * 200_000 +
+        p.stats.assists * 150_000 +
+        p.stats.keyPasses * 5_000 +
+        p.stats.tackles * 3_000;
+      const overpayCost = Math.max(0, p.guaranteedComp - expectedSalary);
       return { player: p, valueScore, overpayCost };
     })
     .filter(x => x.valueScore < 50 && x.overpayCost > 500_000)
-    .sort((a, b) => b.overpayCost - a.overpayCost);
-
-  return scored.map(x => ({ player: x.player, overpayCost: x.overpayCost }));
+    .sort((a, b) => b.overpayCost - a.overpayCost)
+    .map(x => ({ player: x.player, overpayCost: x.overpayCost }));
 }
 
 // ─── Underpaid Gems ──────────────────────────────────────────────────────────
@@ -189,12 +173,7 @@ export function getUnderpaidGems(players: MLSPlayer[]): MLSPlayer[] {
   return players
     .filter(p => {
       const score = calculatePlayerValueScore(p);
-      const ga = p.stats.goals + p.stats.assists;
-      return (
-        score >= 70 &&
-        p.guaranteedComp < 1_000_000 &&
-        ga >= 5
-      );
+      return score >= 70 && p.guaranteedComp < 1_000_000 && p.stats.goals + p.stats.assists >= 5;
     })
     .sort((a, b) => calculatePlayerValueScore(b) - calculatePlayerValueScore(a));
 }
