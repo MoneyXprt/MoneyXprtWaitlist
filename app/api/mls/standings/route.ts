@@ -11,19 +11,6 @@ function espnIdToSlug(espnId: string): string {
   return ESPN_ID_TO_SLUG[espnId] ?? espnId;
 }
 
-/** Estimate team revenue by slug — reasonable 2025 approximations */
-const TEAM_REVENUE: Record<string, number> = {
-  'inter-miami': 95_000_000,
-  'la-galaxy': 72_000_000,
-  lafc: 78_000_000,
-  'seattle-sounders': 65_000_000,
-  'atlanta-united': 68_000_000,
-  'portland-timbers': 55_000_000,
-  'fc-cincinnati': 58_000_000,
-  'columbus-crew': 52_000_000,
-  'new-england-revolution': 60_000_000,
-  nycfc: 70_000_000,
-};
 
 export async function GET() {
   try {

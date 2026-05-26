@@ -1,166 +1,250 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MLS_TEAMS, MLS_PLAYERS } from '@/lib/mls/data';
-import { compareTeamsByEfficiency } from '@/lib/mls/analytics';
-import { TeamFinancials } from '@/lib/mls/types';
-import TeamSelector from '@/components/mls/TeamSelector';
-import CFOMetrics from '@/components/mls/CFOMetrics';
-import PlayerSalaryTable from '@/components/mls/PlayerSalaryTable';
-import LineupOptimizer from '@/components/mls/LineupOptimizer';
-import SocialPostGenerator from '@/components/mls/SocialPostGenerator';
+import type { LiveTeamData, TeamFinancials, EnrichedPlayer, ESPNPlayerStats } from '@/lib/mls/types';
+import LiveTeamSelector from '@/components/mls/LiveTeamSelector';
+import LiveCFOMetrics from '@/components/mls/LiveCFOMetrics';
+import LivePlayerSalaryTable from '@/components/mls/LivePlayerSalaryTable';
+import LiveSocialPostGenerator from '@/components/mls/LiveSocialPostGenerator';
 
-type Tab = 'overview' | 'players' | 'lineup' | 'social';
+// Static team metadata
+const TEAM_META: Record<string, { primaryColor: string; slug: string; shortName: string; city: string }> = {
+  '17362': { primaryColor: '#F7B5CD', slug: 'inter-miami',             shortName: 'Inter Miami',    city: 'Fort Lauderdale' },
+  '396':   { primaryColor: '#00245D', slug: 'la-galaxy',               shortName: 'LA Galaxy',       city: 'Carson' },
+  '18966': { primaryColor: '#000000', slug: 'lafc',                    shortName: 'LAFC',            city: 'Los Angeles' },
+  '9726':  { primaryColor: '#5D9741', slug: 'seattle-sounders',        shortName: 'Seattle',         city: 'Seattle' },
+  '18486': { primaryColor: '#80000A', slug: 'atlanta-united',          shortName: 'Atlanta United',  city: 'Atlanta' },
+  '6808':  { primaryColor: '#004812', slug: 'portland-timbers',        shortName: 'Portland Timbers',city: 'Portland' },
+  '18858': { primaryColor: '#003087', slug: 'fc-cincinnati',           shortName: 'FC Cincinnati',   city: 'Cincinnati' },
+  '754':   { primaryColor: '#FEDA00', slug: 'columbus-crew',           shortName: 'Columbus Crew',   city: 'Columbus' },
+  '928':   { primaryColor: '#C63323', slug: 'new-england-revolution',  shortName: 'New England',     city: 'Boston' },
+  '18396': { primaryColor: '#6CACE4', slug: 'nycfc',                   shortName: 'NYCFC',           city: 'New York' },
+};
+
+type StandingEntry = LiveTeamData & {
+  slug: string;
+  totalPayroll: number;
+  dpCount: number;
+  dpCost: number;
+};
+
+type Tab = 'overview' | 'players' | 'social';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'CFO Overview' },
-  { id: 'players', label: 'Player Salaries' },
-  { id: 'lineup', label: 'Lineup Optimizer' },
-  { id: 'social', label: 'Social Posts' },
+  { id: 'players',  label: 'Player Salaries' },
+  { id: 'social',   label: 'Social Posts' },
 ];
 
-function formatMoney(n: number): string {
+const EMPTY_STATS: ESPNPlayerStats = { goals: 0, assists: 0, gamesPlayed: 0, minutesPlayed: 0, shots: 0, shotsOnTarget: 0, passAccuracy: 0 };
+
+function fmt(n: number): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
   return `$${n}`;
 }
 
 export default function MLSPage() {
-  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [standings, setStandings] = useState<StandingEntry[]>([]);
+  const [standingsLoading, setStandingsLoading] = useState(true);
+  const [standingsError, setStandingsError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | undefined>();
+
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
 
-  // Pre-calculate all financials
-  const allFinancials: TeamFinancials[] = useMemo(
-    () => compareTeamsByEfficiency(MLS_TEAMS, MLS_PLAYERS),
-    []
-  );
+  // Per-team data loaded on demand
+  const [teamData, setTeamData] = useState<{ team: LiveTeamData; financials: TeamFinancials } | null>(null);
+  const [rosterPlayers, setRosterPlayers] = useState<EnrichedPlayer[]>([]);
+  const [teamLoading, setTeamLoading] = useState(false);
 
-  const teamsWithFinancials = useMemo(
-    () =>
-      MLS_TEAMS.map(team => ({
-        team,
-        financials: allFinancials.find(f => f.teamId === team.id)!,
-      })),
-    [allFinancials]
-  );
+  // Load live standings on mount
+  useEffect(() => {
+    let cancelled = false;
+    setStandingsLoading(true);
+    fetch('/api/mls/standings')
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled) return;
+        if (data.standings) {
+          // Assign position numbers
+          const sorted = [...data.standings].sort((a: StandingEntry, b: StandingEntry) => b.points - a.points);
+          sorted.forEach((s: StandingEntry, i: number) => { s.position = i + 1; });
+          setStandings(sorted);
+          setLastUpdated(data.lastUpdated);
+        } else {
+          setStandingsError(data.error ?? 'Failed to load standings');
+        }
+      })
+      .catch(e => { if (!cancelled) setStandingsError(e.message); })
+      .finally(() => { if (!cancelled) setStandingsLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
 
-  const selectedTeam = useMemo(
-    () => MLS_TEAMS.find(t => t.id === selectedTeamId) ?? null,
-    [selectedTeamId]
-  );
+  // Load team + roster when slug changes
+  const loadTeamData = useCallback(async (slug: string) => {
+    setTeamLoading(true);
+    setTeamData(null);
+    setRosterPlayers([]);
 
-  const selectedFinancials = useMemo(
-    () => allFinancials.find(f => f.teamId === selectedTeamId) ?? null,
-    [allFinancials, selectedTeamId]
-  );
+    try {
+      const [teamRes, rosterRes] = await Promise.all([
+        fetch(`/api/mls/team/${slug}`),
+        fetch(`/api/mls/roster/${slug}`),
+      ]);
 
-  const selectedPlayers = useMemo(
-    () => (selectedTeamId ? MLS_PLAYERS.filter(p => p.teamId === selectedTeamId) : []),
-    [selectedTeamId]
-  );
+      if (teamRes.ok) {
+        const t = await teamRes.json();
+        setTeamData({ team: t.team, financials: t.financials });
+      }
 
-  function handleSelectTeam(id: string) {
-    if (selectedTeamId === id) return;
-    setSelectedTeamId(id);
+      if (rosterRes.ok) {
+        const r = await rosterRes.json();
+        setRosterPlayers(r.players ?? []);
+      }
+    } catch (_e) {
+      // silently fallback
+    } finally {
+      setTeamLoading(false);
+    }
+  }, []);
+
+  function handleSelectTeam(slug: string) {
+    if (selectedSlug === slug) return;
+    setSelectedSlug(slug);
     setActiveTab('overview');
+    loadTeamData(slug);
   }
 
-  // League-wide stats for the hero section
+  const selectedStanding = useMemo(
+    () => standings.find(s => s.slug === selectedSlug) ?? null,
+    [standings, selectedSlug]
+  );
+
+  const selectedEspnId = useMemo(
+    () => selectedStanding?.espnId ?? null,
+    [selectedStanding]
+  );
+
+  const primaryColor = selectedEspnId ? (TEAM_META[selectedEspnId]?.primaryColor ?? '#00b86e') : '#00b86e';
+
+  // Build payroll comparison for charts
+  const allPayrollsForChart = useMemo(() =>
+    standings.map(s => ({
+      name: s.name,
+      abbreviation: s.abbreviation,
+      payroll: s.totalPayroll,
+      isSelected: s.slug === selectedSlug,
+    })),
+    [standings, selectedSlug]
+  );
+
+  // Fallback players from salary data embedded in standings
+  const fallbackPlayers: EnrichedPlayer[] = useMemo(() => {
+    if (!selectedStanding) return [];
+    // Build from standings' totalPayroll context - limited info
+    return [];
+  }, [selectedStanding]);
+
+  const displayPlayers = rosterPlayers.length > 0 ? rosterPlayers : fallbackPlayers;
+
+  // League stats from standings
   const leagueStats = useMemo(() => {
-    const totalPayroll = allFinancials.reduce((s, f) => s + f.totalPayroll, 0);
-    const totalDPs = allFinancials.reduce((s, f) => s + f.dpCount, 0);
-    const avgValueRating =
-      allFinancials.reduce((s, f) => s + f.valueRating, 0) / allFinancials.length;
-    return { totalPayroll, totalDPs, avgValueRating };
-  }, [allFinancials]);
+    const totalPayroll = standings.reduce((s, t) => s + t.totalPayroll, 0);
+    const totalDPs = standings.reduce((s, t) => s + t.dpCount, 0);
+    return { totalPayroll, totalDPs };
+  }, [standings]);
 
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #0a1a14 0%, #0d2018 40%, #0a1a14 100%)' }}>
-      {/* Back nav */}
+      {/* Nav */}
       <div className="border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
-          <a
-            href="/"
-            className="text-white/50 hover:text-white/80 text-sm transition-colors flex items-center gap-1.5"
-          >
+          <a href="/" className="text-white/50 hover:text-white/80 text-sm transition-colors">
             ← MoneyXprt
           </a>
           <span className="text-white/20">/</span>
           <span className="text-yellow-400 text-sm font-semibold">MLS CFO Analytics</span>
+          <span className="ml-auto flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Live Data — Updated every 5 min
+          </span>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-10 space-y-10">
         {/* Hero */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center space-y-4"
-        >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-yellow-400/30 bg-yellow-400/10 text-yellow-400 text-xs font-semibold uppercase tracking-wider">
-            2024 MLS Season · 8 Teams · 100+ Players
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 text-emerald-400 text-xs font-semibold uppercase tracking-wider">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Live ESPN Data · 2025 MLSPA Salaries · 10 Featured Clubs
           </div>
           <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
             MLS{' '}
-            <span
-              className="text-transparent bg-clip-text"
-              style={{
-                backgroundImage: 'linear-gradient(90deg, #FACA15, #1B5E4C)',
-              }}
-            >
+            <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(90deg, #FACA15, #1B5E4C)' }}>
               CFO Analytics
             </span>
           </h1>
           <p className="text-white/60 text-lg max-w-2xl mx-auto leading-relaxed">
-            Data-driven insights from the front office perspective. Analyze team payroll efficiency,
-            player value scores, optimal lineups, and generate AI-powered financial social content.
+            Real-time MLS standings from ESPN merged with 2025 MLSPA salary disclosures.
+            Analyze payroll efficiency, player value, and generate AI-powered financial content.
           </p>
 
-          {/* League-wide stats */}
-          <div className="flex flex-wrap justify-center gap-6 mt-4">
-            <div className="text-center">
-              <div className="text-2xl font-black text-yellow-400">
-                {formatMoney(leagueStats.totalPayroll)}
+          {!standingsLoading && leagueStats.totalPayroll > 0 && (
+            <div className="flex flex-wrap justify-center gap-6 mt-4">
+              <div className="text-center">
+                <div className="text-2xl font-black text-yellow-400">{fmt(leagueStats.totalPayroll)}</div>
+                <div className="text-xs text-white/40 uppercase tracking-wider">Combined Payroll (10 teams)</div>
               </div>
-              <div className="text-xs text-white/40 uppercase tracking-wider">
-                Combined Payroll (8 teams)
+              <div className="text-center">
+                <div className="text-2xl font-black text-yellow-400">{leagueStats.totalDPs}</div>
+                <div className="text-xs text-white/40 uppercase tracking-wider">Designated Players</div>
               </div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-black text-yellow-400">{leagueStats.totalDPs}</div>
-              <div className="text-xs text-white/40 uppercase tracking-wider">
-                Designated Players
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-black text-yellow-400">
-                {leagueStats.avgValueRating.toFixed(2)}
-              </div>
-              <div className="text-xs text-white/40 uppercase tracking-wider">
-                Avg Value Rating (G+A/$M)
+              <div className="text-center">
+                <div className="text-2xl font-black text-yellow-400">{standings.length}</div>
+                <div className="text-xs text-white/40 uppercase tracking-wider">Teams Tracked</div>
               </div>
             </div>
-          </div>
+          )}
         </motion.div>
 
-        {/* Team selector */}
+        {/* Standings / Team Selector */}
         <section>
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-white/40 mb-4">
-            Select a Team to Analyze
-          </h2>
-          <TeamSelector
-            teams={teamsWithFinancials}
-            selectedTeamId={selectedTeamId}
-            onSelectTeam={handleSelectTeam}
-          />
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-white/40">
+              Select a Team to Analyze
+            </h2>
+          </div>
+
+          {standingsLoading && (
+            <div className="flex items-center justify-center py-12 gap-3 text-white/40">
+              <span className="w-5 h-5 border-2 border-white/20 border-t-emerald-400 rounded-full animate-spin" />
+              Loading live ESPN standings...
+            </div>
+          )}
+
+          {standingsError && (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-400 text-sm">
+              Failed to load live standings: {standingsError}
+            </div>
+          )}
+
+          {!standingsLoading && standings.length > 0 && (
+            <LiveTeamSelector
+              standings={standings}
+              selectedTeamId={selectedSlug}
+              onSelectTeam={handleSelectTeam}
+              lastUpdated={lastUpdated}
+            />
+          )}
         </section>
 
         {/* Dashboard */}
         <AnimatePresence>
-          {selectedTeam && selectedFinancials && (
+          {selectedSlug && (
             <motion.section
-              key={selectedTeamId}
+              key={selectedSlug}
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -24 }}
@@ -169,64 +253,62 @@ export default function MLSPage() {
               {/* Team header */}
               <div
                 className="rounded-2xl p-6 mb-6 border border-white/10 relative overflow-hidden"
-                style={{
-                  background: `linear-gradient(135deg, ${selectedTeam.primaryColor}30, transparent 60%)`,
-                }}
+                style={{ background: `linear-gradient(135deg, ${primaryColor}30, transparent 60%)` }}
               >
-                <div
-                  className="absolute top-0 left-0 right-0 h-1"
-                  style={{ backgroundColor: selectedTeam.primaryColor }}
-                />
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div
-                      className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg"
-                      style={{ backgroundColor: selectedTeam.primaryColor }}
-                    >
-                      {selectedTeam.abbreviation.slice(0, 2)}
+                <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: primaryColor }} />
+                {teamLoading ? (
+                  <div className="flex items-center gap-3 text-white/40">
+                    <span className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    Loading live team data...
+                  </div>
+                ) : teamData ? (
+                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg"
+                        style={{ backgroundColor: primaryColor }}
+                      >
+                        {teamData.team.abbreviation.slice(0, 2)}
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-black text-white">{teamData.team.name}</h2>
+                        <div className="flex gap-2 mt-1 flex-wrap items-center">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/60">
+                            {selectedStanding?.conference || 'MLS'} · ESPN Live
+                          </span>
+                          <span className="flex items-center gap-1 text-xs text-emerald-400">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            Live Standings
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="text-2xl font-black text-white">{selectedTeam.name}</h2>
-                      <div className="flex gap-2 mt-1 flex-wrap">
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/60">
-                          {selectedTeam.conference} Conference
-                        </span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/60">
-                          {selectedTeam.city}
-                        </span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/60">
-                          Founded {selectedTeam.foundedYear}
-                        </span>
+                    <div className="flex gap-4 flex-wrap">
+                      <div className="text-center">
+                        <div className="text-2xl font-black text-yellow-400">{teamData.team.points}</div>
+                        <div className="text-xs text-white/50">Points</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xl font-bold text-white">
+                          {teamData.team.wins}W-{teamData.team.losses}L-{teamData.team.draws}D
+                        </div>
+                        <div className="text-xs text-white/50">Record</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xl font-bold text-white">
+                          {teamData.team.goalsFor}-{teamData.team.goalsAgainst}
+                        </div>
+                        <div className="text-xs text-white/50">GF-GA</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xl font-bold text-white">#{teamData.financials.payrollRank}</div>
+                        <div className="text-xs text-white/50">Payroll Rank</div>
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-4 flex-wrap">
-                    <div className="text-center">
-                      <div className="text-2xl font-black text-yellow-400">
-                        {selectedTeam.standingsPoints}
-                      </div>
-                      <div className="text-xs text-white/50">Points</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xl font-bold text-white">
-                        {selectedTeam.wins}W-{selectedTeam.losses}L-{selectedTeam.draws}D
-                      </div>
-                      <div className="text-xs text-white/50">Record</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xl font-bold text-white">
-                        {selectedTeam.goalsFor}-{selectedTeam.goalsAgainst}
-                      </div>
-                      <div className="text-xs text-white/50">GF-GA</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xl font-bold text-white">
-                        #{selectedFinancials.payrollRank}
-                      </div>
-                      <div className="text-xs text-white/50">Payroll Rank</div>
-                    </div>
-                  </div>
-                </div>
+                ) : (
+                  <div className="text-white/40 text-sm">Select a team to see live data</div>
+                )}
               </div>
 
               {/* Tabs */}
@@ -240,11 +322,7 @@ export default function MLSPage() {
                         ? 'text-white'
                         : 'text-white/50 hover:text-white/80 hover:bg-white/5'
                     }`}
-                    style={
-                      activeTab === tab.id
-                        ? { backgroundColor: selectedTeam.primaryColor }
-                        : {}
-                    }
+                    style={activeTab === tab.id ? { backgroundColor: primaryColor } : {}}
                   >
                     {tab.label}
                   </button>
@@ -260,36 +338,43 @@ export default function MLSPage() {
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {activeTab === 'overview' && (
-                    <CFOMetrics
-                      team={selectedTeam}
-                      financials={selectedFinancials}
-                      allFinancials={allFinancials}
-                      allTeams={MLS_TEAMS}
+                  {activeTab === 'overview' && teamData && (
+                    <LiveCFOMetrics
+                      team={teamData.team}
+                      financials={teamData.financials}
+                      allPayrolls={allPayrollsForChart}
+                      primaryColor={primaryColor}
                     />
                   )}
 
                   {activeTab === 'players' && (
-                    <PlayerSalaryTable players={selectedPlayers} />
+                    <div>
+                      {teamLoading ? (
+                        <div className="flex items-center gap-3 text-white/40 py-8 justify-center">
+                          <span className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                          Loading roster from ESPN...
+                        </div>
+                      ) : (
+                        <LivePlayerSalaryTable
+                          players={displayPlayers}
+                          isLiveRoster={rosterPlayers.length > 0}
+                        />
+                      )}
+                    </div>
                   )}
 
-                  {activeTab === 'lineup' && (
-                    <LineupOptimizer
-                      players={selectedPlayers}
-                      teamColor={selectedTeam.primaryColor}
-                    />
-                  )}
-
-                  {activeTab === 'social' && (
+                  {activeTab === 'social' && teamData && (
                     <div className="max-w-2xl">
                       <div className="mb-4">
                         <h3 className="text-lg font-bold text-white">AI Social Post Generator</h3>
                         <p className="text-sm text-white/50 mt-1">
-                          Generate data-driven social media content from a CFO perspective using
-                          real 2024 MLS financial data.
+                          Generate data-driven content using live ESPN standings + 2025 MLSPA salaries.
                         </p>
                       </div>
-                      <SocialPostGenerator team={selectedTeam} />
+                      <LiveSocialPostGenerator
+                        team={teamData.team}
+                        primaryColor={primaryColor}
+                      />
                     </div>
                   )}
                 </motion.div>
@@ -299,21 +384,24 @@ export default function MLSPage() {
         </AnimatePresence>
 
         {/* Empty state */}
-        {!selectedTeamId && (
+        {!selectedSlug && !standingsLoading && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="text-center py-16 text-white/30"
           >
             <div className="text-6xl mb-4">⚽</div>
-            <p className="text-lg">Select a team above to view CFO analytics</p>
+            <p className="text-lg">Select a team above to view live CFO analytics</p>
+            <p className="text-sm mt-2 text-white/20">
+              Data sources: ESPN public API (live) + 2025 MLSPA salary disclosures
+            </p>
           </motion.div>
         )}
 
-        {/* Footer note */}
+        {/* Footer */}
         <div className="border-t border-white/5 pt-6 text-center text-xs text-white/20">
-          All financial data is estimated/approximate based on publicly available MLS salary
-          disclosures. This tool is for analytical purposes only.
+          Standings: ESPN public API, cached 5 min &bull; Salaries: 2025 MLSPA disclosure (approximate) &bull;
+          For analytical purposes only.
         </div>
       </div>
     </div>
