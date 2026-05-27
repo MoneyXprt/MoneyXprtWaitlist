@@ -1,7 +1,0 @@
-{
-  "/labs/strategy-demo/page": "app/labs/strategy-demo/page.js",
-  "/labs/page": "app/labs/page.js",
-  "/planner/recommendations/page": "app/planner/recommendations/page.js",
-  "/planner/scenario/page": "app/planner/scenario/page.js",
-  "/planner/playbook/page": "app/planner/playbook/page.js"
-}
