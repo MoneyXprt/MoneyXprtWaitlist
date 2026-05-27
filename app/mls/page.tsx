@@ -10,16 +10,38 @@ import LiveSocialPostGenerator from '@/components/mls/LiveSocialPostGenerator';
 
 // Static team metadata
 const TEAM_META: Record<string, { primaryColor: string; slug: string; shortName: string; city: string }> = {
-  '17362': { primaryColor: '#F7B5CD', slug: 'inter-miami',             shortName: 'Inter Miami',    city: 'Fort Lauderdale' },
-  '396':   { primaryColor: '#00245D', slug: 'la-galaxy',               shortName: 'LA Galaxy',       city: 'Carson' },
-  '18966': { primaryColor: '#000000', slug: 'lafc',                    shortName: 'LAFC',            city: 'Los Angeles' },
-  '9726':  { primaryColor: '#5D9741', slug: 'seattle-sounders',        shortName: 'Seattle',         city: 'Seattle' },
-  '18486': { primaryColor: '#80000A', slug: 'atlanta-united',          shortName: 'Atlanta United',  city: 'Atlanta' },
-  '6808':  { primaryColor: '#004812', slug: 'portland-timbers',        shortName: 'Portland Timbers',city: 'Portland' },
-  '18858': { primaryColor: '#003087', slug: 'fc-cincinnati',           shortName: 'FC Cincinnati',   city: 'Cincinnati' },
-  '754':   { primaryColor: '#FEDA00', slug: 'columbus-crew',           shortName: 'Columbus Crew',   city: 'Columbus' },
-  '928':   { primaryColor: '#C63323', slug: 'new-england-revolution',  shortName: 'New England',     city: 'Boston' },
-  '18396': { primaryColor: '#6CACE4', slug: 'nycfc',                   shortName: 'NYCFC',           city: 'New York' },
+  // Eastern
+  '17362': { primaryColor: '#F7B5CD', slug: 'inter-miami',            shortName: 'Inter Miami',    city: 'Fort Lauderdale' },
+  '18486': { primaryColor: '#80000A', slug: 'atlanta-united',         shortName: 'Atlanta United', city: 'Atlanta' },
+  '18858': { primaryColor: '#003087', slug: 'fc-cincinnati',          shortName: 'FC Cincinnati',  city: 'Cincinnati' },
+  '18396': { primaryColor: '#6CACE4', slug: 'nycfc',                  shortName: 'NYCFC',          city: 'New York' },
+  '754':   { primaryColor: '#FEDA00', slug: 'columbus-crew',          shortName: 'Columbus Crew',  city: 'Columbus' },
+  '399':   { primaryColor: '#D4021D', slug: 'new-york-red-bulls',     shortName: 'NY Red Bulls',   city: 'Harrison, NJ' },
+  '18058': { primaryColor: '#071B2C', slug: 'philadelphia-union',     shortName: 'Philadelphia',   city: 'Chester, PA' },
+  '22502': { primaryColor: '#ECE83A', slug: 'nashville-sc',           shortName: 'Nashville SC',   city: 'Nashville' },
+  '22403': { primaryColor: '#1A85C8', slug: 'charlotte-fc',           shortName: 'Charlotte FC',   city: 'Charlotte' },
+  '928':   { primaryColor: '#C63323', slug: 'new-england-revolution', shortName: 'New England',    city: 'Boston' },
+  '5526':  { primaryColor: '#B81137', slug: 'toronto-fc',             shortName: 'Toronto FC',     city: 'Toronto' },
+  '18887': { primaryColor: '#633492', slug: 'orlando-city',           shortName: 'Orlando City',   city: 'Orlando' },
+  '256':   { primaryColor: '#000000', slug: 'dc-united',              shortName: 'DC United',      city: 'Washington DC' },
+  '1930':  { primaryColor: '#003DA5', slug: 'cf-montreal',            shortName: 'CF Montréal',    city: 'Montreal' },
+  '674':   { primaryColor: '#C63323', slug: 'chicago-fire',           shortName: 'Chicago Fire',   city: 'Chicago' },
+  // Western
+  '18966': { primaryColor: '#000000', slug: 'lafc',                   shortName: 'LAFC',           city: 'Los Angeles' },
+  '396':   { primaryColor: '#00245D', slug: 'la-galaxy',              shortName: 'LA Galaxy',      city: 'Carson, CA' },
+  '6808':  { primaryColor: '#004812', slug: 'portland-timbers',       shortName: 'Portland',       city: 'Portland' },
+  '22500': { primaryColor: '#00B140', slug: 'austin-fc',              shortName: 'Austin FC',      city: 'Austin' },
+  '23213': { primaryColor: '#022169', slug: 'san-diego-fc',           shortName: 'San Diego FC',   city: 'San Diego' },
+  '265':   { primaryColor: '#002B5C', slug: 'sporting-kc',            shortName: 'Sporting KC',    city: 'Kansas City' },
+  '18979': { primaryColor: '#8CD2F4', slug: 'minnesota-united',       shortName: 'Minnesota Utd',  city: 'Minneapolis' },
+  '9726':  { primaryColor: '#5D9741', slug: 'seattle-sounders',       shortName: 'Seattle',        city: 'Seattle' },
+  '255':   { primaryColor: '#960A2C', slug: 'colorado-rapids',        shortName: 'Colorado',       city: 'Denver' },
+  '11408': { primaryColor: '#FF6B00', slug: 'houston-dynamo',         shortName: 'Houston Dynamo', city: 'Houston' },
+  '17209': { primaryColor: '#00245E', slug: 'vancouver-whitecaps',    shortName: 'Vancouver',      city: 'Vancouver' },
+  '11120': { primaryColor: '#B30838', slug: 'real-salt-lake',         shortName: 'Real Salt Lake', city: 'Sandy, UT' },
+  '6977':  { primaryColor: '#E81F3E', slug: 'fc-dallas',              shortName: 'FC Dallas',      city: 'Frisco, TX' },
+  '23197': { primaryColor: '#C8102E', slug: 'st-louis-city',          shortName: 'St. Louis City', city: 'St. Louis' },
+  '279':   { primaryColor: '#0D4C8B', slug: 'san-jose-earthquakes',   shortName: 'San Jose',       city: 'San Jose' },
 };
 
 type StandingEntry = LiveTeamData & {
@@ -178,7 +200,7 @@ export default function MLSPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 text-emerald-400 text-xs font-semibold uppercase tracking-wider">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Live ESPN Data · 2026 MLSPA Salaries · 10 Featured Clubs
+            Live ESPN Data · 2026 MLSPA Salaries · All 30 MLS Clubs
           </div>
           <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
             MLS{' '}
@@ -195,7 +217,7 @@ export default function MLSPage() {
             <div className="flex flex-wrap justify-center gap-6 mt-4">
               <div className="text-center">
                 <div className="text-2xl font-black text-yellow-400">{fmt(leagueStats.totalPayroll)}</div>
-                <div className="text-xs text-white/40 uppercase tracking-wider">Combined Payroll (10 teams)</div>
+                <div className="text-xs text-white/40 uppercase tracking-wider">Combined Payroll (All 30 MLS Clubs)</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-black text-yellow-400">{leagueStats.totalDPs}</div>

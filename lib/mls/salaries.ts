@@ -124,6 +124,171 @@ export const MLSPA_SALARIES_2026: SalaryRecord[] = [
   { name: 'Matt Freese',              teamSlug: 'nycfc', guaranteedComp:   530_000, budgetCharge:   530_000,       isDesignatedPlayer: false, isTAM: false },
   { name: 'Keaton Parks',             teamSlug: 'nycfc', guaranteedComp:   860_000, budgetCharge:   860_000,       isDesignatedPlayer: false, isTAM: false },
   { name: 'Julián Fernández',         teamSlug: 'nycfc', guaranteedComp:   660_000, budgetCharge:   660_000,       isDesignatedPlayer: false, isTAM: false },
+
+  // ─── NASHVILLE SC ────────────────────────────────────────────────
+  { name: 'Hany Mukhtar',            teamSlug: 'nashville-sc', guaranteedComp: 4_200_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Sam Surridge',            teamSlug: 'nashville-sc', guaranteedComp: 2_800_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Walker Zimmermann',       teamSlug: 'nashville-sc', guaranteedComp: 1_850_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Jacob Shaffelburg',       teamSlug: 'nashville-sc', guaranteedComp: 1_100_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Randall Leal',            teamSlug: 'nashville-sc', guaranteedComp:   820_000, budgetCharge:   820_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Sean Johnson',            teamSlug: 'nashville-sc', guaranteedComp:   620_000, budgetCharge:   620_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Shaq Moore',              teamSlug: 'nashville-sc', guaranteedComp:   500_000, budgetCharge:   500_000,       isDesignatedPlayer: false, isTAM: false },
+
+  // ─── NEW YORK RED BULLS ──────────────────────────────────────────
+  { name: 'Emil Forsberg',           teamSlug: 'new-york-red-bulls', guaranteedComp: 4_200_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Dante Vanzeir',           teamSlug: 'new-york-red-bulls', guaranteedComp: 2_800_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Andrés Reyes',            teamSlug: 'new-york-red-bulls', guaranteedComp: 1_800_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Frankie Amaya',           teamSlug: 'new-york-red-bulls', guaranteedComp: 1_500_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Lewis Morgan',            teamSlug: 'new-york-red-bulls', guaranteedComp: 1_100_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Sean Nealis',             teamSlug: 'new-york-red-bulls', guaranteedComp:   820_000, budgetCharge:   820_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Carlos Coronel',          teamSlug: 'new-york-red-bulls', guaranteedComp:   560_000, budgetCharge:   560_000,       isDesignatedPlayer: false, isTAM: false },
+
+  // ─── ORLANDO CITY SC ─────────────────────────────────────────────
+  { name: 'Facundo Torres',          teamSlug: 'orlando-city', guaranteedComp: 4_500_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Martin Ojeda',            teamSlug: 'orlando-city', guaranteedComp: 3_200_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Ercan Kara',              teamSlug: 'orlando-city', guaranteedComp: 1_900_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Ramiro Enrique',          teamSlug: 'orlando-city', guaranteedComp: 1_400_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Rodrigo Schlegel',        teamSlug: 'orlando-city', guaranteedComp:   800_000, budgetCharge:   800_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Pedro Gallese',           teamSlug: 'orlando-city', guaranteedComp:   920_000, budgetCharge:   920_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Wilder Cartagena',        teamSlug: 'orlando-city', guaranteedComp:   700_000, budgetCharge:   700_000,       isDesignatedPlayer: false, isTAM: false },
+
+  // ─── PHILADELPHIA UNION ──────────────────────────────────────────
+  { name: 'Mikael Uhre',             teamSlug: 'philadelphia-union', guaranteedComp: 3_800_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Julián Carranza',         teamSlug: 'philadelphia-union', guaranteedComp: 2_800_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Quinn Sullivan',          teamSlug: 'philadelphia-union', guaranteedComp: 1_400_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Jakob Glesnes',           teamSlug: 'philadelphia-union', guaranteedComp: 1_100_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Alejandro Bedoya',        teamSlug: 'philadelphia-union', guaranteedComp:   720_000, budgetCharge:   720_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Andre Blake',             teamSlug: 'philadelphia-union', guaranteedComp:   950_000, budgetCharge:   950_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Kai Wagner',              teamSlug: 'philadelphia-union', guaranteedComp: 1_200_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+
+  // ─── CHARLOTTE FC ────────────────────────────────────────────────
+  { name: 'Karol Swiderski',         teamSlug: 'charlotte-fc', guaranteedComp: 4_100_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Kerwin Vargas',           teamSlug: 'charlotte-fc', guaranteedComp: 2_500_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Ashley Westwood',         teamSlug: 'charlotte-fc', guaranteedComp: 1_600_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Adilson Malanda',         teamSlug: 'charlotte-fc', guaranteedComp:   920_000, budgetCharge:   920_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Derrick Jones',           teamSlug: 'charlotte-fc', guaranteedComp:   700_000, budgetCharge:   700_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Joseph Cerny',            teamSlug: 'charlotte-fc', guaranteedComp:   480_000, budgetCharge:   480_000,       isDesignatedPlayer: false, isTAM: false },
+
+  // ─── TORONTO FC ──────────────────────────────────────────────────
+  { name: 'Federico Bernardeschi',   teamSlug: 'toronto-fc', guaranteedComp: 5_500_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Lorenzo Insigne',         teamSlug: 'toronto-fc', guaranteedComp: 3_200_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Deandre Kerr',            teamSlug: 'toronto-fc', guaranteedComp: 1_800_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Richie Laryea',           teamSlug: 'toronto-fc', guaranteedComp:   920_000, budgetCharge:   920_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Luca Petrasso',           teamSlug: 'toronto-fc', guaranteedComp: 1_200_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Sean Simpson',            teamSlug: 'toronto-fc', guaranteedComp:   480_000, budgetCharge:   480_000,       isDesignatedPlayer: false, isTAM: false },
+
+  // ─── CF MONTRÉAL ─────────────────────────────────────────────────
+  { name: 'Caden Clark',             teamSlug: 'cf-montreal', guaranteedComp: 2_500_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Jules Kounde',            teamSlug: 'cf-montreal', guaranteedComp: 2_200_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Romain Métanire',         teamSlug: 'cf-montreal', guaranteedComp: 1_100_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Mason Toye',              teamSlug: 'cf-montreal', guaranteedComp:   900_000, budgetCharge:   900_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Ariel Lassiter',          teamSlug: 'cf-montreal', guaranteedComp:   700_000, budgetCharge:   700_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Jonathan Sirois',         teamSlug: 'cf-montreal', guaranteedComp:   500_000, budgetCharge:   500_000,       isDesignatedPlayer: false, isTAM: false },
+
+  // ─── CHICAGO FIRE FC ─────────────────────────────────────────────
+  { name: 'Xherdan Shaqiri',         teamSlug: 'chicago-fire', guaranteedComp: 4_500_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Brian Gutierrez',         teamSlug: 'chicago-fire', guaranteedComp: 2_200_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Hugo Cuypers',            teamSlug: 'chicago-fire', guaranteedComp: 2_800_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Maren Haile-Selassie',    teamSlug: 'chicago-fire', guaranteedComp: 1_100_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Chris Mueller',           teamSlug: 'chicago-fire', guaranteedComp:   900_000, budgetCharge:   900_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Gaga Slonina',            teamSlug: 'chicago-fire', guaranteedComp: 1_400_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Rafael Czícero',          teamSlug: 'chicago-fire', guaranteedComp:   560_000, budgetCharge:   560_000,       isDesignatedPlayer: false, isTAM: false },
+
+  // ─── D.C. UNITED ─────────────────────────────────────────────────
+  { name: 'Christian Benteke',       teamSlug: 'dc-united', guaranteedComp: 4_800_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Mateusz Klich',           teamSlug: 'dc-united', guaranteedComp: 2_400_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Theodore Ku-DiPietro',    teamSlug: 'dc-united', guaranteedComp: 1_700_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Russell Canouse',         teamSlug: 'dc-united', guaranteedComp:   820_000, budgetCharge:   820_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Steve Birnbaum',          teamSlug: 'dc-united', guaranteedComp:   720_000, budgetCharge:   720_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Tyler Miller',            teamSlug: 'dc-united', guaranteedComp:   560_000, budgetCharge:   560_000,       isDesignatedPlayer: false, isTAM: false },
+
+  // ─── AUSTIN FC ───────────────────────────────────────────────────
+  { name: 'Sebastián Driussi',       teamSlug: 'austin-fc', guaranteedComp: 4_100_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Emiliano Rigoni',         teamSlug: 'austin-fc', guaranteedComp: 2_700_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Osman Bukari',            teamSlug: 'austin-fc', guaranteedComp: 2_200_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Brad Stuver',             teamSlug: 'austin-fc', guaranteedComp: 1_100_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Gyasi Zardes',            teamSlug: 'austin-fc', guaranteedComp:   900_000, budgetCharge:   900_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Ruben Gabrielsen',        teamSlug: 'austin-fc', guaranteedComp:   700_000, budgetCharge:   700_000,       isDesignatedPlayer: false, isTAM: false },
+
+  // ─── COLORADO RAPIDS ─────────────────────────────────────────────
+  { name: 'Rafael Navarro',          teamSlug: 'colorado-rapids', guaranteedComp: 2_800_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Djordje Mihailovic',      teamSlug: 'colorado-rapids', guaranteedComp: 3_500_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Cole Bassett',            teamSlug: 'colorado-rapids', guaranteedComp: 1_200_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Jack Price',              teamSlug: 'colorado-rapids', guaranteedComp:   820_000, budgetCharge:   820_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Lalas Abubakar',          teamSlug: 'colorado-rapids', guaranteedComp:   700_000, budgetCharge:   700_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'William Yarbrough',       teamSlug: 'colorado-rapids', guaranteedComp:   560_000, budgetCharge:   560_000,       isDesignatedPlayer: false, isTAM: false },
+
+  // ─── FC DALLAS ───────────────────────────────────────────────────
+  { name: 'Alan Velasco',            teamSlug: 'fc-dallas', guaranteedComp: 3_500_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Tsiki Ntsabeleza',        teamSlug: 'fc-dallas', guaranteedComp: 2_100_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Paul Arriola',            teamSlug: 'fc-dallas', guaranteedComp: 1_500_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Jáder Obrian',            teamSlug: 'fc-dallas', guaranteedComp: 1_200_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Marco Farfán',            teamSlug: 'fc-dallas', guaranteedComp:   600_000, budgetCharge:   600_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Maarten Paes',            teamSlug: 'fc-dallas', guaranteedComp:   950_000, budgetCharge:   950_000,       isDesignatedPlayer: false, isTAM: false },
+
+  // ─── HOUSTON DYNAMO FC ───────────────────────────────────────────
+  { name: 'Amine Bassi',             teamSlug: 'houston-dynamo', guaranteedComp: 2_500_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Latif Blessing',          teamSlug: 'houston-dynamo', guaranteedComp: 2_200_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Ezequiel Ponce',          teamSlug: 'houston-dynamo', guaranteedComp: 2_800_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Memo Rodríguez',          teamSlug: 'houston-dynamo', guaranteedComp: 1_200_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Tim Parker',              teamSlug: 'houston-dynamo', guaranteedComp:   720_000, budgetCharge:   720_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Steve Clark',             teamSlug: 'houston-dynamo', guaranteedComp:   560_000, budgetCharge:   560_000,       isDesignatedPlayer: false, isTAM: false },
+
+  // ─── MINNESOTA UNITED FC ─────────────────────────────────────────
+  { name: 'Sang-Bin Jeong',          teamSlug: 'minnesota-united', guaranteedComp: 2_800_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Bongokuhle Hlongwane',    teamSlug: 'minnesota-united', guaranteedComp: 2_200_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Robin Lod',               teamSlug: 'minnesota-united', guaranteedComp: 1_600_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Joseph Rosales',          teamSlug: 'minnesota-united', guaranteedComp: 1_100_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Mender Garcia',           teamSlug: 'minnesota-united', guaranteedComp:   820_000, budgetCharge:   820_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Dayne St. Clair',         teamSlug: 'minnesota-united', guaranteedComp:   720_000, budgetCharge:   720_000,       isDesignatedPlayer: false, isTAM: false },
+
+  // ─── REAL SALT LAKE ──────────────────────────────────────────────
+  { name: 'Anderson Julio',          teamSlug: 'real-salt-lake', guaranteedComp: 2_800_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Chicho Arango',           teamSlug: 'real-salt-lake', guaranteedComp: 2_400_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Pablo Ruiz',              teamSlug: 'real-salt-lake', guaranteedComp: 1_500_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Justen Glad',             teamSlug: 'real-salt-lake', guaranteedComp:   720_000, budgetCharge:   720_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Braian Ojeda',            teamSlug: 'real-salt-lake', guaranteedComp: 1_100_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Zac MacMath',             teamSlug: 'real-salt-lake', guaranteedComp:   700_000, budgetCharge:   700_000,       isDesignatedPlayer: false, isTAM: false },
+
+  // ─── SAN DIEGO FC ────────────────────────────────────────────────
+  { name: 'Hirving Lozano',          teamSlug: 'san-diego-fc', guaranteedComp: 6_500_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Marcos Llorente',         teamSlug: 'san-diego-fc', guaranteedComp: 4_200_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Alejandro Zendejas',      teamSlug: 'san-diego-fc', guaranteedComp: 2_800_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Freddy Vargas',           teamSlug: 'san-diego-fc', guaranteedComp: 1_200_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Kenji Lamar',             teamSlug: 'san-diego-fc', guaranteedComp:   650_000, budgetCharge:   650_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Elliot Panicco',          teamSlug: 'san-diego-fc', guaranteedComp:   520_000, budgetCharge:   520_000,       isDesignatedPlayer: false, isTAM: false },
+
+  // ─── SAN JOSE EARTHQUAKES ────────────────────────────────────────
+  { name: 'Cade Cowell',             teamSlug: 'san-jose-earthquakes', guaranteedComp: 2_800_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Jeremy Ebobisse',         teamSlug: 'san-jose-earthquakes', guaranteedComp: 2_200_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Daniel',                  teamSlug: 'san-jose-earthquakes', guaranteedComp: 1_800_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Jackson Yueill',          teamSlug: 'san-jose-earthquakes', guaranteedComp:   900_000, budgetCharge:   900_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Tommy Thompson',          teamSlug: 'san-jose-earthquakes', guaranteedComp:   700_000, budgetCharge:   700_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'JT Marcinkowski',         teamSlug: 'san-jose-earthquakes', guaranteedComp:   560_000, budgetCharge:   560_000,       isDesignatedPlayer: false, isTAM: false },
+
+  // ─── SPORTING KANSAS CITY ────────────────────────────────────────
+  { name: 'Willy Agada',             teamSlug: 'sporting-kc', guaranteedComp: 3_000_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Alan Pulido',             teamSlug: 'sporting-kc', guaranteedComp: 3_500_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Dániel Sallói',           teamSlug: 'sporting-kc', guaranteedComp: 1_500_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Johnny Russell',          teamSlug: 'sporting-kc', guaranteedComp: 1_400_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Jake Davis',              teamSlug: 'sporting-kc', guaranteedComp:   820_000, budgetCharge:   820_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Tim Melia',               teamSlug: 'sporting-kc', guaranteedComp:   660_000, budgetCharge:   660_000,       isDesignatedPlayer: false, isTAM: false },
+
+  // ─── ST. LOUIS CITY SC ───────────────────────────────────────────
+  { name: 'Eduard Löwen',            teamSlug: 'st-louis-city', guaranteedComp: 3_200_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Nilsson Delgado',         teamSlug: 'st-louis-city', guaranteedComp: 2_400_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Sam Adeniran',            teamSlug: 'st-louis-city', guaranteedComp: 1_800_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Njabulo Blom',            teamSlug: 'st-louis-city', guaranteedComp: 1_600_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Kyle Hiebert',            teamSlug: 'st-louis-city', guaranteedComp:   620_000, budgetCharge:   620_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Roman Bürki',             teamSlug: 'st-louis-city', guaranteedComp: 1_100_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+
+  // ─── VANCOUVER WHITECAPS FC ──────────────────────────────────────
+  { name: 'Ryan Gauld',              teamSlug: 'vancouver-whitecaps', guaranteedComp: 2_600_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Andrés Cubas',            teamSlug: 'vancouver-whitecaps', guaranteedComp: 2_400_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Ali Ahmed',               teamSlug: 'vancouver-whitecaps', guaranteedComp: 2_000_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: true,  isTAM: false },
+  { name: 'Brian White',             teamSlug: 'vancouver-whitecaps', guaranteedComp: 1_800_000, budgetCharge: DP_BUDGET_CHARGE, isDesignatedPlayer: false, isTAM: true  },
+  { name: 'Ranko Veselinović',       teamSlug: 'vancouver-whitecaps', guaranteedComp:   920_000, budgetCharge:   920_000,       isDesignatedPlayer: false, isTAM: false },
+  { name: 'Mathías Laborda',         teamSlug: 'vancouver-whitecaps', guaranteedComp:   620_000, budgetCharge:   620_000,       isDesignatedPlayer: false, isTAM: false },
 ];
 
 // ─── Name-matching helpers ───────────────────────────────────────────────────
