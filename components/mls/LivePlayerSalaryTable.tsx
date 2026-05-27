@@ -218,7 +218,7 @@ export default function LivePlayerSalaryTable({ players, isLiveRoster = false }:
       </div>
 
       <p className="text-xs text-white/30">
-        Salary: 2025 MLSPA disclosure (matched by name). Stats: live ESPN roster (may be 0 early season).
+        Salary: 2026 MLSPA disclosure (matched by name). Stats: live ESPN roster (may be 0 early season).
         Players without salary match show $0 — on roster but not in MLSPA dataset.
       </p>
     </div>

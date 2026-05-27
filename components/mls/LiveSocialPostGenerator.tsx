@@ -135,7 +135,7 @@ export default function LiveSocialPostGenerator({ team, primaryColor = '#00b86e'
       {/* Live data note */}
       <div className="flex items-center gap-2 text-xs text-white/40 rounded-lg border border-white/10 p-2.5">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
-        Post will use live ESPN standings + 2025 MLSPA salary data for {team.name}
+        Post will use live ESPN standings + 2026 MLSPA salary data for {team.name}
       </div>
 
       {/* Generate button */}

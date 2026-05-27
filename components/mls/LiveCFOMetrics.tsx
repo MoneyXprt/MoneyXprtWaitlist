@@ -94,7 +94,7 @@ export default function LiveCFOMetrics({ team, financials, allPayrolls, primaryC
         <MetricCard
           label="Total Payroll"
           value={formatMoney(financials.totalPayroll)}
-          sub="2025 MLSPA Disclosure"
+          sub="2026 MLSPA Disclosure"
           color={primaryColor}
         />
         <MetricCard
@@ -144,13 +144,13 @@ export default function LiveCFOMetrics({ team, financials, allPayrolls, primaryC
           <div>
             <div className="text-xs text-white/50 mb-1">DP Cap Charge</div>
             <div className="text-xl font-bold text-green-400">
-              {formatMoney(financials.dpCount * 683_750)}
+              {formatMoney(financials.dpCount * 703_125)}
             </div>
           </div>
           <div>
             <div className="text-xs text-white/50 mb-1">League Subsidy</div>
             <div className="text-xl font-bold text-emerald-400">
-              {formatMoney(Math.max(0, financials.dpCost - financials.dpCount * 683_750))}
+              {formatMoney(Math.max(0, financials.dpCost - financials.dpCount * 703_125))}
             </div>
           </div>
         </div>

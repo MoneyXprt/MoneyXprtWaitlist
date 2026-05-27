@@ -178,7 +178,7 @@ export default function MLSPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 text-emerald-400 text-xs font-semibold uppercase tracking-wider">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Live ESPN Data · 2025 MLSPA Salaries · 10 Featured Clubs
+            Live ESPN Data · 2026 MLSPA Salaries · 10 Featured Clubs
           </div>
           <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
             MLS{' '}
@@ -187,7 +187,7 @@ export default function MLSPage() {
             </span>
           </h1>
           <p className="text-white/60 text-lg max-w-2xl mx-auto leading-relaxed">
-            Real-time MLS standings from ESPN merged with 2025 MLSPA salary disclosures.
+            Real-time MLS standings from ESPN merged with 2026 MLSPA salary disclosures.
             Analyze payroll efficiency, player value, and generate AI-powered financial content.
           </p>
 
@@ -368,7 +368,7 @@ export default function MLSPage() {
                       <div className="mb-4">
                         <h3 className="text-lg font-bold text-white">AI Social Post Generator</h3>
                         <p className="text-sm text-white/50 mt-1">
-                          Generate data-driven content using live ESPN standings + 2025 MLSPA salaries.
+                          Generate data-driven content using live ESPN standings + 2026 MLSPA salaries.
                         </p>
                       </div>
                       <LiveSocialPostGenerator
@@ -393,14 +393,14 @@ export default function MLSPage() {
             <div className="text-6xl mb-4">⚽</div>
             <p className="text-lg">Select a team above to view live CFO analytics</p>
             <p className="text-sm mt-2 text-white/20">
-              Data sources: ESPN public API (live) + 2025 MLSPA salary disclosures
+              Data sources: ESPN public API (live) + 2026 MLSPA salary disclosures
             </p>
           </motion.div>
         )}
 
         {/* Footer */}
         <div className="border-t border-white/5 pt-6 text-center text-xs text-white/20">
-          Standings: ESPN public API, cached 5 min &bull; Salaries: 2025 MLSPA disclosure (approximate) &bull;
+          Standings: ESPN public API, cached 5 min &bull; Salaries: 2026 MLSPA disclosure (approximate) &bull;
           For analytical purposes only.
         </div>
       </div>

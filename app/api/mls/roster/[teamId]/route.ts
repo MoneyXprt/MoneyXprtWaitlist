@@ -70,8 +70,8 @@ export async function GET(
         return base;
       });
     } else {
-      // ESPN unavailable — build roster from 2025 MLSPA salary records
-      source = 'static-2025';
+      // ESPN unavailable — build roster from 2026 MLSPA salary records
+      source = 'static-2026';
       const { getSalariesForTeam } = await import('@/lib/mls/salaries');
       const salaries = getSalariesForTeam(slug);
       enriched = salaries.map((s, idx) => {

@@ -1,6 +1,6 @@
 /**
  * POST /api/mls/social-live
- * Generate social media post using live ESPN standings + 2025 MLSPA salary data.
+ * Generate social media post using live ESPN standings + 2026 MLSPA salary data.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
@@ -65,11 +65,11 @@ function buildPrompt(
   const focusPrompts: Record<FocusArea, string> = {
     salary: `Focus on payroll structure and salary allocation. Key figures:
 - Total Payroll: ${fmt(financials.totalPayroll)}
-- DP Count: ${financials.dpCount} DPs costing ${fmt(financials.dpCost)} combined (cap charge only ${fmt(financials.dpCount * 683_750)})
+- DP Count: ${financials.dpCount} DPs costing ${fmt(financials.dpCost)} combined (cap charge only ${fmt(financials.dpCount * 703_125)})
 - TAM Players: ${financials.tamPlayerCount} players, ${fmt(financials.tamCost)} total
 - Payroll as % of est. revenue: ${financials.payrollAsRevenuePct.toFixed(1)}%
 - Payroll Rank in MLS: #${financials.payrollRank}
-- Top 3 earners (2025 MLSPA): ${topSalaries.slice(0, 3).map(p => `${p.name} (${fmt(p.guaranteedComp)})`).join(', ')}`,
+- Top 3 earners (2026 MLSPA): ${topSalaries.slice(0, 3).map(p => `${p.name} (${fmt(p.guaranteedComp)})`).join(', ')}`,
 
     performance: `Focus on performance vs. investment ROI using LIVE ESPN standings. Key metrics:
 - Current Record: ${record}
@@ -84,7 +84,7 @@ function buildPrompt(
 - Value Rating: ${financials.valueRating.toFixed(2)} G+A per $M spent
 - Total Payroll: ${fmt(financials.totalPayroll)}`,
 
-    efficiency: `Focus on capital allocation efficiency using live 2025 data.
+    efficiency: `Focus on capital allocation efficiency using live 2026 data.
 - Current Record: ${record}
 - Value Rating: ${financials.valueRating.toFixed(2)} G+A per $M
 - Senior Budget Used: ${fmt(financials.seniorBudgetUsed)} of ${fmt(financials.seniorBudgetMax)} max
@@ -92,7 +92,7 @@ function buildPrompt(
 - Payroll rank: #${financials.payrollRank} in MLS`,
   };
 
-  return `Team: ${teamName} (2025 MLS Season — Live ESPN Data + MLSPA Salaries)
+  return `Team: ${teamName} (2026 MLS Season — Live ESPN Data + MLSPA Salaries)
 ${focusPrompts[focusArea]}
 
 Platform: ${platformInstructions[platform]}`;
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'system',
-          content: 'You are the CFO of an MLS team analyzing financial performance using 2025 live ESPN standings and MLSPA salary data. Write sharply analytical social media content using specific dollar figures, ratios, and metrics. Be provocative but data-driven. Cite the exact figures provided to you.',
+          content: 'You are the CFO of an MLS team analyzing financial performance using 2026 live ESPN standings and MLSPA salary data. Write sharply analytical social media content using specific dollar figures, ratios, and metrics. Be provocative but data-driven. Cite the exact figures provided to you.',
         },
         { role: 'user', content: userPrompt },
       ],
