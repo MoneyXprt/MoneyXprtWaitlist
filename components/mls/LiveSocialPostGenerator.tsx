@@ -9,13 +9,14 @@ interface LiveSocialPostGeneratorProps {
   primaryColor?: string;
 }
 
-type Platform = 'twitter' | 'linkedin' | 'instagram';
+type Platform = 'twitter' | 'linkedin' | 'instagram' | 'blog';
 type FocusArea = 'salary' | 'performance' | 'lineup' | 'efficiency';
 
 const PLATFORMS: { id: Platform; label: string; icon: string; charLimit?: number }[] = [
   { id: 'twitter',   label: 'Twitter / X', icon: '𝕏', charLimit: 280 },
   { id: 'linkedin',  label: 'LinkedIn',    icon: 'in' },
   { id: 'instagram', label: 'Instagram',   icon: '▲' },
+  { id: 'blog',      label: 'Blog Post',   icon: '✍' },
 ];
 
 const FOCUS_AREAS: { id: FocusArea; label: string; description: string }[] = [
@@ -29,6 +30,7 @@ const PLATFORM_COLORS: Record<Platform, string> = {
   twitter:   '#1DA1F2',
   linkedin:  '#0A66C2',
   instagram: '#E1306C',
+  blog:      '#6366f1',
 };
 
 function copyToClipboard(text: string) {
@@ -79,7 +81,10 @@ export default function LiveSocialPostGenerator({ team, primaryColor = '#00b86e'
 
   function handleCopy() {
     if (!result) return;
-    copyToClipboard(result.content + '\n\n' + result.hashtags.join(' '));
+    const text = platform === 'blog'
+      ? result.content
+      : result.content + '\n\n' + result.hashtags.join(' ');
+    copyToClipboard(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -135,7 +140,7 @@ export default function LiveSocialPostGenerator({ team, primaryColor = '#00b86e'
       {/* Live data note */}
       <div className="flex items-center gap-2 text-xs text-white/40 rounded-lg border border-white/10 p-2.5">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
-        Post will use live ESPN standings + 2026 MLSPA salary data for {team.name}
+        {platform === 'blog' ? 'Article' : 'Post'} will use live ESPN standings + 2026 MLSPA salary data for {team.name}
       </div>
 
       {/* Generate button */}
@@ -155,7 +160,7 @@ export default function LiveSocialPostGenerator({ team, primaryColor = '#00b86e'
             Generating Live CFO Analysis...
           </span>
         ) : (
-          `Generate ${FOCUS_AREAS.find(f => f.id === focusArea)?.label} Post`
+          `Generate ${FOCUS_AREAS.find(f => f.id === focusArea)?.label} ${platform === 'blog' ? 'Article' : 'Post'}`
         )}
       </button>
 
@@ -171,7 +176,7 @@ export default function LiveSocialPostGenerator({ team, primaryColor = '#00b86e'
             exit={{ opacity: 0 }}
             className="space-y-3"
           >
-            {/* Mock social card */}
+            {/* Post card */}
             <div
               className="rounded-2xl border p-5 space-y-3"
               style={{
@@ -191,11 +196,18 @@ export default function LiveSocialPostGenerator({ team, primaryColor = '#00b86e'
                   <div className="text-xs flex items-center gap-1" style={{ color: PLATFORM_COLORS[platform] }}>
                     <span className="w-1 h-1 rounded-full bg-emerald-400" />
                     Live Data · {PLATFORMS.find(p => p.id === platform)?.label}
+                    {platform === 'blog' && (
+                      <span className="ml-2 text-white/30">
+                        ~{Math.ceil(result.content.split(/\s+/).length / 200)} min read
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
 
-              <p className="text-white/90 text-sm leading-relaxed whitespace-pre-wrap">{result.content}</p>
+              <div className={platform === 'blog' ? 'max-h-96 overflow-y-auto pr-1' : ''}>
+                <p className="text-white/90 text-sm leading-relaxed whitespace-pre-wrap">{result.content}</p>
+              </div>
 
               {result.hashtags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
@@ -208,7 +220,7 @@ export default function LiveSocialPostGenerator({ team, primaryColor = '#00b86e'
                         color: PLATFORM_COLORS[platform],
                       }}
                     >
-                      {tag}
+                      {platform === 'blog' ? tag : tag}
                     </span>
                   ))}
                 </div>

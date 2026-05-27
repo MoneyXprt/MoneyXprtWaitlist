@@ -17,7 +17,7 @@ import type { EnrichedPlayer, LiveTeamData, TeamFinancials, ESPNPlayerStats } fr
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 type FocusArea = 'salary' | 'performance' | 'lineup' | 'efficiency';
-type Platform = 'twitter' | 'linkedin' | 'instagram';
+type Platform = 'twitter' | 'linkedin' | 'instagram' | 'blog';
 
 const TEAM_REVENUE: Record<string, number> = {
   'inter-miami': 95_000_000,
@@ -60,6 +60,7 @@ function buildPrompt(
     twitter: 'Write a punchy Twitter/X thread or single tweet (max 280 chars). Short, impactful sentences. Emojis OK but sparingly.',
     linkedin: 'Write a professional LinkedIn post (3-5 paragraphs). Data storytelling, end with a strategic takeaway. Professional tone.',
     instagram: 'Write an Instagram caption (2-3 short paragraphs). Hook with a bold statement. Relevant hashtags at end.',
+    blog: 'Write a structured CFO blog post using markdown. Start with a compelling ## headline, then an intro paragraph, then 3 analytical sections each with a ## sub-heading, then a strategic ## Conclusion section. Use **bold** for key figures and metrics. 700-900 words. Professional, data-driven tone suitable for a sports-finance publication.',
   };
 
   const focusPrompts: Record<FocusArea, string> = {
@@ -175,7 +176,7 @@ export async function POST(request: NextRequest) {
         },
         { role: 'user', content: userPrompt },
       ],
-      max_tokens: 600,
+      max_tokens: platform === 'blog' ? 1600 : 600,
       temperature: 0.7,
     });
 
@@ -183,7 +184,9 @@ export async function POST(request: NextRequest) {
     const hashtagMatches = content.match(/#\w+/g) ?? [];
     const hashtags = hashtagMatches.length > 0
       ? hashtagMatches
-      : ['#MLS', '#MLSSoccer', `#${liveTeam.abbreviation}`, '#SportsBusiness', '#SportsFinance'];
+      : platform === 'blog'
+        ? ['MLS', 'Sports Finance', 'Soccer Analytics', liveTeam.name, 'CFO Analysis']
+        : ['#MLS', '#MLSSoccer', `#${liveTeam.abbreviation}`, '#SportsBusiness', '#SportsFinance'];
 
     const metrics = [
       `Total Payroll: ${fmt(financials.totalPayroll)}`,
