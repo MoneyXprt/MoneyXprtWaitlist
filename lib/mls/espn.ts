@@ -171,7 +171,7 @@ export function getStatValue(stats: ESPNStandingEntry['stats'], name: string): n
   return stats.find(s => s.name === name || s.shortDisplayName === name)?.value ?? 0;
 }
 
-/** Canonical ESPN team IDs for the 10 featured MLS clubs */
+/** Canonical ESPN team IDs for all 30 MLS clubs */
 export const ESPN_TEAM_IDS: Record<string, string> = {
   'inter-miami': '17362',
   'la-galaxy': '396',
@@ -183,6 +183,28 @@ export const ESPN_TEAM_IDS: Record<string, string> = {
   'columbus-crew': '754',
   'new-england-revolution': '928',
   nycfc: '18396',
+  // Eastern Conference additions
+  'cf-montreal':        '1930',
+  'charlotte-fc':       '22403',
+  'chicago-fire':       '674',
+  'dc-united':          '256',
+  'nashville-sc':       '22502',
+  'new-york-red-bulls': '399',
+  'orlando-city':       '18887',
+  'philadelphia-union': '18058',
+  'toronto-fc':         '5526',
+  // Western Conference additions
+  'austin-fc':              '22500',
+  'colorado-rapids':        '255',
+  'fc-dallas':              '6977',
+  'houston-dynamo':         '11408',
+  'minnesota-united':       '18979',
+  'real-salt-lake':         '11120',
+  'san-diego-fc':           '23213',
+  'san-jose-earthquakes':   '279',
+  'sporting-kc':            '265',
+  'st-louis-city':          '23197',
+  'vancouver-whitecaps':    '17209',
 };
 
 /** Reverse map: espnId → internal slug */
