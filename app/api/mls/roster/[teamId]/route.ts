@@ -42,43 +42,57 @@ export async function GET(
       return NextResponse.json({ error: 'Unknown team ID' }, { status: 404 });
     }
 
-    // Fetch live ESPN roster
+    // Try ESPN roster; fall back to salary data if unreachable or empty
     const espnPlayers = await fetchTeamRoster(espnId);
+    let source = 'espn';
+    let enriched: EnrichedPlayer[] = [];
 
-    const enriched: EnrichedPlayer[] = espnPlayers.map(athlete => {
-      // Try salary lookup by player name + team slug
-      const salary = findSalaryRecord(athlete.displayName, slug);
-
-      const stats: ESPNPlayerStats = { ...EMPTY_STATS };
-
-      const guaranteedComp = salary?.guaranteedComp ?? 0;
-      const budgetCharge = salary?.budgetCharge ?? 0;
-      const isDesignatedPlayer = salary?.isDesignatedPlayer ?? false;
-      const isTAM = salary?.isTAM ?? false;
-
-      const base: EnrichedPlayer = {
-        espnId: athlete.id,
-        name: athlete.displayName,
-        position: athlete.position?.abbreviation ?? 'MF',
-        teamId: slug,
-        teamName: '', // filled in by caller if needed
-        age: athlete.age,
-        nationality: athlete.birthPlace?.country,
-        guaranteedComp,
-        budgetCharge,
-        isDesignatedPlayer,
-        isTAM,
-        stats,
-        valueScore: 0,
-        costPerGoalContribution: 0,
-      };
-
-      base.valueScore = calculateEnrichedPlayerValueScore(base);
-      const gc = base.stats.goals + base.stats.assists;
-      base.costPerGoalContribution = gc > 0 ? base.guaranteedComp / gc : 0;
-
-      return base;
-    });
+    if (espnPlayers.length > 0) {
+      enriched = espnPlayers.map(athlete => {
+        const salary = findSalaryRecord(athlete.displayName, slug);
+        const base: EnrichedPlayer = {
+          espnId: athlete.id,
+          name: athlete.displayName,
+          position: athlete.position?.abbreviation ?? 'MF',
+          teamId: slug,
+          teamName: '',
+          age: athlete.age,
+          nationality: athlete.birthPlace?.country,
+          guaranteedComp: salary?.guaranteedComp ?? 0,
+          budgetCharge: salary?.budgetCharge ?? 0,
+          isDesignatedPlayer: salary?.isDesignatedPlayer ?? false,
+          isTAM: salary?.isTAM ?? false,
+          stats: { ...EMPTY_STATS },
+          valueScore: 0,
+          costPerGoalContribution: 0,
+        };
+        base.valueScore = calculateEnrichedPlayerValueScore(base);
+        return base;
+      });
+    } else {
+      // ESPN unavailable — build roster from 2025 MLSPA salary records
+      source = 'static-2025';
+      const { getSalariesForTeam } = await import('@/lib/mls/salaries');
+      const salaries = getSalariesForTeam(slug);
+      enriched = salaries.map((s, idx) => {
+        const base: EnrichedPlayer = {
+          espnId: `salary-${idx}`,
+          name: s.name,
+          position: s.isDesignatedPlayer ? 'FW' : s.isTAM ? 'MF' : 'MF',
+          teamId: slug,
+          teamName: '',
+          guaranteedComp: s.guaranteedComp,
+          budgetCharge: s.budgetCharge,
+          isDesignatedPlayer: s.isDesignatedPlayer,
+          isTAM: s.isTAM,
+          stats: { ...EMPTY_STATS },
+          valueScore: 0,
+          costPerGoalContribution: 0,
+        };
+        base.valueScore = calculateEnrichedPlayerValueScore(base);
+        return base;
+      });
+    }
 
     return NextResponse.json({
       teamId: slug,
@@ -86,6 +100,7 @@ export async function GET(
       players: enriched,
       totalPlayers: enriched.length,
       salaryMatchCount: enriched.filter(p => p.guaranteedComp > 0).length,
+      source,
       lastUpdated: new Date().toISOString(),
     });
   } catch (error: unknown) {
